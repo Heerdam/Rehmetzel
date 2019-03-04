@@ -1,14 +1,17 @@
 #ifndef INPUTMULTIPLEXER_H
 #define INPUTMULTIPLEXER_H
 
-#include <SFML/Graphics.hpp>
-#include <SFML/System.hpp>
-
 #include <vector>
 #include <unordered_map>
 #include <functional>
 
+#include "MainStruct.hpp"
+
 namespace Heerbann {
+
+	using namespace Heerbann;
+
+	class MainStruct;
 
 	class InputMultiplexer {
 

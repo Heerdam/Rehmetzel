@@ -4,6 +4,10 @@
 
 namespace Heerbann {
 
+	using namespace Heerbann;
+
+	class MainStruct;
+
     class Viewport{
 
         sf::View cam;

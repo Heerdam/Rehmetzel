@@ -9,10 +9,15 @@
 
 namespace Heerbann {
 
+	using namespace Heerbann;
+
+	class InputMultiplexer;
+	class World;
+
 	class MainStruct {
 	public:
-		InputMultiplexer inputListener;
-		World world;
+		InputMultiplexer* inputListener;
+		World* world;
 
 	private:
 		static MainStruct* instance;
@@ -25,8 +30,6 @@ namespace Heerbann {
 		};
 		
 	};
-
-	MainStruct* MainStruct::instance = new MainStruct();
 
 }
 

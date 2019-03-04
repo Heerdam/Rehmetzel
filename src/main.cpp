@@ -3,7 +3,13 @@
 
 using namespace Heerbann;
 
+MainStruct* MainStruct::instance = new MainStruct();
+
 int main() {
+
+	MainStruct::get()->inputListener = new InputMultiplexer();
+	MainStruct::get()->world = new World();
+
 
 	sf::RenderWindow window(sf::VideoMode(1920, 1080), "Judihui");
 	window.setVerticalSyncEnabled(true);
@@ -23,12 +29,12 @@ int main() {
 		return false;
 	};
 
-	MainStruct::get()->inputListener.add("closeListener", entry);
+	MainStruct::get()->inputListener->add("closeListener", entry);
 
 	sf::Event event;
 	while (window.isOpen()) {
 		while (window.pollEvent(event)) {
-			MainStruct::get()->inputListener.fire(event);
+			MainStruct::get()->inputListener->fire(event);
 		}
 		window.clear();
 		window.draw(shape);
