@@ -106,9 +106,10 @@ bool InputMultiplexer::fire(sf::Event& _event) {
 	case sf::Event::MouseMoved:
 	{
 		auto& e = entries[3];
+		int mY = MainStruct::get()->canvasHeight - _event.mouseMove.y;
 		for (auto o : e) {
 			if (o == nullptr) continue;
-			if (o->mouseMoveEvent(_event.mouseMove.x, _event.mouseMove.y))
+			if (o->mouseMoveEvent(_event.mouseMove.x, mY))
 				if (o->interrupting) break;
 		}
 	}
@@ -136,9 +137,10 @@ bool InputMultiplexer::fire(sf::Event& _event) {
 	case sf::Event::MouseButtonPressed:
 	{
 		auto& e = entries[6];
+		int mY = MainStruct::get()->canvasHeight - _event.mouseMove.y;
 		for (auto o : e) {
 			if (o == nullptr) continue;
-			if (o->mouseButtonPressEvent(_event.mouseButton.button, _event.mouseButton.x, _event.mouseButton.y))
+			if (o->mouseButtonPressEvent(_event.mouseButton.button, _event.mouseButton.x, mY))
 				if (o->interrupting) break;
 		}
 	}
@@ -146,9 +148,10 @@ bool InputMultiplexer::fire(sf::Event& _event) {
 	case sf::Event::MouseButtonReleased:
 	{
 		auto& e = entries[7];
+		int mY = MainStruct::get()->canvasHeight - _event.mouseMove.y;
 		for (auto o : e) {
 			if (o == nullptr) continue;
-			if (o->mouseButtonReleaseEvent(_event.mouseButton.button, _event.mouseButton.x, _event.mouseButton.y))
+			if (o->mouseButtonReleaseEvent(_event.mouseButton.button, _event.mouseButton.x, mY))
 				if (o->interrupting) break;
 		}
 	}
@@ -242,8 +245,7 @@ bool InputMultiplexer::fire(sf::Event& _event) {
 		auto& e = entries[17];
 		for (auto o : e) {
 			if (o == nullptr) continue;
-			if (o->closeEvent())
-				if (o->interrupting) break;
+			o->closeEvent();
 		}
 	}
 	break;
@@ -252,8 +254,7 @@ bool InputMultiplexer::fire(sf::Event& _event) {
 		auto& e = entries[18];
 		for (auto o : e) {
 			if (o == nullptr) continue;
-			if (o->resizeEvent(_event.size.width, _event.size.height))
-				if (o->interrupting) break;
+			o->resizeEvent(_event.size.width, _event.size.height);
 		}
 	}
 	break;
@@ -262,8 +263,7 @@ bool InputMultiplexer::fire(sf::Event& _event) {
 		auto& e = entries[19];
 		for (auto o : e) {
 			if (o == nullptr) continue;
-			if (o->lostFocusEvent())
-				if (o->interrupting) break;
+			o->lostFocusEvent();
 		}
 	}
 	break;
@@ -272,8 +272,7 @@ bool InputMultiplexer::fire(sf::Event& _event) {
 		auto& e = entries[20];
 		for (auto o : e) {
 			if (o == nullptr) continue;
-			if (o->gainedFocusEvent())
-				if (o->interrupting) break;
+			o->gainedFocusEvent();
 		}
 	}
 	break;

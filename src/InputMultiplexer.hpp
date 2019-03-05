@@ -42,7 +42,7 @@ namespace Heerbann {
 			std::function<bool(sf::Uint32)> textEvent = nullptr;
 
 			// X position of the mouse pointer, relative to the left of the owner window
-			// Y position of the mouse pointer, relative to the top of the owner window
+			// Y position of the mouse pointer, relative to the bottom of the owner window
 			std::function<bool(int, int)> mouseMoveEvent = nullptr;
 
 			// The mouse cursor entered the area of the window (no data)
@@ -53,18 +53,18 @@ namespace Heerbann {
 
 			// Code of the button that has been pressed
 			// X position of the mouse pointer, relative to the left of the owner window
-			// Y position of the mouse pointer, relative to the top of the owner window
+			// Y position of the mouse pointer, rrelative to the bottom of the owner window
 			std::function<bool(sf::Mouse::Button, int, int)> mouseButtonPressEvent = nullptr;
 
 			// Code of the button that has been released
 			// X position of the mouse pointer, relative to the left of the owner window
-			// Y position of the mouse pointer, relative to the top of the owner window
+			// Y position of the mouse pointer, relative to the top of the owner window (bottom = 0)
 			std::function<bool(sf::Mouse::Button, int, int)> mouseButtonReleaseEvent = nullptr;
 
 			// Which wheel (for mice with multiple ones)
 			// Wheel offset (positive is up/left, negative is down/right). High-precision mice may use non-integral offsets.
 			// X position of the mouse pointer, relative to the left of the owner window
-			// Y position of the mouse pointer, relative to the top of the owner window
+			// Y position of the mouse pointer, relative to the bottom of the owner window
 			std::function<bool(sf::Mouse::Wheel, float, int, int)> mouseWheelScrollEvent = nullptr;
 
 			// Index of the joystick (in range [0 .. Joystick::Count - 1])

@@ -3,9 +3,11 @@
 
 #include <SFML/Graphics.hpp>
 #include <SFML/System.hpp>
+#include <SFML/OpenGL.hpp>
 
-#include "InputMultiplexer.hpp"
-#include "World.hpp"
+//#include "InputMultiplexer.hpp"
+//#include "World.hpp"
+//#include "CameraUtils.hpp"
 
 namespace Heerbann {
 
@@ -13,11 +15,16 @@ namespace Heerbann {
 
 	class InputMultiplexer;
 	class World;
+	class Viewport;
 
 	class MainStruct {
 	public:
 		InputMultiplexer* inputListener;
 		World* world;
+		Viewport* mainCam;
+
+		int canvasWidth;
+		int canvasHeight;
 
 	private:
 		static MainStruct* instance;
@@ -34,3 +41,4 @@ namespace Heerbann {
 }
 
 #endif
+
