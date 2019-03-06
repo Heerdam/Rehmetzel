@@ -26,7 +26,9 @@ void Viewport::setPosition(int _x, int _y) {
 };
 
 Viewport::Viewport(std::string _id, int _prio) {
-
+	setPosition(0, 0);
+	cam.setSize(sf::Vector2f((float)width, (float)height));
+	cam.setCenter(sf::Vector2f(0.f, 0.f));
 	InputMultiplexer::InputEntry* entry = new InputMultiplexer::InputEntry();
 	entry->priority = _prio;
 
@@ -36,9 +38,9 @@ Viewport::Viewport(std::string _id, int _prio) {
 		if (mouseRightPressed) { //touch dragged
 			sf::Vector2i delta(_x, _y);
 			delta -= last;
-			//delta.x = (int)((float)delta.x * -1 * zoom);
-			//delta.y = (int)((float)delta.y * zoom);
-			cam.setCenter(cam.getCenter() + sf::Vector2f(delta));
+			delta.x = (int)((float)delta.x * -1 * zoom);
+			delta.y = (int)((float)delta.y * zoom);
+			cam.move(sf::Vector2f(delta));
 			last.x = _x;
 			last.y = _y;
 			return true;
@@ -49,7 +51,7 @@ Viewport::Viewport(std::string _id, int _prio) {
 			}
 			sf::Vector2i delta(_x, _y);
 			delta -= last;
-			std::cout << delta.x << " " << delta.y << std::endl;
+			//std::cout << delta.x << " " << delta.y << std::endl;
 			//delta.x = (int)((float)delta.x * - 1 * zoom);
 			//delta.y = (int)((float)delta.y * zoom);
 			switch (borderRes) {
@@ -162,9 +164,10 @@ Viewport::Viewport(std::string _id, int _prio) {
 		return false;
 	};
 
-	entry->mouseWheelScrollEvent = [&](sf::Mouse::Wheel, float _delta, int, int)->bool {
-		zoom = std::clamp(zoom += _delta, 0.1f, 100.f);
-		cam.zoom(zoom);
+	entry->mouseWheelScrollEvent = [&](sf::Mouse::Wheel, float _delta, int, int)->bool {	
+		zoom += zoomSpeed * (_delta < 0 ? -1 : 1);
+		if(zoom > 0.1f && zoom < 100) cam.zoom(1 + zoomSpeed * (_delta < 0 ? -1 : 1));
+		else zoom = std::clamp(zoom, 0.1f, 100.f);		
 		return false;
 	};
 
@@ -182,7 +185,8 @@ Viewport::Viewport(std::string _id, int _prio) {
 		 glClearColor(1.f / 255.f * clearColor.r, 1.f / 255.f * clearColor.g, 1.f / 255.f * clearColor.b, 1.f / 255.f * clearColor.a);
 		 glClear(GL_COLOR_BUFFER_BIT);
 	 }
-
+	 if (update != nullptr) update(_window, _deltaTime);
+	 if (draw != nullptr) draw(_window, _deltaTime);
 	 if (debugDraw) {
 		 int mh = MainStruct::get()->canvasHeight;
 		 sf::RectangleShape rec;

@@ -17,7 +17,7 @@ namespace Heerbann {
         sf::View cam;
 
 		int posX = 0, posY = 0, width = MainStruct::get()->canvasWidth, height = MainStruct::get()->canvasHeight;
-		float zoom = 1;
+		float zoom = 1.f;
 
 	public:
 		bool interactive = false;
@@ -28,6 +28,8 @@ namespace Heerbann {
 		bool debugDraw = false;
 		bool clear = true;
 		sf::Color clearColor = sf::Color::White;
+
+		float zoomSpeed = .1f;
 
 	private:
 
@@ -90,6 +92,8 @@ namespace Heerbann {
 
 		Viewport(std::string _id, int _prio);
 
+		std::function<void(sf::RenderWindow& _window, float _deltaTime)> update = nullptr;
+		std::function<void(sf::RenderWindow& _window, float _deltaTime)> draw = nullptr;
         void apply(sf::RenderWindow& _window, float _deltaTime);
 
     };

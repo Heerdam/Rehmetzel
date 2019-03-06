@@ -126,6 +126,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\AI.hpp" />
     <ClInclude Include="..\src\CameraUtils.hpp" />
     <ClInclude Include="..\src\InputMultiplexer.hpp" />
     <ClInclude Include="..\src\MainStruct.hpp" />

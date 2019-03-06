@@ -17,19 +17,13 @@ int main() {
 	MainStruct::get()->inputListener = new InputMultiplexer();
 	MainStruct::get()->world = new World();
 	auto cam = MainStruct::get()->mainCam = new Viewport("main", -100);
-	//cam debug
-	cam->interactive = true;
-	cam->debugDraw = true;
-	cam->border = 15;
-	cam->topBorder = 30;
-	cam->setPosition(200, 200);
-	cam->setSize(500, 500);
 
-	sf::RenderWindow window(sf::VideoMode(MainStruct::get()->canvasWidth, MainStruct::get()->canvasHeight), "Judihui");
+	sf::RenderWindow window(sf::VideoMode(MainStruct::get()->canvasWidth, MainStruct::get()->canvasHeight), "Rehmetzel a.0.1");
 	window.setVerticalSyncEnabled(true);
 	window.setFramerateLimit(60);
 
 	sf::CircleShape shape(100.f);
+	shape.setPosition(sf::Vector2f(0.f, 0.f));
 	shape.setFillColor(sf::Color::Green);
 
 	InputMultiplexer::InputEntry* entry = new InputMultiplexer::InputEntry();
@@ -55,11 +49,8 @@ int main() {
 			MainStruct::get()->inputListener->fire(event);
 		}
 
-		window.setView(window.getDefaultView());
-		window.clear(sf::Color::Black);
-
 		MainStruct::get()->mainCam->apply(window, 1);
-		//window.draw(shape);
+		window.draw(shape);
 		window.display();
 	}
 
