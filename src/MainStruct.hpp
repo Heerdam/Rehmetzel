@@ -35,8 +35,13 @@ namespace Heerbann {
 		static MainStruct* get() {
 			return instance;
 		};
+
+		long static getId() {
+			static long id = 1000;
+			return ++id;
+		}
 		
-	};
+	};	
 
 }
 

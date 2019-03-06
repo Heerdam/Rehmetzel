@@ -132,6 +132,7 @@
     <ClInclude Include="..\src\World.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\CameraUtils.cpp" />
     <ClCompile Include="..\src\InputMultiplexer.cpp" />
     <ClCompile Include="..\src\main.cpp" />
   </ItemGroup>

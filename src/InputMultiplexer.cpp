@@ -137,7 +137,7 @@ bool InputMultiplexer::fire(sf::Event& _event) {
 	case sf::Event::MouseButtonPressed:
 	{
 		auto& e = entries[6];
-		int mY = MainStruct::get()->canvasHeight - _event.mouseMove.y;
+		int mY = MainStruct::get()->canvasHeight - _event.mouseButton.y;
 		for (auto o : e) {
 			if (o == nullptr) continue;
 			if (o->mouseButtonPressEvent(_event.mouseButton.button, _event.mouseButton.x, mY))
@@ -148,7 +148,7 @@ bool InputMultiplexer::fire(sf::Event& _event) {
 	case sf::Event::MouseButtonReleased:
 	{
 		auto& e = entries[7];
-		int mY = MainStruct::get()->canvasHeight - _event.mouseMove.y;
+		int mY = MainStruct::get()->canvasHeight - _event.mouseButton.y;
 		for (auto o : e) {
 			if (o == nullptr) continue;
 			if (o->mouseButtonReleaseEvent(_event.mouseButton.button, _event.mouseButton.x, mY))

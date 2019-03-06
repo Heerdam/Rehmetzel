@@ -11,8 +11,6 @@ namespace Heerbann {
 
 	using namespace Heerbann;
 
-	class MainStruct;
-
 	class InputMultiplexer {
 
 	public:
