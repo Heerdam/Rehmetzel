@@ -17,8 +17,14 @@ namespace Heerbann {
 	class World {
 
 		struct WorldObject {
+			WorldObject* next = 0;
+			bool isStatic = true;
+
 			long id = MainStruct::getId();
+			EntityType type;
 			b2Body* body;
+
+			BehaviourTree::Root root;
 		};
 
 		b2World* bworld = new b2World(b2Vec2(0, -9.8f));
@@ -42,6 +48,7 @@ namespace Heerbann {
 					ob->body = bworld->CreateBody(bodyDef);
 
 					b2FixtureDef* def = new b2FixtureDef();
+					
 					
 				}
 					break;
