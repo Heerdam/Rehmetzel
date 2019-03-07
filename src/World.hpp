@@ -10,21 +10,29 @@ namespace Heerbann {
 
 	using namespace Heerbann;
 
+	namespace BehaviourTree {
+		struct Root;
+	}
+	
+	using namespace BehaviourTree;
+
 	enum EntityType {
 		red_deer, tree, hunter
 	};
 
 	class World {
-
+	public:
 		struct WorldObject {
 			WorldObject* next = 0;
+			WorldObject* tail = 0;
+
 			bool isStatic = true;
 
 			long id = MainStruct::getId();
 			EntityType type;
 			b2Body* body;
 
-			BehaviourTree::Root root;
+			Root* root; //behaviour
 		};
 
 		b2World* bworld = new b2World(b2Vec2(0, -9.8f));

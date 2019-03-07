@@ -127,15 +127,18 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\src\AI.hpp" />
+    <ClInclude Include="..\src\Assets.hpp" />
     <ClInclude Include="..\src\CameraUtils.hpp" />
     <ClInclude Include="..\src\InputMultiplexer.hpp" />
     <ClInclude Include="..\src\MainStruct.hpp" />
     <ClInclude Include="..\src\World.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\Assets.cpp" />
     <ClCompile Include="..\src\CameraUtils.cpp" />
     <ClCompile Include="..\src\InputMultiplexer.cpp" />
     <ClCompile Include="..\src\main.cpp" />
+    <ClCompile Include="..\src\MainStruct.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

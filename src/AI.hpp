@@ -9,58 +9,94 @@ namespace Heerbann {
 
 	namespace BehaviourTree{
 
+		enum Status {
+			success, failed, running
+		};
 
-		struct Node{
-			std::function<void(float)> func;
-			std::vector<Decorator> decorators;
+		struct Node {
+			std::vector<Node> children;
 
-			bool check(float _deltaTime){
-				for(auto& d : decorators)
-					if(d.eval(_deltaTime))
-						return true;
-				return false;
-			};
+			//0 - failed
+			//1 - success
+			//2 - running
+			virtual Status eval(float _deltaTime) = 0;
+		};
 
-			std::vector<Node*> children;
-			void step(float _deltaTime){
-				for(auto c : children){
-					if(check(deltaTime))
-						func(_deltaTime);
-					c->step(deltaTime);
+		//Executes its child nodes consecutively, one at a time, stopping at the first one that succeeds.
+		struct Selector : public Node {
+			Status eval(float _deltaTime) override {
+				for (auto& t : children) {
+					Status status = t.eval(_deltaTime);
+					if (status == Status::running)
+						return status;
+					else if (status == Status::success)
+						return status;
 				}
+				return Status::failed;
 			};
 		};
 
-		struct Decorator{
-			std::function<bool(float)> dec;
-			bool eval(float deltaTime){
-				return dec(__deltaTime);
+		//Executes its child nodes one at a time in order.
+		struct Sequence : public Node {
+			Status eval(float _deltaTime) override {
+				for (auto& t : children) {
+					Status status = t.eval(_deltaTime);
+					if (status == Status::running)
+						return status;
+					else if (status == Status::failed)
+						return status;
+				}
+				return Status::success;
 			};
 		};
 
-		struct Root : public Node{
-			
+		struct Task : public Node {				
+			std::function<Status(float)> eval;
+			Status eval(float _deltaTime) override {
+				return eval(_deltaTime);
+			}
+		};
+
+		struct Root : public Node {
+			Node* rootNode;
+			Status eval(float _deltaTime) override {
+				rootNode->eval(_deltaTime);
+			}
 		};
 
 	}
 
+	using namespace BehaviourTree;
+
 	class Brain {
 
-	
-
 		//prio 1, 2, 3
-		std::vector<WorldObject*, 3> objects;
+		World::WorldObject* objects[3];
 		
 	public:
 		void step(float _deltaTime){
 			for(auto v : objects){
-				WorldObject* o = v;
+				World::WorldObject* o = v;
 				while(o->next != nullptr){
-					//do stuff
+					o->root->eval(_deltaTime);
 					o = o->next;
 				}
 			}
-		}
+		};
+
+		void add(World::WorldObject* _object) {
+			if (objects[0] == nullptr) {
+				objects[0] = _object;
+				_object->tail = _object;
+			} else {
+				objects[0]->tail->next = _object;
+				objects[0]->tail = _object;
+			}
+		};
+
+		void remove(World::WorldObject* _object) {
+			//TODO
+		};
 
 	};
 

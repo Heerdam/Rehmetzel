@@ -4,10 +4,7 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/System.hpp>
 #include <SFML/OpenGL.hpp>
-
-//#include "InputMultiplexer.hpp"
-//#include "World.hpp"
-//#include "CameraUtils.hpp"
+#include <unordered_map>
 
 namespace Heerbann {
 
@@ -16,20 +13,21 @@ namespace Heerbann {
 	class InputMultiplexer;
 	class World;
 	class Viewport;
+	class AssetManager;
 
 	class MainStruct {
 	public:
 		InputMultiplexer* inputListener;
 		World* world;
 		Viewport* mainCam;
+		AssetManager* assets;
 
-		int canvasWidth;
-		int canvasHeight;
+		int canvasWidth = 640;
+		int canvasHeight = 480;
 
 	private:
 		static MainStruct* instance;
-		MainStruct() {
-		};
+		MainStruct();
 
 	public:
 		static MainStruct* get() {

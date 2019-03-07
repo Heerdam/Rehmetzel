@@ -165,8 +165,8 @@ Viewport::Viewport(std::string _id, int _prio) {
 	};
 
 	entry->mouseWheelScrollEvent = [&](sf::Mouse::Wheel, float _delta, int, int)->bool {	
-		zoom += zoomSpeed * (_delta < 0 ? -1 : 1);
-		if(zoom > 0.1f && zoom < 100) cam.zoom(1 + zoomSpeed * (_delta < 0 ? -1 : 1));
+		zoom += zoomSpeed * (_delta < 0 ? 1 : -1);
+		if(zoom > 0.1f && zoom < 100) cam.zoom(1 + zoomSpeed * (_delta < 0 ? 1 : -1));
 		else zoom = std::clamp(zoom, 0.1f, 100.f);		
 		return false;
 	};
@@ -185,6 +185,7 @@ Viewport::Viewport(std::string _id, int _prio) {
 		 glClearColor(1.f / 255.f * clearColor.r, 1.f / 255.f * clearColor.g, 1.f / 255.f * clearColor.b, 1.f / 255.f * clearColor.a);
 		 glClear(GL_COLOR_BUFFER_BIT);
 	 }
+	 _window.setView(cam);
 	 if (update != nullptr) update(_window, _deltaTime);
 	 if (draw != nullptr) draw(_window, _deltaTime);
 	 if (debugDraw) {
@@ -209,6 +210,5 @@ Viewport::Viewport(std::string _id, int _prio) {
 		 rec.setSize(sf::Vector2f((float)width, (float)topBorder));
 		 _window.draw(rec);
 	 }
-	 _window.setView(cam);
 	 glDisable(GL_SCISSOR_TEST);
  };
