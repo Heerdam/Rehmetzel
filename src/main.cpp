@@ -11,13 +11,12 @@ using namespace Heerbann;
 
 MainStruct* MainStruct::instance = new MainStruct();
 
-void loadAssets(sf::Sprite& _sprite) {
+sf::Texture* loadAssets() {
 	MainStruct::get()->assets->load("assets/tex/ForestGrass_basecolor.png", Type::texture);
 	MainStruct::get()->assets->finish();
-	sf::Texture* texture = (sf::Texture*)(*MainStruct::get()->assets)["assets/tex/ForestGrass_basecolor.png"]->data;
+	sf::Texture* texture = (sf::Texture*)(*MainStruct::get()->assets)["assets/tex/ForestGrass_basecolor.png"]->data;	
 	texture->setRepeated(true);
-	_sprite.setTexture(*texture);
-	_sprite.setPosition(sf::Vector2f(0, 0));
+	return texture;
 }
 
 int main() {
@@ -32,8 +31,13 @@ int main() {
 	window.setVerticalSyncEnabled(true);
 	window.setFramerateLimit(60);
 
-	sf::Sprite bg;
-	loadAssets(bg);
+	int scale = 6;
+	sf::RectangleShape bg;
+	bg.setTexture(loadAssets());
+	bg.setTextureRect(sf::IntRect(0, 0, scale * 2048.f, scale * 2048.f));
+	bg.setPosition(sf::Vector2f(0, 0));
+	bg.setScale(sf::Vector2f(0.25f, 0.25f));
+	bg.setSize(sf::Vector2f(scale * 2048.f, scale * 2048.f));
 
 	InputMultiplexer::InputEntry* entry = new InputMultiplexer::InputEntry();
 	entry->closeEvent = [&]()->bool {
@@ -52,7 +56,7 @@ int main() {
 
 	MainStruct::get()->inputListener->add("closeListener", entry);
 
-	cam->draw = [&](sf::RenderWindow& _window, float _deltaTime)->void {
+	cam->update = [&](sf::RenderWindow& _window, float _deltaTime)->void {
 		_window.draw(bg);
 	};
 
