@@ -131,6 +131,7 @@
     <ClInclude Include="..\src\CameraUtils.hpp" />
     <ClInclude Include="..\src\InputMultiplexer.hpp" />
     <ClInclude Include="..\src\MainStruct.hpp" />
+    <ClInclude Include="..\src\UI.hpp" />
     <ClInclude Include="..\src\World.hpp" />
   </ItemGroup>
   <ItemGroup>

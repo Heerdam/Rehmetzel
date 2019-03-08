@@ -15,12 +15,17 @@ namespace Heerbann {
 	class Viewport;
 	class AssetManager;
 
+	namespace UI {
+		class Stage;
+	}
+
 	class MainStruct {
 	public:
 		InputMultiplexer* inputListener;
 		World* world;
 		Viewport* mainCam;
 		AssetManager* assets;
+		UI::Stage* stage;
 
 		int canvasWidth = 640;
 		int canvasHeight = 480;
