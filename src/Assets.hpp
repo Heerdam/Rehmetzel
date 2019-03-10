@@ -13,7 +13,7 @@ namespace Heerbann {
 	using namespace Heerbann;
 
 	enum Type {
-		texture
+		texture, font, shader
 	};
 
 	class AssetManager {

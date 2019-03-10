@@ -13,13 +13,12 @@ namespace Heerbann {
 	using namespace Heerbann;
 
     class Viewport{
-
-        sf::View cam;
-
+	public:
 		int posX = 0, posY = 0, width = MainStruct::get()->canvasWidth, height = MainStruct::get()->canvasHeight;
+
+		sf::View cam;
 		float zoom = 1.f;
 
-	public:
 		bool interactive = false;
 		int border = 5, topBorder = 10;
 

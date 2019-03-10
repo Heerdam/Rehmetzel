@@ -34,10 +34,10 @@ int main() {
 	int scale = 6;
 	sf::RectangleShape bg;
 	bg.setTexture(loadAssets());
-	bg.setTextureRect(sf::IntRect(0, 0, scale * 2048.f, scale * 2048.f));
+	bg.setTextureRect(sf::IntRect(0, 0, scale * 2048, scale * 2048));
 	bg.setPosition(sf::Vector2f(0, 0));
 	bg.setScale(sf::Vector2f(0.25f, 0.25f));
-	bg.setSize(sf::Vector2f(scale * 2048.f, scale * 2048.f));
+	bg.setSize(sf::Vector2f((float)scale * 2048.f, (float)scale * 2048.f));
 
 	InputMultiplexer::InputEntry* entry = new InputMultiplexer::InputEntry();
 	entry->closeEvent = [&]()->bool {
@@ -57,7 +57,32 @@ int main() {
 	MainStruct::get()->inputListener->add("closeListener", entry);
 
 	cam->update = [&](sf::RenderWindow& _window, float _deltaTime)->void {
-		_window.draw(bg);
+		
+		auto bounds = bg.getGlobalBounds();
+		float imW = bounds.width;
+		float imH = bounds.height;
+		
+		auto pos = cam->cam.getCenter();
+
+		float width = cam->width*cam->zoom;
+		float height = cam->height*cam->zoom;
+
+		sf::Vector2f lCorner(pos.x - width/2, pos.y - height/2);
+		
+		float offsetX = lCorner.x - (int)(lCorner.x / width) * width;
+		float offsetY = lCorner.y - (int)(lCorner.y / height) * height;
+
+		int countX = (int)(width / imW) + 1;
+		int countY = (int)(height / imH) + 1;
+
+		for (int x = 0; x < countX; ++x) {
+			for (int y = 0; y < countY; ++y) {
+				bg.setPosition(sf::Vector2f(offsetX + x * imW, offsetY + y * imH));
+				_window.draw(bg);
+			}
+		}
+
+
 	};
 
 	sf::Event event;

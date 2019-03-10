@@ -36,6 +36,12 @@
     <ClInclude Include="..\src\UI.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\Utils.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MapGenerator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\InputMultiplexer.cpp">
@@ -53,5 +59,19 @@
     <ClCompile Include="..\src\MainStruct.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\Utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\bin\assets\shader\bg_shader.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\bg_shader.geom">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\bg_shader.vert">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
