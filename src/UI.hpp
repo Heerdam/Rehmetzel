@@ -16,18 +16,61 @@ namespace Heerbann {
 			std::vector<Actor*> children;
 			BoundingBox2f aabb;
 			Actor* parent;
-			sf::Vector2i relPos;
+			sf::Vector2i position; //relative to parent
 			bool isDirty = true;
 
 		public:
-			virtual void layout(sf::Vector2i) = 0;
-			virtual void act(float) = 0;
-			virtual void draw(sf::RenderWindow&) = 0;
-			virtual void getAABB(BoundingBox2f&) = 0;
+			virtual void layout(sf::Vector2i _parent) {
+				auto pos = _parent + position;
+				for (auto c : children)
+					c->layout(pos);
+			};
 
-			virtual bool mouseMoveEvent(int, int) = 0;
-			virtual bool mouseButtonPressEvent(sf::Mouse::Button, int, int) = 0;
-			virtual bool mouseButtonReleaseEvent(sf::Mouse::Button, int, int) = 0;
+			virtual void act(float _deltaTime) {
+				for (auto c : children)
+					c->act(_deltaTime);
+			};
+
+			virtual void draw(sf::RenderWindow& _window) {
+				for (auto c : children)
+					c->draw(_window);
+			};
+
+			virtual void getAABB(BoundingBox2f& _aabb) {
+				aabb += _aabb;
+				for (auto c : children)
+					c->getAABB(aabb);
+			}
+
+			virtual bool mouseMoveEvent(int _x, int _y) {
+				if (aabb == sf::Vector2i(_x, _y)) {
+					for (auto c : children) {
+						if (c->mouseMoveEvent(_x, _y))
+							return true;
+					}
+				}
+				return false;
+			};
+
+			virtual bool mouseButtonPressEvent(sf::Mouse::Button _button, int _x, int _y) {
+				if (aabb == sf::Vector2i(_x, _y)) {
+					for (auto c : children) {
+						if (c->mouseButtonPressEvent(_button, _x, _y))
+							return true;
+					}
+				}
+				return false;
+			};
+
+			virtual bool mouseButtonReleaseEvent(sf::Mouse::Button _button, int _x, int _y) {
+				if (aabb == sf::Vector2i(_x, _y)) {
+					for (auto c : children) {
+						if (c->mouseButtonReleaseEvent(_button, _x, _y))
+							return true;
+					}
+				}
+				return false;
+			};
 
 			void add(Actor* _actor) {
 				children.emplace_back(_actor);
@@ -45,7 +88,7 @@ namespace Heerbann {
 		};
 
 		class Stage {
-			Actor* root;
+			Actor* root = new Actor();
 			BoundingBox2f aabb;
 		public:
 			Stage() {
@@ -74,19 +117,21 @@ namespace Heerbann {
 			};
 
 			void layout() {
-				if (root != nullptr) root->layout(sf::Vector2i(0, 0));
+				root->layout(sf::Vector2i(0, 0));
 			}
 
 			void act(float _deltaTime) {
-				if (root != nullptr) root->act(_deltaTime);
+				root->act(_deltaTime);
 			};
 
 			void draw(sf::RenderWindow& _window) {
-				if (root != nullptr) root->draw(_window);
+				root->draw(_window);
 			};
 
-			void getAABB() {
-				if (root != nullptr) root->getAABB(aabb);
+			const BoundingBox2f& getAABB() {
+				aabb.clr();
+				root->getAABB(aabb);
+				return aabb;
 			}
 
 		};
@@ -111,8 +156,9 @@ namespace Heerbann {
 
 		public:
 
-			void layout(sf::Vector2i _parent) override {
+			virtual void layout(sf::Vector2i _parent) override {
 				if (s_up != nullptr) {
+					s_up->setPosition(sf::Vector2f(_parent) + sf::Vector2f(position));
 					auto bounds = s_up->getGlobalBounds();
 					//relative aabb of sprite
 					BoundingBox2f b(sf::Vector2f(bounds.left - _parent.x, bounds.top - _parent.y),
@@ -120,6 +166,7 @@ namespace Heerbann {
 					aabb += b;
 				}
 				if (s_pressed != nullptr) {
+					s_pressed->setPosition(sf::Vector2f(_parent) + sf::Vector2f(position));
 					auto bounds = s_pressed->getGlobalBounds();
 					//relative aabb of sprite
 					BoundingBox2f b(sf::Vector2f(bounds.left - _parent.x, bounds.top - _parent.y),
@@ -127,6 +174,7 @@ namespace Heerbann {
 					aabb += b;
 				}
 				if (s_hover != nullptr) {
+					s_hover->setPosition(sf::Vector2f(_parent) + sf::Vector2f(position));
 					auto bounds = s_hover->getGlobalBounds();
 					//relative aabb of sprite
 					BoundingBox2f b(sf::Vector2f(bounds.left - _parent.x, bounds.top - _parent.y),
@@ -134,31 +182,36 @@ namespace Heerbann {
 					aabb += b;
 				}
 				if (s_inactive != nullptr) {
+					s_inactive->setPosition(sf::Vector2f(_parent) + sf::Vector2f(position));
 					auto bounds = s_inactive->getGlobalBounds();
 					//relative aabb of sprite
 					BoundingBox2f b(sf::Vector2f(bounds.left - _parent.x, bounds.top - _parent.y),
 						sf::Vector2f(bounds.left - _parent.x + bounds.width, bounds.top - _parent.y + bounds.height));
 					aabb += b;
 				}
-				for (auto c : children)
-					c->layout(_parent + relPos);
+				Actor::layout(_parent);
 			};
 
-			void act(float _deltaTime) override {
-				for (auto c : children)
-					c->act(_deltaTime);
+			virtual void draw(sf::RenderWindow& _window) {
+				switch (state) {
+				case ButtonState::hover:
+					if (s_hover != nullptr) _window.draw(*s_hover);
+					else if (s_up != nullptr) _window.draw(*s_up);
+					break;
+				case ButtonState::inactive:
+					if (s_inactive != nullptr) _window.draw(*s_inactive);
+					else if (s_up != nullptr) _window.draw(*s_up);
+					break;
+				case ButtonState::pressed:
+					if (s_pressed != nullptr) _window.draw(*s_pressed);
+					else if (s_up != nullptr) _window.draw(*s_up);
+					break;
+				case ButtonState::up:
+					if (s_up != nullptr) _window.draw(*s_up);
+					break;
+				}
+				Actor::draw(_window);
 			};
-
-			void draw(sf::RenderWindow& _window) override {
-				for (auto c : children)
-					c->draw(_window);
-			};
-
-			void getAABB(BoundingBox2f& _aabb) {
-				aabb += _aabb;
-				for (auto c : children)
-					c->getAABB(aabb);
-			}
 
 			bool mouseMoveEvent(int _x, int _y) {
 
@@ -175,42 +228,53 @@ namespace Heerbann {
 				}
 
 				if (isOver) {
-					for (auto c : children) {
-						if (c->mouseMoveEvent(_x, _y))
-							return true;
-					}
+					return Actor::mouseMoveEvent(_x, _y);
 				}
 				return false;
 			};
 
 			bool mouseButtonPressEvent(sf::Mouse::Button _button, int _x, int _y) {
-				if (aabb == sf::Vector2i(_x, _y)) {
-					for (auto c : children) {
-						if (c->mouseButtonPressEvent(_button, _x, _y))
-							return true;
-					}
-				}
-				return false;
+				
+				return Actor::mouseButtonPressEvent(_button, _y, _y);
 			};
 
 			bool mouseButtonReleaseEvent(sf::Mouse::Button _button, int _x, int _y) {
-				if (aabb == sf::Vector2i(_x, _y)) {
-					for (auto c : children) {
-						if (c->mouseButtonReleaseEvent(_button, _x, _y))
-							return true;
-					}
-				}
-				return false;
+				
+				return Actor::mouseButtonReleaseEvent(_button, _y, _y);
 			};
 		};
 
-		class LoadingBar : public Actor {
+		class Label : public Actor {
+
+		public:
+			sf::Text text;
+
+			Label(std::string _text, sf::Font* _font) : Actor() {
+				text.setFont(*_font);
+				text.setString(_text.c_str());
+			};
+
+			virtual void layout(sf::Vector2i _parent) override {
+				auto pos = _parent + position;
+				text.setPosition(sf::Vector2f(pos));
+				auto bounds = text.getGlobalBounds();
+				aabb.min = sf::Vector2f(position);
+				aabb.max = sf::Vector2f(position) + sf::Vector2f(bounds.width, bounds.height);
+				Actor::layout(_parent);
+			};
+
+		};
+
+		class TextButton : public Button{
+		public:
+			Label* label;
+		};
+
+		class ProgressBar : public Actor {
 
 			float value = 0.5f;
 
 		public:
-
-			bool isInteractive = false;
 
 			sf::Sprite* background;
 			sf::Sprite* bar;
@@ -224,15 +288,12 @@ namespace Heerbann {
 				return value;
 			};
 
-			void layout(sf::Vector2i _parent) override {
+			virtual void layout(sf::Vector2i _parent) override {
 
-				for (auto c : children)
-					c->layout(_parent + relPos);
 			};
 
-			void act(float _deltaTime) override {
-				for (auto c : children)
-					c->act(_deltaTime);
+			void act(float _deltaTime) {
+
 			};
 
 			void draw(sf::RenderWindow& _window) override {
@@ -244,110 +305,30 @@ namespace Heerbann {
 					_window.draw(*border);
 				for (auto c : children)
 					c->draw(_window);
-
-			};
-
-			void getAABB(BoundingBox2f& _aabb) {
-				aabb += _aabb;
-				for (auto c : children)
-					c->getAABB(aabb);
-			}
-
-			bool mouseMoveEvent(int _x, int _y) {
-				if (aabb == sf::Vector2i(_x, _y)) {
-					for (auto c : children) {
-						if (c->mouseMoveEvent(_x, _y))
-							return true;
-					}
-				}
-				return false;
-			};
-
-			bool mouseButtonPressEvent(sf::Mouse::Button _button, int _x, int _y) {
-				if (aabb == sf::Vector2i(_x, _y)) {
-					for (auto c : children) {
-						if (c->mouseButtonPressEvent(_button, _x, _y))
-							return true;
-					}
-				}
-				return false;
-			};
-
-			bool mouseButtonReleaseEvent(sf::Mouse::Button _button, int _x, int _y) {
-				if (aabb == sf::Vector2i(_x, _y)) {
-					for (auto c : children) {
-						if (c->mouseButtonReleaseEvent(_button, _x, _y))
-							return true;
-					}
-				}
-				return false;
+				Actor::draw(_window);
 			};
 
 		};
 
-		class Label : public Actor {
-
+		class Image : public Actor {
 		public:
-			sf::Text text;
+			sf::Sprite* img;
 
-			Label(std::string _text, sf::Font* _font) {
-				text.setFont(*_font);
-				text.setString(_text.c_str());
-			};
-
-			void layout(sf::Vector2i _parent) override {
-				auto pos = _parent + relPos;
-				text.setPosition(sf::Vector2f(pos));
-				for (auto c : children)
-					c->layout(pos);
-			};
-
-			void act(float _deltaTime) override {
-				for (auto c : children)
-					c->act(_deltaTime);
-			};
-
-			void draw(sf::RenderWindow& _window) override {
-				_window.draw(text);
-				for (auto c : children)
-					c->draw(_window);
-			};
-
-			void getAABB(BoundingBox2f& _aabb) {
-				aabb += _aabb;
-				for (auto c : children)
-					c->getAABB(aabb);
-			}
-
-			bool mouseMoveEvent(int _x, int _y) {
-				if (aabb == sf::Vector2i(_x, _y)) {
-					for (auto c : children) {
-						if (c->mouseMoveEvent(_x, _y))
-							return true;
-					}
+			virtual void layout(sf::Vector2i _parent) override {
+				if (img != nullptr) {
+					img->setPosition(sf::Vector2f(_parent) + sf::Vector2f(position));
+					auto bounds = img->getGlobalBounds();
+					aabb.min = sf::Vector2f(position);
+					aabb.max = sf::Vector2f(position) + sf::Vector2f(bounds.width, bounds.height);
 				}
-				return false;
+				Actor::layout(_parent);
 			};
 
-			bool mouseButtonPressEvent(sf::Mouse::Button _button, int _x, int _y) {
-				if (aabb == sf::Vector2i(_x, _y)) {
-					for (auto c : children) {
-						if (c->mouseButtonPressEvent(_button, _x, _y))
-							return true;
-					}
-				}
-				return false;
+			virtual void draw(sf::RenderWindow& _window) override {
+				if (img != nullptr) _window.draw(*img);
+				Actor::draw(_window);
 			};
 
-			bool mouseButtonReleaseEvent(sf::Mouse::Button _button, int _x, int _y) {
-				if (aabb == sf::Vector2i(_x, _y)) {
-					for (auto c : children) {
-						if (c->mouseButtonReleaseEvent(_button, _x, _y))
-							return true;
-					}
-				}
-				return false;
-			};
 		};
 
 	}
