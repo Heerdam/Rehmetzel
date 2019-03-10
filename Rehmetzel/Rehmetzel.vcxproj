@@ -142,6 +142,7 @@
     <ClCompile Include="..\src\InputMultiplexer.cpp" />
     <ClCompile Include="..\src\main.cpp" />
     <ClCompile Include="..\src\MainStruct.cpp" />
+    <ClCompile Include="..\src\UI.cpp" />
     <ClCompile Include="..\src\Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
