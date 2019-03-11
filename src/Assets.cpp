@@ -5,18 +5,48 @@
 
 using namespace Heerbann;
 
+AssetManager::LoadItem* AssetManager::popLoad() {
+	std::unique_lock<std::mutex> guard(loadQueueLock);
+	guard.lock();
+	LoadItem* item = loadQueue.front();
+	loadQueue.pop();
+	guard.unlock();
+	return item;
+}
+
+AssetManager::LoadItem* AssetManager::popUnload() {
+	std::unique_lock<std::mutex> guard(unloadQueueLock);
+	guard.lock();
+	LoadItem* item = unloadQueue.front();
+	unloadQueue.pop();
+	guard.unlock();
+	return item;
+}
+
+void AssetManager::queueLoad(LoadItem* _item) {
+	std::unique_lock<std::mutex> guard(loadQueueLock);
+	guard.lock();
+	loadQueue.emplace(_item);
+	guard.unlock();
+}
+
+void AssetManager::queueUnLoad(LoadItem* _item) {
+	std::unique_lock<std::mutex> guard(unloadQueueLock);
+	guard.lock();
+	unloadQueue.emplace(_item);
+	guard.unlock();
+}
+
 void AssetManager::load(std::string _id, Type _type) {
-	if (isLoading) std::exception("Assetmanager is currently loading. Nothing can be added");
 	LoadItem* item = (*this)[_id];
 	if (item != nullptr) std::exception(std::string("Asset already exists [").append(_id).append("]").c_str());
-	loadQueue.emplace(new LoadItem(_id, _type));
+	queueLoad(new LoadItem(_id, _type));
 }
 
 void AssetManager::unload(std::string _id) {
-	if (isLoading) std::exception("Assetmanager is currently loading. Nothing can be removed");
 	LoadItem* item = (*this)[_id];
 	if (item == nullptr) std::exception(std::string("Asset does not exist [").append(_id).append("]").c_str());
-	unloadQueue.emplace(item);
+	queueUnLoad(item);
 }
 
 void AssetManager::asyncLoad() {
