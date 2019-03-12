@@ -12,7 +12,8 @@ using namespace Heerbann;
 MainStruct* MainStruct::instance = new MainStruct();
 
 sf::Texture* loadAssets() {
-	MainStruct::get()->assets->load("assets/tex/ForestGrass_basecolor.png", Type::texture);
+	//TODO
+	MainStruct::get()->assets->load("assets/tex/ForestGrass_basecolor.png");
 	MainStruct::get()->assets->finish();
 	sf::Texture* texture = (sf::Texture*)(*MainStruct::get()->assets)["assets/tex/ForestGrass_basecolor.png"]->data;	
 	texture->setRepeated(true);

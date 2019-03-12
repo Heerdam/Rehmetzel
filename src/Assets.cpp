@@ -7,153 +7,109 @@
 using namespace Heerbann;
 
 AssetManager::LoadItem* AssetManager::popLoad() {
-	std::unique_lock<std::mutex> guard(loadQueueLock);
-	guard.lock();
-	if (continuousLoadQueue.empty()) {
-		guard.unlock();
-		return nullptr;
-	}
+	std::lock_guard<std::mutex> guard(loadQueueLock);
+	if (continuousLoadQueue.empty()) return nullptr;
 	LoadItem* item = continuousLoadQueue.front();
 	continuousLoadQueue.pop();
-	guard.unlock();
 	return item;
 }
 
 AssetManager::LoadItem* AssetManager::popUnload() {
-	std::unique_lock<std::mutex> guard(unloadQueueLock);
-	guard.lock();
-	if (continuousUnloadQueue.empty()) {
-		guard.unlock();
-		return nullptr;
-	}
+	std::lock_guard<std::mutex> guard(unloadQueueLock);
+	if (continuousUnloadQueue.empty()) return nullptr;
 	LoadItem* item = continuousUnloadQueue.front();
 	continuousUnloadQueue.pop();
-	guard.unlock();
 	return item;
 }
 
 Level * Heerbann::AssetManager::popLevelLoad() {
-	std::unique_lock<std::mutex> guard(loadQueueLock);
-	guard.lock();
-	if (continuousLevelLoadQueue.empty()) {
-		guard.unlock();
-		return nullptr;
-	}
+	std::lock_guard<std::mutex> guard(loadQueueLock);
+	if (continuousLevelLoadQueue.empty()) return nullptr;
 	Level* item = continuousLevelLoadQueue.front();
 	continuousLevelLoadQueue.pop();
-	guard.unlock();
 	return item;
 }
 
 Level * Heerbann::AssetManager::popLevelUnload() {
-	std::unique_lock<std::mutex> guard(unloadQueueLock);
-	guard.lock();
-	if (continuousLevelUnloadQueue.empty()) {
-		guard.unlock();
-		return nullptr;
-	}
+	std::lock_guard<std::mutex> guard(unloadQueueLock);
+	if (continuousLevelUnloadQueue.empty()) return nullptr;
 	Level* item = continuousLevelUnloadQueue.front();
 	continuousLevelUnloadQueue.pop();
-	guard.unlock();
 	return item;
 }
 
 bool Heerbann::AssetManager::isContinuousLoadQueueEmpty() {
-	std::unique_lock<std::mutex> guard(loadQueueLock);
-	guard.lock();
+	std::lock_guard<std::mutex> guard(loadQueueLock);
 	bool empty = continuousLoadQueue.empty();
-	guard.unlock();
 	return empty;
 }
 
 bool Heerbann::AssetManager::iscontinuousUnloadQueueEmpty() {
-	std::unique_lock<std::mutex> guard(unloadQueueLock);
-	guard.lock();
+	std::lock_guard<std::mutex> guard(unloadQueueLock);
 	bool empty = continuousUnloadQueue.empty();
-	guard.unlock();
 	return empty;
 }
 
 bool Heerbann::AssetManager::iscontinuousLevelLoadQueueEmpty() {
-	std::unique_lock<std::mutex> guard(loadLevelQueueLock);
-	guard.lock();
+	std::lock_guard<std::mutex> guard(loadLevelQueueLock);
 	bool empty = continuousLevelLoadQueue.empty();
-	guard.unlock();
 	return empty;
 }
 
 bool Heerbann::AssetManager::iscontinuousLevelUnloadQueueEmpty() {
-	std::unique_lock<std::mutex> guard(unloadLevelQueueLock);
-	guard.lock();
+	std::lock_guard<std::mutex> guard(unloadLevelQueueLock);
 	bool empty = continuousLevelUnloadQueue.empty();
-	guard.unlock();
 	return empty;
 }
 
 void AssetManager::queueLoad(LoadItem* _item) {
-	std::unique_lock<std::mutex> guard(loadQueueLock);
-	guard.lock();
+	std::lock_guard<std::mutex> guard(loadQueueLock);
 	_item->isLocked = true;
 	continuousLoadQueue.emplace(_item);
-	guard.unlock();
 }
 
 void AssetManager::queueUnLoad(LoadItem* _item) {
-	std::unique_lock<std::mutex> guard(unloadQueueLock);
-	guard.lock();
+	std::lock_guard<std::mutex> guard(unloadQueueLock);
 	_item->isLocked = true;
 	continuousUnloadQueue.emplace(_item);
-	guard.unlock();
 }
 
 void Heerbann::AssetManager::queueLoad(Level* _level) {
-	std::unique_lock<std::mutex> guard(loadLevelQueueLock);
-	guard.lock();
+	std::lock_guard<std::mutex> guard(loadLevelQueueLock);
 	_level->isLocked = true;
 	continuousLevelLoadQueue.emplace(_level);
-	guard.unlock();
 }
 
 void Heerbann::AssetManager::queueUnLoad(Level* _level) {
-	std::unique_lock<std::mutex> guard(unloadLevelQueueLock);
-	guard.lock();
+	std::lock_guard<std::mutex> guard(unloadLevelQueueLock);
 	_level->isLocked = true;
 	continuousLevelUnloadQueue.emplace(_level);
-	guard.unlock();
 }
 
 void AssetManager::addAsset(std::string _id, Type _type) {
-	std::unique_lock<std::mutex> guard(assetLock);
-	guard.lock();	
+	std::lock_guard<std::mutex> guard(assetLock);
 	if(assets.count(_id) != 0) std::exception(std::string("Asset already exists [").append(_id).append("]").c_str());
 	assets[_id] = new LoadItem(_id, _type);	
-	guard.unlock();
 }
 
 AssetManager::LoadItem* AssetManager::getAsset(std::string _id) {
-	std::unique_lock<std::mutex> guard(assetLock);
-	guard.lock();
+	std::lock_guard<std::mutex> guard(assetLock);
 	if (assets.count(_id) == 0) std::exception(std::string("Asset doesnt exists [").append(_id).append("]").c_str());
 	LoadItem* item = assets[_id];
-	guard.unlock();
 	return item;
 }
 
 Level * Heerbann::AssetManager::getLevel(std::string _id) {
-	std::unique_lock<std::mutex> guard(levelLock);
-	guard.lock();
+	std::lock_guard<std::mutex> guard(levelLock);
 	if (levels.count(_id) == 0) std::exception(std::string("Level doesnt exists [").append(_id).append("]").c_str());
 	Level* level = levels[_id];
-	guard.unlock();
 	return level;
 }
 
 Level * Heerbann::AssetManager::getLoadedLevel(std::string _id) {
-	std::unique_lock<std::mutex> guard(levelLock);
-	guard.lock();
+	std::lock_guard<std::mutex> guard(levelLock);
 	if (levels.count(_id) == 0) return nullptr;
 	auto level = levels[_id];
-	guard.unlock();
 	return level->isLoaded ? level : nullptr;
 }
 
@@ -377,11 +333,21 @@ void AssetManager::finish() {
 	if(locked) std::exception("already loading!");
 	locked = true;
 	loadingThread = std::thread(&AssetManager::asyncDiscreteLoad, this);
-	loadingThread.join();
+	if (loadingThread.joinable())
+		loadingThread.join();
 	progress = 1;
 }
 
-void Heerbann::AssetManager::changeState(State _state) {
-	if(isLoading()) std::exception("state cant be changed while loading!");
+void Heerbann::AssetManager::toggleState() {
+	if (state == discrete) {
+		state = continuous;
+		if (loadingThread.joinable())
+			loadingThread.join();
+		loadingThread = std::thread(&AssetManager::asyncContinuousLoad, this);
+	} else {
+		state = discrete;
+		if (loadingThread.joinable())
+			loadingThread.join();
+	}
 }
 

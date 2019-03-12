@@ -14,7 +14,7 @@ namespace Heerbann {
 
 	using namespace Heerbann;
 
-	class Level;
+	struct Level;
 
 	enum Type {
 		texture, font, shader, level
@@ -44,7 +44,6 @@ namespace Heerbann {
 		std::atomic<bool> locked = false;
 
 		std::thread loadingThread;
-
 
 		//discrete loading
 		std::queue<LoadItem*> discreteLoadQueue;
@@ -142,8 +141,8 @@ namespace Heerbann {
 		//blocks threat until loading is finished (discrete loading) (thread safe)
 		void finish();
 
-		//changes the state of the loader. isLoading() needs to be false (thread safe)
-		void changeState(State);
+		//changes the state of the loader (thread safe)
+		void toggleState();
 
 	};
 

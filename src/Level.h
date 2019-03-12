@@ -1,13 +1,5 @@
 #pragma once
 
-#include <vector>
-#include <unordered_map>
-#include <queue>
-#include <thread>
-#include <tuple>
-#include <mutex>
-#include <functional>
-
 #include "MainStruct.hpp"
 
 namespace Heerbann {
@@ -17,8 +9,11 @@ namespace Heerbann {
 		std::atomic<bool> isLocked = false;
 		bool isLoaded = false;
 
-		std::function<void(AssetManager*)> load;
-		std::function<void(AssetManager*)> unload;
+		virtual void load(AssetManager*) = 0;
+		virtual void unload(AssetManager*) = 0;
+
+		virtual void update(float) = 0;
+		virtual void draw(float, sf::RenderWindow&) = 0;
 	};
 
 }
