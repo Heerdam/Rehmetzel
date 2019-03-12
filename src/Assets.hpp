@@ -6,6 +6,7 @@
 #include <thread>
 #include <atomic>
 #include <mutex>
+#include <condition_variable>
 
 #include "MainStruct.hpp"
 
@@ -13,70 +14,136 @@ namespace Heerbann {
 
 	using namespace Heerbann;
 
+	class Level;
+
 	enum Type {
 		texture, font, shader, level
 	};
 
 	class AssetManager {
 
+		enum State {
+			continuous, discrete
+		};
+
 		struct LoadItem {
+			std::atomic<bool> isLocked = false;
+
+			bool isLoaded = false;
 			Type type;
 			std::string id;
 			void* data;
 			LoadItem(std::string _id, Type _type) : id(_id), type(_type) {};
 		};
 
-		std::queue<LoadItem*> loadQueue;
-		std::queue<LoadItem*> unloadQueue;
+
+		std::unordered_map<std::string, LoadItem*> assets;
+		std::unordered_map<std::string, Level*> levels;
+
+		State state = State::discrete;
+		std::atomic<bool> locked = false;
+
+		std::thread loadingThread;
+
+
+		//discrete loading
+		std::queue<LoadItem*> discreteLoadQueue;
+		std::queue<LoadItem*> discreteUnloadQueue;
+		std::queue<Level*> discreteLevelLoadQueue;
+		std::queue<Level*> discreteLevelUnloadQueue;
+		std::atomic<float> progress;
+
+
+		//continous loading
+		std::queue<LoadItem*> continuousLoadQueue;
+		std::queue<LoadItem*> continuousUnloadQueue;
+		std::queue<Level*> continuousLevelLoadQueue;
+		std::queue<Level*> continuousLevelUnloadQueue;
 
 		std::mutex loadQueueLock;
 		std::mutex unloadQueueLock;
-		std::mutex accessLock;
+		std::mutex loadLevelQueueLock;
+		std::mutex unloadLevelQueueLock;
 
-		std::unordered_map<std::string, LoadItem*> assets;
+		std::mutex assetLock;
+		std::mutex levelLock;
 
-		std::atomic<bool> isLoading = false;
-		std::atomic<bool> continousLoading = false;
-
-		std::thread t1;
-
+		std::mutex cvLock;
+		std::condition_variable cv;
+		
+		//thread safe functions for continous loading
 		LoadItem* popLoad();
 		LoadItem* popUnload();
+		Level* popLevelLoad();
+		Level* popLevelUnload();
+
+		bool isContinuousLoadQueueEmpty();
+		bool iscontinuousUnloadQueueEmpty();
+		bool iscontinuousLevelLoadQueueEmpty();
+		bool iscontinuousLevelUnloadQueueEmpty();
 
 		void queueLoad(LoadItem*);
 		void queueUnLoad(LoadItem*);
+		void queueLoad(Level*);
+		void queueUnLoad(Level*);
 
+
+		//loading functions
+		void asyncDiscreteLoad();
+		void asyncContinuousLoad();
+
+		void levelLoader(Level* _level);
+		void levelUnloader(Level* _level);
+		
 	public:
-
-		//thread safe
+		//thread safe method to get a loaded Asset
 		LoadItem* operator[](std::string _id) {
-			std::unique_lock<std::mutex> guard(accessLock);
+			std::unique_lock<std::mutex> guard(assetLock);
 			guard.lock();
 			if (assets.count(_id) == 0) return nullptr;
 			auto asset = assets[_id];
 			guard.unlock();
-			return asset;
+			return asset->isLoaded ? asset : nullptr;
 		};
 
-		//enqueues a new asset to load
-		void load(std::string _id, Type _type);
+		//get asset if exists (thread safe)
+		LoadItem* getAsset(std::string);
 
-		//enqueues a new asset to unload
-		void unload(std::string _id);
+		//get a loaded level (thread safe)
+		Level* getLoadedLevel(std::string);
 
-	private:
-		void asyncLoad();
+		//get a level if exists (thread safe)
+		Level* getLevel(std::string);
 
-		std::atomic<float> progress;
+		//adds an asset to the manager (thread safe)
+		void addAsset(std::string, Type);
 
-	public:
-		float update();
+		//enqueues a new asset to load (discrete, continuous) (thread safe)
+		void load(std::string);
 
-		bool loading() {
-			return isLoading;
-		};
+		//enqueues a new asset to unload (discrete, continuous) (thread safe)
+		void unload(std::string);
 
+		//adds a level to the manager (thread safe)
+		void addLevel(std::string, Level*);
+
+		//adds a level to the loading queue (discrete, continuous) (thread safe)
+		void loadLevel(std::string);
+
+		//adds a level to the unloading queue (discrete, continuous) (thread safe)
+		void unloadLevel(std::string);
+
+		//begins loading (discrete) (thread safe)
+		void startLoading();
+
+		//is currently loading (discrete, continuous) (thread safe)
+		bool isLoading();
+
+		//blocks threat until loading is finished (discrete loading) (thread safe)
 		void finish();
+
+		//changes the state of the loader. isLoading() needs to be false (thread safe)
+		void changeState(State);
 
 	};
 

@@ -13,6 +13,9 @@
 namespace Heerbann {
 
 	struct Level {
+		std::atomic<bool> isLocked = false;
+		bool isLoaded = false;
+
 		std::vector <std::tuple<std::string, Type>> assetLoadQueue;
 		std::vector <std::tuple<std::string, Type>> assetUnloadQueue;
 	};
