@@ -284,12 +284,12 @@ void Heerbann::AssetManager::asyncContinuousLoad() {
 	guard.unlock();
 }
 
-void Heerbann::AssetManager::levelLoader(Level * _level) {
-	//TODO
+void Heerbann::AssetManager::levelLoader(Level* _level) {
+	_level->load(this);
 }
 
 void Heerbann::AssetManager::levelUnloader(Level * _level) {
-	//TODO
+	_level->unload(this);
 }
 
 void AssetManager::asyncDiscreteLoad() {
