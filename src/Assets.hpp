@@ -26,6 +26,7 @@ namespace Heerbann {
 			continuous, discrete
 		};
 
+	public:
 		struct LoadItem {
 			std::atomic<bool> isLocked = false;
 
@@ -36,7 +37,7 @@ namespace Heerbann {
 			LoadItem(std::string _id, Type _type) : id(_id), type(_type) {};
 		};
 
-
+	private:
 		std::unordered_map<std::string, LoadItem*> assets;
 		std::unordered_map<std::string, Level*> levels;
 

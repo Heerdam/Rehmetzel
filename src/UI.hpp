@@ -46,7 +46,6 @@ namespace Heerbann {
 		};
 
 		class Button : public Actor {
-
 		public:
 
 			enum ButtonState {

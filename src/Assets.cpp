@@ -1,7 +1,7 @@
 
 #include <fstream>
 
-#include "Assets.hpp"
+//#include "Assets.hpp"
 #include "Level.h"
 
 using namespace Heerbann;
@@ -145,7 +145,7 @@ void Heerbann::AssetManager::loadLevel(std::string _id) {
 void Heerbann::AssetManager::unloadLevel(std::string _id) {
 	if (isLoading() && state == discrete) std::exception("cant add to unloading queue while loading and in discrete mode");
 	Level* item = getLevel(_id);
-	if (item == nullptr || !item->isLoaded) std::exception(std::string("Asset does not exist or is already unloaded [").append(_id).append("]").c_str());
+	if (item == nullptr || !item->isLoaded) std::exception(std::string("Level does not exist or is already unloaded [").append(_id).append("]").c_str());
 	queueUnLoad(item);
 }
 

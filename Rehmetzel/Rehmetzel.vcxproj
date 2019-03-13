@@ -141,6 +141,7 @@
     <ClCompile Include="..\src\Assets.cpp" />
     <ClCompile Include="..\src\CameraUtils.cpp" />
     <ClCompile Include="..\src\InputMultiplexer.cpp" />
+    <ClCompile Include="..\src\Level.cpp" />
     <ClCompile Include="..\src\main.cpp" />
     <ClCompile Include="..\src\MainStruct.cpp" />
     <ClCompile Include="..\src\UI.cpp" />
