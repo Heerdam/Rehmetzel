@@ -47,8 +47,20 @@ void LevelManager::draw(float _deltaTime, sf::RenderWindow& _window) {
 //---------------------- LoadingScreenLevel ----------------------\\
 
 Heerbann::LoadingScreenLevel::LoadingScreenLevel() {
-	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestGrass_basecolor.png",Type::texture));
+	assetToLoad.emplace_back(new LoadItem("assets/tex/Forest_soil_diffuse.png",Type::texture));
+	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestCliff_basecolor.png", Type::texture));
+	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestDirt_diffuse.png", Type::texture));
+	
+	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestGrass_basecolor.png", Type::texture));
+	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestMoss_basecolor.png", Type::texture));
+	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestMud_baseColor.png", Type::texture));
+	
+	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestRoad_diffuse.png", Type::texture));
+	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestRock_basecolor.png", Type::texture));
+	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestWetMud_baseColor.png", Type::texture));
+
 	assetToLoad.emplace_back(new LoadItem("assets/fonts/black.ttf", Type::font));
+	assetToLoad.emplace_back(new LoadItem("assets/shader/bg_shader", Type::shader));
 
 	auto assets = Main::getAssetManager();
 	for (auto a : assetToLoad)
@@ -56,9 +68,39 @@ Heerbann::LoadingScreenLevel::LoadingScreenLevel() {
 }
 
 void Heerbann::LoadingScreenLevel::load(AssetManager* _manager) {
-	label = new Label("0%", (sf::Font*)((*_manager)["assets/fonts/black.ttf"]->data));
+	label = new Label("99%", (sf::Font*)((*_manager)["assets/fonts/black.ttf"]->data));
 	label->position = sf::Vector2i(Main::width() / 2, Main::height() / 2);
-	Main::getStage()->add(label);
+	//Main::getStage()->add(label);
+
+	bgShader = (sf::Shader*)(*_manager)["assets/shader/bg_shader"]->data;
+
+	uniformlocation = glGetUniformLocation(bgShader->getNativeHandle(), "tex");
+
+	tex[0] = (sf::Texture*)(Main::asset_getAsset("assets/tex/Forest_soil_diffuse.png")->data);
+	tex[0] = (sf::Texture*)(Main::asset_getAsset("assets/tex/ForestCliff_basecolor.png")->data);
+	tex[0] = (sf::Texture*)(Main::asset_getAsset("assets/tex/ForestDirt_diffuse.png")->data);
+
+	tex[0] = (sf::Texture*)(Main::asset_getAsset("assets/tex/ForestGrass_basecolor.png")->data);
+	tex[0] = (sf::Texture*)(Main::asset_getAsset("assets/tex/ForestMoss_basecolor.png")->data);
+	tex[0] = (sf::Texture*)(Main::asset_getAsset("assets/tex/ForestMud_baseColor.png")->data);
+
+	tex[0] = (sf::Texture*)(Main::asset_getAsset("assets/tex/ForestRoad_diffuse.png")->data);
+	tex[0] = (sf::Texture*)(Main::asset_getAsset("assets/tex/ForestRock_basecolor.png")->data);
+	tex[0] = (sf::Texture*)(Main::asset_getAsset("assets/tex/ForestWetMud_baseColor.png")->data);
+
+	//TODO: create buffers
+
+	glGenBuffers(1, &posBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, posBuffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(pos), pos, GL_STATIC_DRAW);
+	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	//glEnableVertexAttribArray(0);
+
+	glGenBuffers(1, &indexBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, indexBuffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(index), index, GL_STATIC_DRAW);
+	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	//glEnableVertexAttribArray(0);
 }
 
 void Heerbann::LoadingScreenLevel::unload(AssetManager* _manager) {
@@ -70,7 +112,20 @@ void Heerbann::LoadingScreenLevel::update(float _deltaTime) {
 }
 
 void Heerbann::LoadingScreenLevel::draw(float _deltaTime, sf::RenderWindow& _window) {
+	sf::Shader::bind(bgShader);
+	
+	for (int i = 0; i < 9; ++i) {
+		glActiveTexture(GL_TEXTURE + i);
+		glBindTexture(GL_TEXTURE_2D, tex[i]->getNativeHandle());
+	}	
+	const GLint samplers[9]{ 0, 1, 2, 3, 4, 5, 6, 7, 8 };
+	glUniform1iv(uniformlocation, 9, samplers);
 
+	glBindVertexArray(posBuffer);
+	glBindVertexArray(indexBuffer);
+	glDrawArrays(GL_POINTS, 0, sizeof(pos) / 2);
+
+	sf::Shader::bind(nullptr);
 }
 
 //---------------------- MainMenuLevel ----------------------\\

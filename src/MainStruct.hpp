@@ -2,7 +2,7 @@
 
 #include <SFML/Graphics.hpp>
 #include <SFML/System.hpp>
-#include <SFML/OpenGL.hpp>
+#include <GL/glew.h>
 #include <unordered_map>
 
 namespace Heerbann {

@@ -33,6 +33,15 @@ namespace Heerbann {
 
 		Label* label;
 
+		sf::Shader* bgShader;
+
+		GLint uniformlocation;
+		GLuint posBuffer, indexBuffer;
+		sf::Texture* tex[9];
+
+		float* pos;
+		unsigned char* index;
+
 		LoadingScreenLevel();
 		void load(AssetManager*);
 		void unload(AssetManager*);

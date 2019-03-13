@@ -21,7 +21,7 @@ namespace Heerbann {
 		void inf();
 		void ext(const sf::Vector2f&);
 		void clr();
-		boolean isValid();
+		bool isValid();
 		void ext(const BoundingBox2f&);
 		bool contains(const BoundingBox2f&);
 		bool intersects(const BoundingBox2f&);

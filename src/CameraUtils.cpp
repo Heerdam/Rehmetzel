@@ -4,9 +4,10 @@
 using namespace Heerbann;
 
 void Viewport::setBounds(int _x, int _y, int _width, int _height) {
-	float fx = 1.f / Main::width();
-	float fy = 1.f / Main::height();
-	cam.setViewport(sf::FloatRect(fx * _x, fy * _y, fx * _width, fy * _height));
+	//float fx = 1.f / Main::width();
+	//float fy = 1.f / Main::height();
+	cam.setSize(sf::Vector2f((float)_width, (float)_height));
+	//cam.setViewport(sf::FloatRect(fx * _x, fy * _y, fx * _width, fy * _height));
 }
 
 void Viewport::setSize(int _width, int _height) {

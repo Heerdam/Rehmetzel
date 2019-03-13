@@ -30,7 +30,7 @@ void BoundingBox2f::clr() {
 	set(min = sf::Vector2f(0, 0), max = sf::Vector2f(0, 0));
 }
 
-boolean BoundingBox2f::isValid() {
+bool BoundingBox2f::isValid() {
 	return min.x <= max.x && min.y <= max.y;
 }
 
