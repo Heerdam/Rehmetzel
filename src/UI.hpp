@@ -80,6 +80,7 @@ namespace Heerbann {
 			Label(std::string _text, sf::Font* _font);
 
 			virtual void layout(sf::Vector2i _parent) override;
+			virtual void draw(sf::RenderWindow& _window);
 
 		};
 

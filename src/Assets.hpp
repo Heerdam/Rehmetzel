@@ -97,13 +97,11 @@ namespace Heerbann {
 		void levelUnloader(Level* _level);
 		
 	public:
-		//thread safe method to get a loaded Asset
+		//thread safe method to get Asset
 		LoadItem* operator[](std::string _id) {
-			std::unique_lock<std::mutex> guard(assetLock);
-			guard.lock();
+			std::lock_guard<std::mutex> guard(assetLock);
 			if (assets.count(_id) == 0) return nullptr;
 			auto asset = assets[_id];
-			guard.unlock();
 			return asset->isLoaded ? asset : nullptr;
 		};
 
@@ -118,6 +116,9 @@ namespace Heerbann {
 
 		//adds an asset to the manager (thread safe)
 		void addAsset(std::string, Type);
+
+		//adds an asset to the manager (thread safe)
+		void addAsset(LoadItem*);
 
 		//enqueues a new asset to load (discrete, continuous) (thread safe)
 		void load(std::string);

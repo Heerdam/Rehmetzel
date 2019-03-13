@@ -87,9 +87,13 @@ void Heerbann::AssetManager::queueUnLoad(Level* _level) {
 }
 
 void AssetManager::addAsset(std::string _id, Type _type) {
+	addAsset(new LoadItem(_id, _type));	
+}
+
+void Heerbann::AssetManager::addAsset(LoadItem* _item) {
+	if (assets.count(_item->id) != 0) std::exception(std::string("Asset already exists [").append(_item->id).append("]").c_str());
 	std::lock_guard<std::mutex> guard(assetLock);
-	if(assets.count(_id) != 0) std::exception(std::string("Asset already exists [").append(_id).append("]").c_str());
-	assets[_id] = new LoadItem(_id, _type);	
+	assets[_item->id] = _item;
 }
 
 LoadItem* AssetManager::getAsset(std::string _id) {
@@ -115,16 +119,18 @@ Level * Heerbann::AssetManager::getLoadedLevel(std::string _id) {
 
 void AssetManager::load(std::string _id) {
 	if (isLoading() && state == discrete) std::exception("cant add to loading queue while loading and in discrete mode");
-	LoadItem* item = (*this)[_id];
-	if (item == nullptr) std::exception(std::string("Asset does not exist [").append(_id).append("]").c_str());
-	queueLoad(item);
+	LoadItem* item = getAsset(_id);
+	if (item == nullptr || item->isLoaded) std::exception(std::string("Asset does not exist or is already loaded [").append(_id).append("]").c_str());
+	if(state == continuous) queueLoad(item);
+	else discreteLoadQueue.emplace(item);
 }
 
 void AssetManager::unload(std::string _id) {
 	if (isLoading() && state == discrete) std::exception("cant add to unloading queue while loading and in discrete mode");
 	LoadItem* item = (*this)[_id];
 	if (item == nullptr) std::exception(std::string("Asset does not exist [").append(_id).append("]").c_str());
-	queueUnLoad(item);
+	if (state == continuous) queueUnLoad(item);
+	else discreteUnloadQueue.emplace(item);
 }
 
 void Heerbann::AssetManager::addLevel(std::string _id, Level* _level) {
@@ -137,14 +143,16 @@ void Heerbann::AssetManager::loadLevel(std::string _id) {
 	if (isLoading() && state == discrete) std::exception("cant add to loading queue while loading and in discrete mode");
 	Level* item = getLevel(_id);
 	if (item == nullptr || item->isLoaded) std::exception(std::string("Level does not exist or is already loaded [").append(_id).append("]").c_str());
-	queueLoad(item);
+	if (state == continuous) queueLoad(item);
+	else discreteLevelLoadQueue.emplace(item);
 }
 
 void Heerbann::AssetManager::unloadLevel(std::string _id) {
 	if (isLoading() && state == discrete) std::exception("cant add to unloading queue while loading and in discrete mode");
 	Level* item = getLevel(_id);
 	if (item == nullptr || !item->isLoaded) std::exception(std::string("Level does not exist or is already unloaded [").append(_id).append("]").c_str());
-	queueUnLoad(item);
+	if (state == continuous) queueUnLoad(item);
+	else discreteLevelUnloadQueue.emplace(item);
 }
 
 void Heerbann::AssetManager::startLoading() {

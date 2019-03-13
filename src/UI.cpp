@@ -228,6 +228,10 @@ void Label::layout(sf::Vector2i _parent) {
 	Actor::layout(_parent);
 }
 
+void Heerbann::UI::Label::draw(sf::RenderWindow & _window) {
+	_window.draw(text);
+}
+
 void ProgressBar::setValue(float _val) {
 	value = std::clamp(_val, 0.f, 1.f);
 }
