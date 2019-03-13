@@ -3,17 +3,15 @@
 #include <vector>
 #include <atomic>
 
-#include "Assets.hpp" //beware!
-
 #include "MainStruct.hpp"
 
 namespace Heerbann {
 
-	//forward declaration doesnt work because of ambiguity 
-	//class AssetManager {
-	//public:
-		//struct LoadItem;
-	//};
+	namespace UI {
+		class Label;
+	}
+
+	using namespace UI;
 
 	//base class to be inherited
 	struct Level {
@@ -21,8 +19,8 @@ namespace Heerbann {
 		std::atomic<bool> isLocked = false;
 		std::atomic<bool> isLoaded = false;
 
-		std::vector<AssetManager::LoadItem*> assetToLoad;
-		std::vector<AssetManager::LoadItem*> assetToUnload;
+		std::vector<LoadItem*> assetToLoad;
+		std::vector<LoadItem*> assetToUnload;
 
 		virtual void load(AssetManager*) = 0;
 		virtual void unload(AssetManager*) = 0;
@@ -32,6 +30,10 @@ namespace Heerbann {
 	};
 
 	struct LoadingScreenLevel : public Level {
+
+		Label* label;
+
+		LoadingScreenLevel();
 		void load(AssetManager*);
 		void unload(AssetManager*);
 		void update(float);
@@ -39,6 +41,7 @@ namespace Heerbann {
 	};
 
 	struct MainMenuLevel : public Level {
+		MainMenuLevel();
 		void load(AssetManager*);
 		void unload(AssetManager*);
 		void update(float);
@@ -50,7 +53,8 @@ namespace Heerbann {
 		std::vector<Level*> activeLevels;
 
 	public:
-		LevelManager();
+
+		void initialize();
 
 		void loadLevel(std::string);
 		void unloadLevel(std::string);

@@ -1,5 +1,4 @@
-#ifndef WORLD_H
-#define WORLD_H
+#pragma once
 
 #include <Box2D/Box2D.h>
 #include <unordered_map>
@@ -28,7 +27,7 @@ namespace Heerbann {
 
 			bool isStatic = true;
 
-			long id = MainStruct::getId();
+			long id = Main::getId();
 			EntityType type;
 			b2Body* body;
 
@@ -82,5 +81,3 @@ namespace Heerbann {
 	};
 
 }
-
-#endif

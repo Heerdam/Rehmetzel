@@ -4,14 +4,14 @@
 using namespace Heerbann;
 
 void Viewport::setBounds(int _x, int _y, int _width, int _height) {
-	float fx = 1.f / MainStruct::get()->canvasWidth;
-	float fy = 1.f / MainStruct::get()->canvasHeight;
+	float fx = 1.f / Main::width();
+	float fy = 1.f / Main::height();
 	cam.setViewport(sf::FloatRect(fx * _x, fy * _y, fx * _width, fy * _height));
 }
 
 void Viewport::setSize(int _width, int _height) {
-	int maxWidth = MainStruct::get()->canvasWidth - posX;
-	int maxHeight = MainStruct::get()->canvasHeight - posY;
+	int maxWidth = Main::width() - posX;
+	int maxHeight = Main::height() - posY;
 	width = std::clamp(_width, 2 * border, maxWidth);
 	height = std::clamp(_height, border + topBorder, maxHeight);
 
@@ -19,17 +19,16 @@ void Viewport::setSize(int _width, int _height) {
 };
 
 void Viewport::setPosition(int _x, int _y) {
-	posX = std::clamp(_x, 0, MainStruct::get()->canvasWidth);
-	posY = std::clamp(_y, 0, MainStruct::get()->canvasHeight);
+	posX = std::clamp(_x, 0, (int)Main::width());
+	posY = std::clamp(_y, 0, (int)Main::height());
 	setSize(width, height);
 	setBounds(posX, posY, width, height);
 };
 
 Viewport::Viewport(std::string _id, int _prio) {
-	setPosition(0, 0);
 	cam.setSize(sf::Vector2f((float)width, (float)height));
 	cam.setCenter(sf::Vector2f(0.f, 0.f));
-	InputMultiplexer::InputEntry* entry = new InputMultiplexer::InputEntry();
+	InputEntry* entry = new InputEntry();
 	entry->priority = _prio;
 
 	entry->mouseMoveEvent = [&](int _x, int _y)->bool {
@@ -171,11 +170,7 @@ Viewport::Viewport(std::string _id, int _prio) {
 		return false;
 	};
 
-	entry->resizeEvent = [&](int _width, int _height)->bool {
-		return false;
-	};
-
-	MainStruct::get()->inputListener->add(_id, entry);
+	Main::input_add(_id, entry);
  };
 
  void Viewport::apply(sf::RenderWindow& _window, float _deltaTime) {
@@ -189,7 +184,7 @@ Viewport::Viewport(std::string _id, int _prio) {
 	 if (update != nullptr) update(_window, _deltaTime);
 	 if (draw != nullptr) draw(_window, _deltaTime);
 	 if (debugDraw) {
-		 int mh = MainStruct::get()->canvasHeight;
+		 int mh = Main::height();
 		 sf::RectangleShape rec;
 		 rec.setFillColor(sf::Color::Blue);
 		 //left

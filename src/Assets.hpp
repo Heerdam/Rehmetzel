@@ -14,28 +14,29 @@ namespace Heerbann {
 
 	using namespace Heerbann;
 
+	class AssetManager;
+
 	struct Level;
 
 	enum Type {
 		texture, font, shader, level
 	};
 
+	enum State {
+		continuous, discrete
+	};
+
+	struct LoadItem {
+		std::atomic<bool> isLocked = false;
+
+		bool isLoaded = false;
+		Type type;
+		std::string id;
+		void* data;
+		LoadItem(std::string _id, Type _type) : id(_id), type(_type) {};
+	};
+
 	class AssetManager {
-
-		enum State {
-			continuous, discrete
-		};
-
-	public:
-		struct LoadItem {
-			std::atomic<bool> isLocked = false;
-
-			bool isLoaded = false;
-			Type type;
-			std::string id;
-			void* data;
-			LoadItem(std::string _id, Type _type) : id(_id), type(_type) {};
-		};
 
 	private:
 		std::unordered_map<std::string, LoadItem*> assets;
@@ -144,6 +145,10 @@ namespace Heerbann {
 
 		//changes the state of the loader (thread safe)
 		void toggleState();
+
+		inline State getState() {
+			return state;
+		};
 
 	};
 

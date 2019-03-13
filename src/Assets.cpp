@@ -1,12 +1,12 @@
 
 #include <fstream>
 
-//#include "Assets.hpp"
+#include "Assets.hpp"
 #include "Level.h"
 
 using namespace Heerbann;
 
-AssetManager::LoadItem* AssetManager::popLoad() {
+LoadItem* AssetManager::popLoad() {
 	std::lock_guard<std::mutex> guard(loadQueueLock);
 	if (continuousLoadQueue.empty()) return nullptr;
 	LoadItem* item = continuousLoadQueue.front();
@@ -14,7 +14,7 @@ AssetManager::LoadItem* AssetManager::popLoad() {
 	return item;
 }
 
-AssetManager::LoadItem* AssetManager::popUnload() {
+LoadItem* AssetManager::popUnload() {
 	std::lock_guard<std::mutex> guard(unloadQueueLock);
 	if (continuousUnloadQueue.empty()) return nullptr;
 	LoadItem* item = continuousUnloadQueue.front();
@@ -92,7 +92,7 @@ void AssetManager::addAsset(std::string _id, Type _type) {
 	assets[_id] = new LoadItem(_id, _type);	
 }
 
-AssetManager::LoadItem* AssetManager::getAsset(std::string _id) {
+LoadItem* AssetManager::getAsset(std::string _id) {
 	std::lock_guard<std::mutex> guard(assetLock);
 	if (assets.count(_id) == 0) std::exception(std::string("Asset doesnt exists [").append(_id).append("]").c_str());
 	LoadItem* item = assets[_id];
@@ -128,11 +128,9 @@ void AssetManager::unload(std::string _id) {
 }
 
 void Heerbann::AssetManager::addLevel(std::string _id, Level* _level) {
-	std::unique_lock<std::mutex> guard(levelLock);
-	guard.lock();
+	std::lock_guard<std::mutex> guard(levelLock);
 	if (levels.count(_id) != 0) std::exception(std::string("Level already exists [").append(_id).append("]").c_str());
 	levels[_id] = _level;
-	guard.unlock();
 }
 
 void Heerbann::AssetManager::loadLevel(std::string _id) {

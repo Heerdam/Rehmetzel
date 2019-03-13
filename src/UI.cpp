@@ -71,7 +71,7 @@ void Actor::remove() {
 }
 
 Stage::Stage() {
-	InputMultiplexer::InputEntry* entry = new InputMultiplexer::InputEntry();
+	InputEntry* entry = new InputEntry();
 	entry->mouseButtonPressEvent = [&](sf::Mouse::Button _button, int _x, int _y)->bool {
 		if (aabb == sf::Vector2i(_x, _y))
 			return root->mouseButtonPressEvent(_button, _x, _y);

@@ -1,5 +1,4 @@
-#ifndef CAMERAUTILS_H
-#define CAMERAUTILS_H
+#pragma once
 
 #include <functional>
 #include <algorithm>
@@ -14,7 +13,7 @@ namespace Heerbann {
 
     class Viewport{
 	public:
-		int posX = 0, posY = 0, width = MainStruct::get()->canvasWidth, height = MainStruct::get()->canvasHeight;
+		int posX = 0, posY = 0, width = 640, height = 480;
 
 		sf::View cam;
 		float zoom = 1.f;
@@ -86,10 +85,10 @@ namespace Heerbann {
 		void setBounds(int _x, int _y, int _width, int _height);
 
     public:
-		void setSize(int _width, int _height);
-		void setPosition(int _x, int _y);
+		void setSize(int, int);
+		void setPosition(int, int);
 
-		Viewport(std::string _id, int _prio);
+		Viewport(std::string, int);
 
 		std::function<void(sf::RenderWindow& _window, float _deltaTime)> update = nullptr;
 		std::function<void(sf::RenderWindow& _window, float _deltaTime)> draw = nullptr;
@@ -98,5 +97,3 @@ namespace Heerbann {
     };
 
 }
-
-#endif

@@ -15,11 +15,12 @@ namespace Heerbann {
 		protected:
 			std::vector<Actor*> children;
 			BoundingBox2f aabb;
-			Actor* parent;
-			sf::Vector2i position; //relative to parent
+			Actor* parent;			
 			bool isDirty = true;
 
 		public:
+			sf::Vector2i position; //relative to parent
+
 			virtual void layout(sf::Vector2i _parent);
 			virtual void act(float _deltaTime);
 			virtual void draw(sf::RenderWindow& _window);
