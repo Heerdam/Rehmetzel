@@ -37,7 +37,10 @@ namespace Heerbann {
 
 		GLint uniformlocation;
 		GLuint vao;
+		GLuint vbo[2];
 		sf::Texture* tex[9];
+
+		unsigned int VBO, VAO, EBO;
 
 		float* pos;
 		unsigned char* index;

@@ -175,13 +175,20 @@ Viewport::Viewport(std::string _id, int _prio) {
  };
 
  void Viewport::apply(sf::RenderWindow& _window, float _deltaTime) {
-	 glEnable(GL_SCISSOR_TEST);
-	 glScissor(posX, posY, width, height);
+	 
+	 //glEnable(GL_SCISSOR_TEST);
+	// glScissor(posX, posY, width, height);
 	 if (clear) {
 		 glClearColor(1.f / 255.f * clearColor.r, 1.f / 255.f * clearColor.g, 1.f / 255.f * clearColor.b, 1.f / 255.f * clearColor.a);
 		 glClear(GL_COLOR_BUFFER_BIT);
 	 }
-	 _window.setView(cam);
+	 //_window.setView(cam);
+	 
+	 glViewport(posX, posY, width, height);
+	// glMatrixMode(GL_PROJECTION);
+	// glLoadMatrixf(cam.getTransform().getMatrix());
+	 //glMatrixMode(GL_MODELVIEW);
+
 	 if (update != nullptr) update(_window, _deltaTime);
 	 if (draw != nullptr) draw(_window, _deltaTime);
 	 if (debugDraw) {
@@ -206,5 +213,5 @@ Viewport::Viewport(std::string _id, int _prio) {
 		 rec.setSize(sf::Vector2f((float)width, (float)topBorder));
 		 _window.draw(rec);
 	 }
-	 glDisable(GL_SCISSOR_TEST);
+	 //glDisable(GL_SCISSOR_TEST);
  };

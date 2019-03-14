@@ -1,5 +1,6 @@
 
 #include "MainStruct.hpp"
+#include <iostream>
 
 #include "InputMultiplexer.hpp"
 #include "World.hpp"
@@ -15,15 +16,12 @@ Main::Main() {}
 void Heerbann::Main::intialize() {
 
 	sf::ContextSettings settings;
-	settings.depthBits = 24;
-	settings.stencilBits = 8;
-	settings.antialiasingLevel = 4;
 	settings.majorVersion = 3;
-	settings.minorVersion = 2;
+	settings.minorVersion = 3;
 
 	context = new sf::RenderWindow();
-	context->create(sf::VideoMode(64, 480, 32), "Rehmetzel a.0.1", sf::Style::Default, settings);
-	context->setVerticalSyncEnabled(true);
+	context->create(sf::VideoMode(640, 480, 32), "Rehmetzel a.0.1", sf::Style::Default, settings);
+	//context->setVerticalSyncEnabled(true);
 	context->setFramerateLimit(60);	
 
 	inputListener = new InputMultiplexer();
@@ -33,7 +31,7 @@ void Heerbann::Main::intialize() {
 	level = new LevelManager();
 	mainCam = new Viewport("main", -100);
 
-	//glewExperimental = GL_TRUE;
+	glewExperimental = GL_TRUE;
 	auto status = glewInit();
 	if (!status == GLEW_OK) {
 		std::exception("glew not ok");

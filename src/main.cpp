@@ -20,6 +20,7 @@ int main() {
 
 	Main::setSize(1920, 1080);
 	Main::getViewport()->clearColor = sf::Color::Black;
+	Main::getViewport()->setSize(1920, 1080);
 
 	InputEntry* entry = new InputEntry();
 	entry->closeEvent = [&]()->bool {
@@ -44,8 +45,8 @@ int main() {
 		Main::getLevel()->update(delta);
 		Main::getLevel()->draw(delta, *Main::getContext());
 
-		Main::getStage()->act(delta);
-		Main::getStage()->draw(*Main::getContext());
+		//Main::getStage()->act(delta);
+		//Main::getStage()->draw(*Main::getContext());
 
 		Main::getContext()->display();
 	}
