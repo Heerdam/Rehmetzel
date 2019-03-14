@@ -103,8 +103,6 @@ namespace Heerbann {
 		//---------------------- Level ----------------------\\
 
 		static LevelManager* getLevel();
-		static void loadLevel(std::string);
-		static void unloadLevel(std::string);
 		
 	};	
 

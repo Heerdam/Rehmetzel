@@ -145,12 +145,3 @@ void Main::stage_add(UI::Actor* _actor) {
 LevelManager* Main::getLevel() {
 	return get()->level;
 }
-
-void Heerbann::Main::loadLevel(std::string _id) {
-	getLevel()->loadLevel(_id);
-}
-
-void Heerbann::Main::unloadLevel(std::string _id) {
-	getLevel()->unloadLevel(_id);
-}
-

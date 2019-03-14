@@ -103,6 +103,11 @@ LoadItem* AssetManager::getAsset(std::string _id) {
 	return item;
 }
 
+bool Heerbann::AssetManager::exists(std::string _id) {
+	std::lock_guard<std::mutex> guard(assetLock);
+	return assets.count(_id) != 0;
+}
+
 Level * Heerbann::AssetManager::getLevel(std::string _id) {
 	std::lock_guard<std::mutex> guard(levelLock);
 	if (levels.count(_id) == 0) std::exception(std::string("Level doesnt exists [").append(_id).append("]").c_str());
@@ -264,7 +269,7 @@ void AssetManager::asyncDiscreteLoad() {
 		switch (next->type) {
 		case Type::texture:
 		{
-			sf::Texture* tex = new sf::Texture();
+			sf::Image* tex = new sf::Image();
 			tex->loadFromFile(next->id);
 			next->data = tex;
 			next->isLoaded = true;

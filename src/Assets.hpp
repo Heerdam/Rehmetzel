@@ -108,6 +108,9 @@ namespace Heerbann {
 		//get asset if exists (thread safe)
 		LoadItem* getAsset(std::string);
 
+		//check if asset exists (thread safe)
+		bool exists(std::string);
+
 		//get a loaded level (thread safe)
 		Level* getLoadedLevel(std::string);
 

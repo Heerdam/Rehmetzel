@@ -2,10 +2,13 @@
 
 #include <vector>
 #include <atomic>
+#include <queue>
 
 #include "MainStruct.hpp"
 
 namespace Heerbann {
+
+	enum State : int;
 
 	namespace UI {
 		class Label;
@@ -16,48 +19,78 @@ namespace Heerbann {
 	//base class to be inherited
 	struct Level {
 	public:
+		const std::string id;
+		Level(std::string);
 		std::atomic<bool> isLocked = false;
 		std::atomic<bool> isLoaded = false;
 
 		std::vector<LoadItem*> assetToLoad;
 		std::vector<LoadItem*> assetToUnload;
 
-		virtual void load(AssetManager*) = 0;
-		virtual void unload(AssetManager*) = 0;
+		State neededLoadingState;
+		bool lockIfDiscrete = true;
 
-		virtual void update(float) = 0;
-		virtual void draw(float, sf::RenderWindow&) = 0;
+		virtual void load(AssetManager*) {};
+		virtual void unload(AssetManager*) {};
+
+		virtual void preLoad(AssetManager*) {};
+		//on main thread for opengl
+		virtual void postLoad(AssetManager*) {};
+		
+		virtual void preUnload(AssetManager*) {};
+
+		virtual void update(float) {};
+		virtual void draw(float, sf::RenderWindow&) {};
+	};
+
+	struct PreLoadLevel : public Level {
+		PreLoadLevel() : Level("PreLoadLevel") {};
+
+		void preLoad(AssetManager*) override;
+		void postLoad(AssetManager*) override;
 	};
 
 	struct LoadingScreenLevel : public Level {
+		LoadingScreenLevel() : Level("LoadingScreenLevel") {};
 
 		Label* label;
 
-		sf::Shader* bgShader;
-
-		GLint uniformlocation;
-		GLuint vao;
-		GLuint vbo[2];
-		sf::Texture* tex[9];
-
-		unsigned int VBO, VAO, EBO;
-
-		float* pos;
-		unsigned char* index;
-
-		LoadingScreenLevel();
-		void load(AssetManager*);
-		void unload(AssetManager*);
-		void update(float);
-		void draw(float, sf::RenderWindow&);
+		void preLoad(AssetManager*) override;
+		void load(AssetManager*) override;
+		void preUnload(AssetManager*) override;
+		void postLoad(AssetManager*) override;
+		void unload(AssetManager*) override;
+		void update(float) override;
 	};
 
 	struct MainMenuLevel : public Level {
-		MainMenuLevel();
-		void load(AssetManager*);
-		void unload(AssetManager*);
-		void update(float);
-		void draw(float, sf::RenderWindow&);
+		MainMenuLevel() : Level("MainMenuLevel") {};
+
+		void load(AssetManager*) override;
+		void unload(AssetManager*) override;
+		void update(float) override;
+	};
+
+	struct TestWorldLevel : public Level {
+		TestWorldLevel() : Level("TestWorldLevel") {};
+
+		sf::Shader* bgShader;
+
+		//background
+		int vertexCount = 9;
+
+		GLuint vao, vbo;
+		GLint cameraUniformHandle;
+		GLuint texLoc[9];
+		sf::Texture* tex[9];
+
+		float* pos;
+
+		void preLoad(AssetManager*) override;
+		void load(AssetManager*) override;
+		void postLoad(AssetManager*) override;
+		void update(float) override;
+		void draw(float, sf::RenderWindow&) override;
 	};
 
 	class LevelManager {
@@ -68,11 +101,22 @@ namespace Heerbann {
 
 		void initialize();
 
-		void loadLevel(std::string);
-		void unloadLevel(std::string);
+	private:
+		std::queue<Level*> toLoad;
+		std::queue<Level*> toUnload;
 
+		void loadLevel(Level*);
+		void unloadLevel(Level*);
+
+	public:
 		void update(float);
 		void draw(float, sf::RenderWindow&);
+
+		void queueLevelToLoad(std::string);
+		void queueLevelToUnLoad(std::string);
+
+		void queueLevelToLoad(Level*);
+		void queueLevelToUnLoad(Level*);
 	};
 
 }
