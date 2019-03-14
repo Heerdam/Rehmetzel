@@ -1,8 +1,8 @@
 #pragma once
 
+#include <GL/glew.h>
 #include <SFML/Graphics.hpp>
 #include <SFML/System.hpp>
-#include <GL/glew.h>
 #include <unordered_map>
 
 namespace Heerbann {

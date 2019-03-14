@@ -36,7 +36,7 @@ namespace Heerbann {
 		sf::Shader* bgShader;
 
 		GLint uniformlocation;
-		GLuint posBuffer, indexBuffer;
+		GLuint vao;
 		sf::Texture* tex[9];
 
 		float* pos;

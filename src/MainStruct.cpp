@@ -18,8 +18,8 @@ void Heerbann::Main::intialize() {
 	settings.depthBits = 24;
 	settings.stencilBits = 8;
 	settings.antialiasingLevel = 4;
-	settings.majorVersion = 4;
-	settings.minorVersion = 1;
+	settings.majorVersion = 3;
+	settings.minorVersion = 2;
 
 	context = new sf::RenderWindow();
 	context->create(sf::VideoMode(64, 480, 32), "Rehmetzel a.0.1", sf::Style::Default, settings);
@@ -33,7 +33,13 @@ void Heerbann::Main::intialize() {
 	level = new LevelManager();
 	mainCam = new Viewport("main", -100);
 
-	level->initialize();	
+	//glewExperimental = GL_TRUE;
+	auto status = glewInit();
+	if (!status == GLEW_OK) {
+		std::exception("glew not ok");
+	}
+
+	level->initialize();
 }
 
 //---------------------- Context ----------------------\\

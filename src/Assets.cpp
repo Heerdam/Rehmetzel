@@ -294,9 +294,15 @@ void AssetManager::asyncDiscreteLoad() {
 			frag.close();
 			geom.close();
 			sf::Shader* shader = new sf::Shader();
-			if(v) shader->loadFromFile(next->id + ".vert", sf::Shader::Type::Vertex);
-			if(f) shader->loadFromFile(next->id + ".frag", sf::Shader::Type::Fragment);
-			if(g) shader->loadFromFile(next->id + ".geom", sf::Shader::Type::Geometry);
+
+			if (v && f && g) {
+				if (!shader->loadFromFile(next->id + ".vert", next->id + ".geom", next->id + ".frag"))
+					std::exception("vertex/ geom/ fragment failed");
+			} else if (v && f) {
+				if (!shader->loadFromFile(next->id + ".vert", next->id + ".frag"))
+					std::exception("vertex/ fragment failed");
+			} else std::exception("cant load shader");
+
 			next->data = shader;
 			next->isLoaded = true;
 			next->isLocked = false;

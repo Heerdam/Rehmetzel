@@ -15,6 +15,7 @@ Main* Main::instance = new Main();
 
 int main() {
 
+
 	Main::get()->intialize();
 
 	Main::setSize(1920, 1080);
