@@ -146,6 +146,7 @@
     <ClCompile Include="..\src\MainStruct.cpp" />
     <ClCompile Include="..\src\UI.cpp" />
     <ClCompile Include="..\src\Utils.cpp" />
+    <ClCompile Include="..\src\World.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\bin\assets\shader\bg_shader.frag" />

@@ -9,6 +9,8 @@ namespace Heerbann {
 
 	using namespace Heerbann;
 
+	class WorldBuilder;
+
 	namespace BehaviourTree {
 		struct Root;
 	}
@@ -21,6 +23,9 @@ namespace Heerbann {
 
 	class World {
 	public:
+
+		WorldBuilder* builder;
+
 		struct WorldObject {
 			WorldObject* next = 0;
 			WorldObject* tail = 0;
@@ -77,6 +82,22 @@ namespace Heerbann {
 			if (objects.count(_id) == 0) return nullptr;
 			return objects[_id];
 		}
+
+	};
+
+	struct WorldBuilderDefinition {
+		long seed = 0;
+	};
+
+	struct WorldOut {
+		float** bgs;
+		int vertexcount;
+	};
+
+	class WorldBuilder {
+	public:
+		//thread safe and stateless
+		WorldOut* build(const WorldBuilderDefinition&);
 
 	};
 

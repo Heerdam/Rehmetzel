@@ -3,6 +3,9 @@
 #include "Assets.hpp"
 #include "UI.hpp"
 #include "CameraUtils.hpp"
+#include "Utils.hpp"
+#include "World.hpp"
+
 #include <iostream>
 
 using namespace Heerbann;
@@ -89,23 +92,23 @@ void LevelManager::draw(float _deltaTime, sf::RenderWindow& _window) {
 	}
 }
 
-void Heerbann::LevelManager::queueLevelToLoad(std::string _id) {
+void LevelManager::queueLevelToLoad(std::string _id) {
 	auto assets = Main::getAssetManager();
 	Level* level = assets->getLevel(_id);
 	toLoad.emplace(level);
 }
 
-void Heerbann::LevelManager::queueLevelToUnLoad(std::string _id) {
+void LevelManager::queueLevelToUnLoad(std::string _id) {
 	auto assets = Main::getAssetManager();
 	Level* level = assets->getLevel(_id);
 	toUnload.emplace(level);
 }
 
-void Heerbann::LevelManager::queueLevelToLoad(Level* _level) {
+void LevelManager::queueLevelToLoad(Level* _level) {
 	toLoad.emplace(_level);
 }
 
-void Heerbann::LevelManager::queueLevelToUnLoad(Level* _level) {
+void LevelManager::queueLevelToUnLoad(Level* _level) {
 	toUnload.emplace(_level);
 }
 
@@ -176,132 +179,33 @@ void MainMenuLevel::update(float _deltaTime) {
 
 //---------------------- TestWorldLevel ----------------------\\
 
-void Heerbann::TestWorldLevel::preLoad(AssetManager *) {
+void TestWorldLevel::preLoad(AssetManager *) {
 	
 	
 }
 
 void TestWorldLevel::load(AssetManager* _asset) {
 	
-	pos = new float[vertexCount * 3]{
-	 0.f, 0.f, 0.f,
-	 200.f, 0.f, 1.f,
-	 400.f, 0.f, 2.f,
+	WorldBuilderDefinition def;
 
-	 0.f, 225.f, 3.f,
-	 200.f, 225.f, 4.f,
-	 400.f, 225.f, 5.f,
-
-	 0.f, 450.f, 6.f,
-	 200.f, 450.f, 7.f,
-	 400.f, 450.f, 8.f,
-	};
+	WorldOut* world = Main::getWorld()->builder->build(def);
+	data = world->bgs[0];
+	vertexCount = world->vertexcount;
 }
 
-void TestWorldLevel::postLoad(AssetManager* _asset) {
-	
+void TestWorldLevel::postLoad(AssetManager* _asset) {	
 	bgShader = new sf::Shader();
 	if (!bgShader->loadFromFile("assets/shader/bg_shader.vert", "assets/shader/bg_shader.geom", "assets/shader/bg_shader.frag"))
 		std::exception("vertex/ geom/ fragment failed");
 
-	//GLint link;
-	//glGetProgramiv(bgShader->getNativeHandle(), GL_LINK_STATUS, &link);
-	//std::cout << "link: " << link << std::endl;
-
-	cameraUniformHandle = glGetUniformLocation(bgShader->getNativeHandle(), "transform");
-
-	//create buffer
-	glGenVertexArrays(1, &vao);
-	glGenBuffers(1, &vbo);
-
-	glBindVertexArray(vao);
-
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertexCount * 3, pos, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-
-	for (int i = 0; i < 9; ++i)
-		tex[i] = new sf::Texture();
-
-	tex[0]->loadFromImage(*(sf::Image*)(Main::asset_getAsset("assets/tex/Forest_soil_diffuse.png")->data));
-
-	tex[1]->loadFromImage(*(sf::Image*)(Main::asset_getAsset("assets/tex/ForestCliff_basecolor.png")->data));
-	tex[2]->loadFromImage(*(sf::Image*)(Main::asset_getAsset("assets/tex/ForestDirt_diffuse.png")->data));
-
-	tex[3]->loadFromImage(*(sf::Image*)(Main::asset_getAsset("assets/tex/ForestGrass_basecolor.png")->data));
-	tex[4]->loadFromImage(*(sf::Image*)(Main::asset_getAsset("assets/tex/ForestMoss_basecolor.png")->data));
-	tex[5]->loadFromImage(*(sf::Image*)(Main::asset_getAsset("assets/tex/ForestMud_baseColor.png")->data));
-
-	tex[6]->loadFromImage(*(sf::Image*)(Main::asset_getAsset("assets/tex/ForestRoad_diffuse.png")->data));
-	tex[7]->loadFromImage(*(sf::Image*)(Main::asset_getAsset("assets/tex/ForestRock_basecolor.png")->data));
-	tex[8]->loadFromImage(*(sf::Image*)(Main::asset_getAsset("assets/tex/ForestWetMud_baseColor.png")->data));
-
-	for (int i = 0; i < 9; ++i)
-		texLoc[i] = glGetUniformLocation(bgShader->getNativeHandle(), (std::string("tex[") + std::to_string(i) + std::string("]")).c_str());
-
-	//GLenum err;
-	//while ((err = glGetError()) != GL_NO_ERROR) {
-	//	std::cout << err << std::endl;
-	//}
+	vao = new BGVAO();
+	vao->setData(bgShader, data, vertexCount);
 }
 
 void TestWorldLevel::update(float _delta) {
 }
 
 void TestWorldLevel::draw(float _delta, sf::RenderWindow& _window) {
-	sf::Shader::bind(bgShader);
-	glUniformMatrix4fv(cameraUniformHandle, 1, false, Main::getViewport()->cam.getTransform().getMatrix());
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, tex[0]->getNativeHandle());
-	glUniform1i(texLoc[0], 0);
-
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, tex[1]->getNativeHandle());
-	glUniform1i(texLoc[1], 1);
-
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, tex[2]->getNativeHandle());
-	glUniform1i(texLoc[2], 2);
-
-	glActiveTexture(GL_TEXTURE3);
-	glBindTexture(GL_TEXTURE_2D, tex[3]->getNativeHandle());
-	glUniform1i(texLoc[3], 3);
-
-	glActiveTexture(GL_TEXTURE4);
-	glBindTexture(GL_TEXTURE_2D, tex[4]->getNativeHandle());
-	glUniform1i(texLoc[4], 4);
-
-	glActiveTexture(GL_TEXTURE5);
-	glBindTexture(GL_TEXTURE_2D, tex[5]->getNativeHandle());
-	glUniform1i(texLoc[5], 5);
-
-	glActiveTexture(GL_TEXTURE6);
-	glBindTexture(GL_TEXTURE_2D, tex[6]->getNativeHandle());
-	glUniform1i(texLoc[6], 6);
-
-	glActiveTexture(GL_TEXTURE7);
-	glBindTexture(GL_TEXTURE_2D, tex[7]->getNativeHandle());
-	glUniform1i(texLoc[7], 7);
-
-	glActiveTexture(GL_TEXTURE8);
-	glBindTexture(GL_TEXTURE_2D, tex[8]->getNativeHandle());
-	glUniform1i(texLoc[8], 8);
-
-	//GLenum err;
-	//while ((err = glGetError()) != GL_NO_ERROR) {
-	//	std::cout << err << std::endl;
-	//}
-
-	glBindVertexArray(vao);
-	glDrawArrays(GL_POINTS, 0, vertexCount); //TODO
-
-	glBindVertexArray(0);
-
-	glUseProgram(0);
+	vao->draw(bgShader);
 }
 

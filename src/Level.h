@@ -71,20 +71,17 @@ namespace Heerbann {
 		void update(float) override;
 	};
 
+	class BGVAO;
+
 	struct TestWorldLevel : public Level {
 		TestWorldLevel() : Level("TestWorldLevel") {};
 
 		sf::Shader* bgShader;
 
-		//background
-		int vertexCount = 9;
+		BGVAO* vao;
 
-		GLuint vao, vbo;
-		GLint cameraUniformHandle;
-		GLuint texLoc[9];
-		sf::Texture* tex[9];
-
-		float* pos;
+		float* data;
+		int vertexCount;
 
 		void preLoad(AssetManager*) override;
 		void load(AssetManager*) override;

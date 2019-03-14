@@ -54,4 +54,31 @@ namespace Heerbann {
 
 	};
 
+	class VAO {
+	protected:
+		GLuint vao, vbo;
+		GLint cameraUniformHandle;
+
+		float* data;
+
+		int vertexCount, vertexSize;
+
+	public:
+		virtual void setData(sf::Shader*, float*, int);
+		virtual void draw(sf::Shader*);
+
+	};
+
+	class BGVAO : public VAO {
+
+		GLuint texLoc[9];
+		sf::Texture* tex[9];
+
+		GLint cameraUniformHandle;
+
+	public:
+		void setData(sf::Shader*, float*, int) override;
+		void draw(sf::Shader*) override;
+	};
+
 }

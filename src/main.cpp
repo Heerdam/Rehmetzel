@@ -15,7 +15,6 @@ Main* Main::instance = new Main();
 
 int main() {
 
-
 	Main::get()->intialize();
 
 	Main::setSize(1920, 1080);
@@ -32,6 +31,9 @@ int main() {
 		return false;
 	};
 	Main::input_add("closeListener", entry);
+
+	Main::getViewport()->apply(*Main::getContext(), 1);
+	Main::getContext()->display();
 
 	sf::Event event;
 	while (Main::getContext()->isOpen()) {
