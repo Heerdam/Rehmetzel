@@ -1,5 +1,7 @@
 
 #include "CameraUtils.hpp"
+#include "World.hpp"
+#include "InputMultiplexer.hpp"
 
 using namespace Heerbann;
 
@@ -182,7 +184,7 @@ Viewport::Viewport(std::string _id, int _prio) {
 		 glClearColor(1.f / 255.f * clearColor.r, 1.f / 255.f * clearColor.g, 1.f / 255.f * clearColor.b, 1.f / 255.f * clearColor.a);
 		 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	 }
-	 //_window.setView(cam);
+	 _window.setView(cam);
 	 
 	 glViewport(posX, posY, width, height);
 
@@ -212,3 +214,41 @@ Viewport::Viewport(std::string _id, int _prio) {
 	 }
 	 glDisable(GL_SCISSOR_TEST);
  };
+
+ void Box2dRenderer::draw(float _deltaTime, sf::RenderWindow& _window) {
+
+	 auto cam = Main::getViewport()->cam;
+	 auto world = Main::getWorld();
+
+	 auto centre = cam.getCenter();
+
+	 float hw = Main::width() * 0.5f * 1.1f;
+	 float hh = Main::height() * 0.5f * 1.1f;
+
+	 float p1x = cam.getCenter().x - hw;
+	 float p1y = cam.getCenter().y - hh;
+
+	 float p2x = cam.getCenter().x + hw;
+	 float p2y = cam.getCenter().y + hh;
+
+	 world->AABB((b2QueryCallback*)this, sf::Vector2f(p1x * UNRATIO, p1y * UNRATIO), sf::Vector2f(p2x * UNRATIO, p2y * UNRATIO));
+	 
+	 //_window.pushGLStates();
+	 for (auto o : objects)
+		 if (o->draw != nullptr)
+			 o->draw(o, _deltaTime, _window);
+	 //_window.popGLStates();
+
+	 objects.clear();
+ }
+
+ bool Box2dRenderer::ReportFixture(b2Fixture* _fixture) {
+	 auto data = (WorldObject*)_fixture->GetBody()->GetUserData();
+
+	 if (data->lastSeen == Main::getFrameId()) return true;
+	 if (!data->isLoaded) return true;
+	 data->lastSeen = Main::getFrameId();
+	 objects.emplace_back(data);
+
+	 return true;
+ }

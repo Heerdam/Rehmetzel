@@ -1,15 +1,12 @@
 #pragma once
 
-#include <functional>
-#include <algorithm>
-#include <iostream>
-
 #include "MainStruct.hpp"
-#include "InputMultiplexer.hpp"
 
 namespace Heerbann {
 
 	using namespace Heerbann;
+
+	struct WorldObject;
 
     class Viewport{
 	public:
@@ -95,5 +92,14 @@ namespace Heerbann {
         void apply(sf::RenderWindow& _window, float _deltaTime);
 
     };
+
+	class Box2dRenderer : public b2QueryCallback {
+
+		std::vector<WorldObject*> objects;
+
+	public:
+		void draw(float, sf::RenderWindow&);
+		bool ReportFixture(b2Fixture*) override;
+	};
 
 }

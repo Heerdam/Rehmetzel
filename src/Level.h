@@ -1,9 +1,5 @@
 #pragma once
 
-#include <vector>
-#include <atomic>
-#include <queue>
-
 #include "MainStruct.hpp"
 
 namespace Heerbann {

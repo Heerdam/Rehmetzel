@@ -13,6 +13,10 @@ using namespace Heerbann;
 
 Main::Main() {}
 
+void Heerbann::Main::update() {
+	++frameId;
+}
+
 void Heerbann::Main::intialize() {
 
 	sf::ContextSettings settings;
@@ -128,6 +132,10 @@ void Main::asset_toggleState() {
 
 State Main::asset_getState() {
 	return getAssetManager()->getState();
+}
+
+sf::Font * Heerbann::Main::getDefaultFont() {	
+	return (sf::Font*)asset_getAsset("assets/fonts/default.ttf")->data;
 }
 
 //---------------------- Stage ----------------------\\

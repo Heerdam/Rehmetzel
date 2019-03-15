@@ -115,7 +115,8 @@ void LevelManager::queueLevelToUnLoad(Level* _level) {
 //---------------------- PreLoadLevel ----------------------\\
 
 void PreLoadLevel::preLoad(AssetManager* _asset) {
-	//assetToLoad.emplace_back(new LoadItem("assets/fonts/black.ttf", Type::font));
+	assetToLoad.emplace_back(new LoadItem("assets/fonts/black.ttf", Type::font));
+	assetToLoad.emplace_back(new LoadItem("assets/fonts/default.ttf", Type::font));
 }
 
 void PreLoadLevel::postLoad(AssetManager* _assets) {
@@ -137,6 +138,8 @@ void LoadingScreenLevel::preLoad(AssetManager *) {
 	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestRoad_diffuse.png", Type::texture));
 	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestRock_basecolor.png", Type::texture));
 	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestWetMud_baseColor.png", Type::texture));
+
+	assetToLoad.emplace_back(new LoadItem("assets/trees/poplar_07_top.png", Type::texture));
 }
 
 void LoadingScreenLevel::load(AssetManager* _manager) {
@@ -191,6 +194,8 @@ void TestWorldLevel::load(AssetManager* _asset) {
 	WorldOut* world = Main::getWorld()->builder->build(def);
 	data = world->bgs[0];
 	vertexCount = world->vertexcount;
+
+	Main::getWorld()->create(EntityType::tree, sf::Vector2f(0, 0));
 }
 
 void TestWorldLevel::postLoad(AssetManager* _asset) {	

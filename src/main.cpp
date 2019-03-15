@@ -35,17 +35,28 @@ int main() {
 	Main::getViewport()->apply(*Main::getContext(), 1);
 	Main::getContext()->display();
 
+	Box2dRenderer boxRenderer;
+	
+
+
 	sf::Event event;
 	while (Main::getContext()->isOpen()) {
+		Main::get()->update();
 		while (Main::getContext()->pollEvent(event))
 			Main::getInput()->fire(event);
 
 		const float delta = 1.f / 60.f;
+
+		Main::getWorld()->update(delta);
 		//update & apply
 		Main::getViewport()->apply(*Main::getContext(), delta);
 
 		Main::getLevel()->update(delta);
 		Main::getLevel()->draw(delta, *Main::getContext());
+
+		boxRenderer.draw(delta, *Main::getContext());
+
+		Main::getWorld()->debugDraw();
 
 		//Main::getStage()->act(delta);
 		//Main::getStage()->draw(*Main::getContext());

@@ -134,51 +134,219 @@ void BGVAO::draw(sf::Shader* _shader) {
 	sf::Shader::bind(_shader);
 	glUniformMatrix4fv(cameraUniformHandle, 1, false, Main::getViewport()->cam.getTransform().getMatrix());
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, tex[0]->getNativeHandle());
-	glUniform1i(texLoc[0], 0);
-
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, tex[1]->getNativeHandle());
-	glUniform1i(texLoc[1], 1);
-
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, tex[2]->getNativeHandle());
-	glUniform1i(texLoc[2], 2);
-
-	glActiveTexture(GL_TEXTURE3);
-	glBindTexture(GL_TEXTURE_2D, tex[3]->getNativeHandle());
-	glUniform1i(texLoc[3], 3);
-
-	glActiveTexture(GL_TEXTURE4);
-	glBindTexture(GL_TEXTURE_2D, tex[4]->getNativeHandle());
-	glUniform1i(texLoc[4], 4);
-
-	glActiveTexture(GL_TEXTURE5);
-	glBindTexture(GL_TEXTURE_2D, tex[5]->getNativeHandle());
-	glUniform1i(texLoc[5], 5);
-
-	glActiveTexture(GL_TEXTURE6);
-	glBindTexture(GL_TEXTURE_2D, tex[6]->getNativeHandle());
-	glUniform1i(texLoc[6], 6);
-
-	glActiveTexture(GL_TEXTURE7);
-	glBindTexture(GL_TEXTURE_2D, tex[7]->getNativeHandle());
-	glUniform1i(texLoc[7], 7);
-
-	glActiveTexture(GL_TEXTURE8);
-	glBindTexture(GL_TEXTURE_2D, tex[8]->getNativeHandle());
-	glUniform1i(texLoc[8], 8);
-
-	//GLenum err;
-	//while ((err = glGetError()) != GL_NO_ERROR) {
-	//	std::cout << err << std::endl;
-	//}
+	for (int i = 0; i < 9; ++i) {
+		glActiveTexture(GL_TEXTURE0 + i);
+		glBindTexture(GL_TEXTURE_2D, tex[i]->getNativeHandle());
+		glUniform1i(texLoc[i], i);
+	}
 
 	glBindVertexArray(vao);
 	glDrawArrays(GL_POINTS, 0, vertexCount); //TODO
 
-	glBindVertexArray(0);
+	for (int i = 0; i < 9; ++i) {
+		glActiveTexture(GL_TEXTURE0 + i);
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}		
 
+	glBindVertexArray(0);
 	glUseProgram(0);
+}
+
+bool Heerbann::almost_equal(float _f1, float _f2) {
+	return false;
+}
+
+//convert a Box2D (float 0.0f - 1.0f range) color to a SFML color (uint8 0 - 255 range)
+sf::Color DebugDraw::B2SFColor(const b2Color& _color, int _alpha = 255) {	
+	return sf::Color((sf::Uint8)(_color.r * 255), (sf::Uint8)(_color.g * 255), (sf::Uint8)(_color.b * 255), (sf::Uint8) _alpha);
+}
+
+void DebugDraw::DrawAABB(b2AABB* _aabb, const b2Color& _color) {
+	sf::ConvexShape polygon;
+	polygon.setOutlineColor(B2SFColor(_color));
+	polygon.setOutlineThickness(1.f);
+
+	polygon.setPoint(0, sf::Vector2f(_aabb->lowerBound.x*RATIO, _aabb->lowerBound.y*RATIO));
+	polygon.setPoint(1, sf::Vector2f(_aabb->upperBound.x*RATIO, _aabb->lowerBound.y*RATIO));
+	polygon.setPoint(2, sf::Vector2f(_aabb->upperBound.x*RATIO, _aabb->upperBound.y*RATIO));
+	polygon.setPoint(3, sf::Vector2f(_aabb->lowerBound.x*RATIO, _aabb->upperBound.y*RATIO));
+
+	Main::getContext()->draw(polygon);
+}
+
+void DebugDraw::DrawString(int _x, int _y, const char* _string) {
+	sf::Text fpsText;
+	fpsText.setFont(*Main::getDefaultFont());
+	fpsText.setCharacterSize(15);
+	fpsText.setPosition(sf::Vector2f(_x * RATIO, _y * RATIO));
+	fpsText.setString(_string);
+
+	Main::getContext()->draw(fpsText);
+}
+
+void DebugDraw::DrawPoint(const b2Vec2& _p, float32 _size, const b2Color& _color) {
+	sf::CircleShape shape;
+	shape.setPosition(sf::Vector2f(_p.x * RATIO, _p.y * RATIO));
+	shape.setRadius(_size * RATIO);
+	shape.setFillColor(B2SFColor(_color));
+
+	Main::getContext()->draw(shape);
+}
+
+void DebugDraw::DrawTransform(const b2Transform& _xf) {
+	float x, y, lineProportion;
+	x = _xf.p.x * RATIO;
+	y = _xf.p.y * RATIO;
+	lineProportion = 0.15f; // 0.15 ~ 10 pixels
+	b2Vec2 p1 = _xf.p, p2;
+
+	//red (X axis)
+	p2 = p1 + (lineProportion * _xf.q.GetXAxis());
+	sf::Vertex redLine[] =
+	{
+		sf::Vertex(sf::Vector2f(p1.x * RATIO, p1.y * RATIO)),
+		sf::Vertex(sf::Vector2f(p2.x * RATIO, p2.y * RATIO))
+	};
+
+	//green (Y axis)
+	p2 = p1 - (lineProportion * _xf.q.GetYAxis());
+	sf::Vertex greenLine[] =
+	{
+		sf::Vertex(sf::Vector2f(p1.x * RATIO, p1.y * RATIO)),
+		sf::Vertex(sf::Vector2f(p2.x  *RATIO, p2.y * RATIO))
+	};
+
+	redLine[0].color = sf::Color::Red;
+	redLine[1].color = sf::Color::Red;
+
+	greenLine[0].color = sf::Color::Green;
+	greenLine[1].color = sf::Color::Green;
+
+	Main::getContext()->draw(redLine, 2, sf::Lines);
+	Main::getContext()->draw(greenLine, 2, sf::Lines);
+}
+
+void DebugDraw::DrawSegment(const b2Vec2& _p1, const b2Vec2& _p2, const b2Color& _color) {
+	auto color = B2SFColor(_color);
+	sf::Vertex line[] =
+	{
+		sf::Vertex(sf::Vector2f(_p1.x * RATIO, _p1.y * RATIO)),
+		sf::Vertex(sf::Vector2f(_p2.x  *RATIO, _p2.y * RATIO))
+	};
+
+	line[0].color = color;
+	line[1].color = color;
+
+	Main::getContext()->draw(line, 2, sf::Lines);
+}
+
+void DebugDraw::DrawSolidCircle(const b2Vec2& _center, float32 _radius, const b2Vec2& _axis, const b2Color& _color) {
+	sf::CircleShape shape;
+	auto color = B2SFColor(_color);
+	float radius = _radius * RATIO;
+	shape.setOrigin(sf::Vector2f(radius, radius));
+	shape.setPosition(sf::Vector2f(_center.x * RATIO, _center.y * RATIO));
+	shape.setRadius(radius);
+	shape.setOutlineColor(color);
+	shape.setOutlineThickness(1.f);
+	shape.setFillColor(sf::Color::Transparent);
+
+	// line of the circle wich shows the angle
+	b2Vec2 p = _center + (_radius * _axis);
+	sf::Vertex line[] =
+	{
+		sf::Vertex(sf::Vector2f(_center.x * RATIO, _center.y * RATIO)),
+		sf::Vertex(sf::Vector2f(p.x * RATIO, p.y * RATIO))
+	};
+
+	line[0].color = color;
+	line[1].color = color;
+
+	Main::getContext()->draw(shape);
+	Main::getContext()->draw(line, 2, sf::Lines);
+}
+
+void DebugDraw::DrawCircle(const b2Vec2& _center, float32 _radius, const b2Color& _color) {
+	sf::CircleShape shape;
+	shape.setPosition(sf::Vector2f(_center.x * RATIO, _center.y * RATIO));
+	shape.setRadius(_radius * RATIO);
+	shape.setOutlineColor(B2SFColor(_color));
+
+	Main::getContext()->draw(shape);
+}
+
+void DebugDraw::DrawSolidPolygon(const b2Vec2* _vertices, int32 _vertexCount, const b2Color& _color) {
+
+	sf::ConvexShape polygon;
+	polygon.setPointCount(_vertexCount);
+	for (int32 i = 0; i < _vertexCount; i++) {
+		b2Vec2 vertex = _vertices[i];
+		polygon.setPoint(i, sf::Vector2f(vertex.x * RATIO, vertex.y * RATIO));
+	}
+	polygon.setOutlineColor(B2SFColor(_color));
+	polygon.setOutlineThickness(1.f);
+	polygon.setFillColor(sf::Color::Transparent);
+	Main::getContext()->draw(polygon);
+}
+
+DebugDraw::DebugDraw() {
+	SetFlags(e_shapeBit);
+}
+
+void DebugDraw::DrawPolygon(const b2Vec2* _vertices, int32 _vertexCount, const b2Color& _color) {
+	sf::ConvexShape polygon;
+	polygon.setPointCount(_vertexCount);
+	for (int32 i = 0; i < _vertexCount; i++) {
+		b2Vec2 vertex = _vertices[i];
+		polygon.setPoint(i, sf::Vector2f(vertex.x * RATIO, vertex.y * RATIO));
+	}
+	polygon.setOutlineThickness(1.f);
+	polygon.setOutlineColor(B2SFColor(_color));
+	polygon.setFillColor(sf::Color::Transparent);
+	Main::getContext()->draw(polygon);
+}
+
+
+void DebugDraw::DrawMouseJoint(b2Vec2& p1, b2Vec2& p2, const b2Color &boxColor, const b2Color &lineColor) {
+	sf::ConvexShape polygon;
+	sf::ConvexShape polygon2;
+	float p1x = p1.x * RATIO;
+	float p1y = p1.y * RATIO;
+	float p2x = p2.x * RATIO;
+	float p2y = p2.y * RATIO;
+	float size = 4.0f;
+
+	sf::Color boxClr = B2SFColor(boxColor);
+	sf::Color lineClr = B2SFColor(lineColor);
+
+	polygon.setOutlineColor(boxClr);
+	polygon2.setOutlineColor(boxClr);
+
+	//first green box for the joint
+	polygon.setPointCount(4);
+	polygon.setPoint(0, sf::Vector2f(p1x - size * 0.5f, p1y - size * 0.5f));
+	polygon.setPoint(1, sf::Vector2f(p1x + size * 0.5f, p1y - size * 0.5f));
+	polygon.setPoint(2, sf::Vector2f(p1x + size * 0.5f, p1y + size * 0.5f));
+	polygon.setPoint(3, sf::Vector2f(p1x - size * 0.5f, p1y + size * 0.5f));
+
+	//second green box for the joint
+	polygon2.setPointCount(4);
+	polygon2.setPoint(0, sf::Vector2f(p2x - size * 0.5f, p2y - size * 0.5f));
+	polygon2.setPoint(1, sf::Vector2f(p2x + size * 0.5f, p2y - size * 0.5f));
+	polygon2.setPoint(2, sf::Vector2f(p2x + size * 0.5f, p2y + size * 0.5f));
+	polygon2.setPoint(3, sf::Vector2f(p2x - size * 0.5f, p2y + size * 0.5f));
+
+	sf::Vertex line[] =
+	{
+		sf::Vertex(sf::Vector2f(p1x, p1y)),
+		sf::Vertex(sf::Vector2f(p2x, p2y))
+	};
+
+	line[0].color = lineClr;
+	line[1].color = lineClr;
+
+	Main::getContext()->draw(polygon);
+	Main::getContext()->draw(polygon2);
+
+	Main::getContext()->draw(line, 2, sf::Lines);
 }

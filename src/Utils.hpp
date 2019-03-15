@@ -1,12 +1,10 @@
 #pragma once
 
-#include <limits>
-
 #include "MainStruct.hpp"
 
 namespace Heerbann {
 
-	bool almost_equal(float _f1, float _f2);
+	bool almost_equal(float _f1, float _f2); //TODO
 
 	class BoundingBox2f {
 
@@ -79,6 +77,22 @@ namespace Heerbann {
 	public:
 		void setData(sf::Shader*, float*, int) override;
 		void draw(sf::Shader*) override;
+	};
+
+	class DebugDraw : public b2Draw {
+	public:
+		DebugDraw();
+		void DrawPolygon(const b2Vec2*, int32, const b2Color&);
+		void DrawSolidPolygon(const b2Vec2*, int32, const b2Color&);
+		void DrawCircle(const b2Vec2&, float32, const b2Color&);
+		void DrawSolidCircle(const b2Vec2&, float32, const b2Vec2&, const b2Color&);
+		void DrawSegment(const b2Vec2&, const b2Vec2&, const b2Color&);
+		void DrawTransform(const b2Transform&);
+		void DrawPoint(const b2Vec2&, float32, const b2Color&);
+		void DrawString(int, int, const char*);
+		void DrawAABB(b2AABB*, const b2Color&);
+		sf::Color B2SFColor(const b2Color&, int);
+		void DrawMouseJoint(b2Vec2&, b2Vec2&, const b2Color&, const b2Color&);
 	};
 
 }

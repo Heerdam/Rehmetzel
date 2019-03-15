@@ -3,11 +3,35 @@
 #include <GL/glew.h>
 #include <SFML/Graphics.hpp>
 #include <SFML/System.hpp>
+
 #include <unordered_map>
+#include <thread>
+#include <mutex>
+#include <queue>
+#include <vector>
+#include <atomic>
+#include <functional>
+#include <algorithm>
+#include <iostream>
+#include <math.h>
+#include <limits>
+
+#include <Box2D/Box2D.h>
 
 namespace Heerbann {
 
 	using namespace Heerbann;
+
+// 1 meter (box2d) is more or less 64 pixels (sfml)
+#define RATIO 30.0f
+#define PIXELS_PER_METER RATIO
+
+// 64 pixels (sfml) are more or less 1 meter (box2d)
+#define UNRATIO (1.0F/RATIO)
+#define METERS_PER_PIXEL UNRATIO
+
+//formula to convert radians to degrees = (radians * (pi/180))
+#define RADTODEG (b2_pi / 180.0)
 
 	class InputMultiplexer;
 	class World;
@@ -36,12 +60,19 @@ namespace Heerbann {
 		UI::Stage* stage;
 		LevelManager* level;
 
+		unsigned long frameId = 1;
+
 		static Main* instance;
 		Main();
 
 	public:
 
+		void update();
 		void intialize();
+
+		inline static unsigned long getFrameId() {
+			return instance->frameId;
+		};
 
 		static Main* get() {
 			return instance;
@@ -94,6 +125,7 @@ namespace Heerbann {
 		static void asset_finish();
 		static void asset_toggleState();
 		static State asset_getState();
+		static sf::Font* getDefaultFont();
 
 		//---------------------- Stage ----------------------\\
 
