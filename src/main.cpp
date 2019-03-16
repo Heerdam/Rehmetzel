@@ -56,7 +56,7 @@ int main() {
 
 		boxRenderer.draw(delta, *Main::getContext());
 
-		Main::getWorld()->debugDraw();
+		//Main::getWorld()->debugDraw();
 
 		//Main::getStage()->act(delta);
 		//Main::getStage()->draw(*Main::getContext());

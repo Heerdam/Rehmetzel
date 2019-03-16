@@ -15,6 +15,7 @@
 #include <iostream>
 #include <math.h>
 #include <limits>
+#include <random>
 
 #include <Box2D/Box2D.h>
 
@@ -65,6 +66,8 @@ namespace Heerbann {
 		static Main* instance;
 		Main();
 
+		std::mt19937_64 random;
+
 	public:
 
 		void update();
@@ -82,6 +85,13 @@ namespace Heerbann {
 			static long id = 1000;
 			return ++id;
 		}
+
+		//---------------------- Random ----------------------\\
+
+		static void setSeed(long);
+		//random in interval [0, 1]
+		static float getRandom();
+		static float getRandom(float, float);
 
 		//---------------------- Context ----------------------\\
 

@@ -222,8 +222,8 @@ Viewport::Viewport(std::string _id, int _prio) {
 
 	 auto centre = cam.getCenter();
 
-	 float hw = Main::width() * 0.5f * 1.1f;
-	 float hh = Main::height() * 0.5f * 1.1f;
+	 float hw = (Main::width() * 0.5f * 1.1f) * Main::getViewport()->zoom;
+	 float hh = (Main::height() * 0.5f * 1.1f) * Main::getViewport()->zoom;
 
 	 float p1x = cam.getCenter().x - hw;
 	 float p1y = cam.getCenter().y - hh;

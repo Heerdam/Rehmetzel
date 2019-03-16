@@ -44,6 +44,20 @@ void Heerbann::Main::intialize() {
 	level->initialize();
 }
 
+//---------------------- Random ----------------------\\
+
+void Main::setSeed(long _seed) {
+	instance->random.seed(_seed);
+}
+
+float Main::getRandom() {
+	return (float)((instance->random() >> 40) * 1.0 / (1L << 24));
+}
+
+float Main::getRandom(float _low, float _high) {
+	return _low + getRandom() * (_high - _low);
+}
+
 //---------------------- Context ----------------------\\
 
 sf::RenderWindow* Main::getContext() {

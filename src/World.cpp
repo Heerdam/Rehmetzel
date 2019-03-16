@@ -20,42 +20,6 @@ void World::AABB(b2QueryCallback* callback, const sf::Vector2f& _p1, const sf::V
 	bworld->QueryAABB(callback, aabb);
 }
 
-WorldOut * WorldBuilder::build(const WorldBuilderDefinition& _def) {
-	WorldOut* out = new WorldOut();
-
-	const float PI = (float)std::atan(1.0) * 4;
-	const float toRad = 2 * PI / 360.f;
-
-	int cells = 50;
-	float diam = 100;
-
-	int vertex = cells * cells;
-
-	float* data = new float[3 * vertex];
-
-	float xw = cosf(toRad * 30.f) * diam;
-	float yw = 1.5f * diam;
-
-	
-	for (int y = 0; y < cells; ++y) {
-		for (int x = 0; x < cells; ++x) {
-		
-			int index = 3 * (y*cells + x);
-
-			data[index] = x * 2 * xw - ((y % 2 == 0) ? xw : 0);
-			data[index + 1] = y * yw;
-			data[index + 2] = (y % 2 == 0) ? 3.f : 4.f;
-			
-		}
-	}
-
-	out->bgs = new float*[1];
-	out->bgs[0] = data;
-	out->vertexcount = vertex;
-
-	return out;
-}
-
 World::World() {
 	bworld->SetDebugDraw(debug = new DebugDraw());
 }
@@ -73,7 +37,7 @@ void World::update(float _deltaTime) {
 	bworld->Step(_deltaTime, 8, 3);
 }
 
-void Heerbann::World::debugDraw() {
+void World::debugDraw() {
 	bworld->DrawDebugData();
 }
 
@@ -92,7 +56,7 @@ long World::create(EntityType _type, sf::Vector2f _pos) {
 		b2BodyDef* bodyDef = new b2BodyDef();
 		bodyDef->userData = ob;
 		bodyDef->type = b2BodyType::b2_staticBody;
-		bodyDef->position = b2Vec2(_pos.x, _pos.y);
+		bodyDef->position = b2Vec2(_pos.x * UNRATIO, _pos.y * UNRATIO);
 		ob->body = bworld->CreateBody(bodyDef);
 
 		b2CircleShape circle;
@@ -136,4 +100,51 @@ long World::create(EntityType _type, sf::Vector2f _pos) {
 	}
 	return ob->id;
 }
+
+WorldOut * WorldBuilder::build(const WorldBuilderDefinition& _def) {
+	WorldOut* out = new WorldOut();
+
+	Main::setSeed(_def.seed);
+
+	const float PI = (float)std::atan(1.0) * 4;
+	const float toRad = 2 * PI / 360.f;
+
+	int cells = 50;
+	float diam = 100;
+
+	int vertex = cells * cells;
+
+	float* data = new float[3 * vertex];
+
+	float xw = cosf(toRad * 30.f) * diam;
+	float yw = 1.5f * diam;
+
+
+	for (int y = 0; y < cells; ++y) {
+		for (int x = 0; x < cells; ++x) {
+
+			int index = 3 * (y*cells + x);
+
+			data[index] = x * 2 * xw - ((y % 2 == 0) ? xw : 0);
+			data[index + 1] = y * yw;
+			data[index + 2] = (y % 2 == 0) ? 3.f : 4.f;
+
+		}
+	}
+
+
+	for (int i = 0; i < 100; ++i) {
+		float rx = Main::getRandom();
+		float ry = Main::getRandom();
+		Main::getWorld()->create(EntityType::tree, sf::Vector2f(2* xw * cells * rx, yw * cells * ry));
+	}
+		
+
+	out->bgs = new float*[1];
+	out->bgs[0] = data;
+	out->vertexcount = vertex;
+
+	return out;
+}
+
 
