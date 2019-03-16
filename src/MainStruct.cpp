@@ -1,6 +1,5 @@
 
 #include "MainStruct.hpp"
-#include <iostream>
 
 #include "InputMultiplexer.hpp"
 #include "World.hpp"

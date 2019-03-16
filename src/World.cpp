@@ -71,7 +71,7 @@ long World::create(EntityType _type, sf::Vector2f _pos) {
 
 		ob->finishedLoading = [](WorldObject* _object)->void {
 			sf::Texture* tex = new sf::Texture();
-			tex->loadFromImage(*(sf::Image*)(Main::asset_getAsset("assets/trees/poplar_07_top.png")->data));
+			tex->loadFromImage(*(sf::Image*)(Main::asset_getAsset("assets/trees/poplar_07_top.png")->data)); //TODO
 			_object->sprite = new sf::Sprite(*tex);
 			_object->sprite->setOrigin(_object->sprite->getGlobalBounds().width * 0.5f, _object->sprite->getGlobalBounds().height * 0.5f);
 			
@@ -101,9 +101,12 @@ long World::create(EntityType _type, sf::Vector2f _pos) {
 	return ob->id;
 }
 
+void createTrees(int _treeCount, sf::Vector2f _mon, sf::Vector2f _max, float* _out) {
+
+}
+
 WorldOut * WorldBuilder::build(const WorldBuilderDefinition& _def) {
 	WorldOut* out = new WorldOut();
-
 	Main::setSeed(_def.seed);
 
 	const float PI = (float)std::atan(1.0) * 4;

@@ -16,6 +16,7 @@
 #include <math.h>
 #include <limits>
 #include <random>
+#include <sstream>
 
 #include <Box2D/Box2D.h>
 

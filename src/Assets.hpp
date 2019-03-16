@@ -19,7 +19,7 @@ namespace Heerbann {
 	struct Level;
 
 	enum Type {
-		texture, font, shader, level
+		texture, font, level, atlas
 	};
 
 	enum State {
@@ -154,6 +154,29 @@ namespace Heerbann {
 			return state;
 		};
 
+	};
+
+	struct AtlasRegion {
+		sf::Texture* tex;
+		sf::Sprite* sprite;
+		int texIndex = -1;
+		int x, y, width, height;
+
+		sf::Sprite* createSprite();
+		sf::Vector2f getU();
+		sf::Vector2f getV();
+	};
+
+	struct TextureAtlas {
+		std::vector<sf::Texture*> tex;
+		std::vector<sf::Image*> img;
+		std::unordered_map<std::string, AtlasRegion*> regions;
+		AtlasRegion* operator[](std::string);
+	};
+
+	class TextureAtlasLoader {
+	public:
+		TextureAtlas* operator()(std::string);
 	};
 
 }

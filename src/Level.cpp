@@ -139,7 +139,9 @@ void LoadingScreenLevel::preLoad(AssetManager *) {
 	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestRock_basecolor.png", Type::texture));
 	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestWetMud_baseColor.png", Type::texture));
 
-	assetToLoad.emplace_back(new LoadItem("assets/trees/poplar_07_top.png", Type::texture));
+	//assetToLoad.emplace_back(new LoadItem("assets/trees/poplar_07_top.png", Type::texture));
+
+	assetToLoad.emplace_back(new LoadItem("assets/trees/trees", Type::atlas));
 }
 
 void LoadingScreenLevel::load(AssetManager* _manager) {

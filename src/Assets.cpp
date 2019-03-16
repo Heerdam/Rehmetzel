@@ -202,27 +202,7 @@ void Heerbann::AssetManager::asyncContinuousLoad() {
 					next->isLoaded = true;
 					next->isLocked = false;
 				}
-				break;
-				case Type::shader:
-				{
-					std::ifstream vert(next->id + ".vert");
-					std::ifstream frag(next->id + ".frag");
-					std::ifstream geom(next->id + ".geom");
-					bool v = vert.good();
-					bool f = frag.good();
-					bool g = geom.good();
-					vert.close();
-					frag.close();
-					geom.close();
-					sf::Shader* shader = new sf::Shader();
-					if (v) shader->loadFromFile(next->id + ".vert", sf::Shader::Type::Vertex);
-					if (f) shader->loadFromFile(next->id + ".frag", sf::Shader::Type::Fragment);
-					if (g) shader->loadFromFile(next->id + ".geom", sf::Shader::Type::Geometry);
-					next->data = shader;
-					next->isLoaded = true;
-					next->isLocked = false;
-				}
-				break;
+				break;				
 				}
 			}
 
@@ -287,28 +267,10 @@ void AssetManager::asyncDiscreteLoad() {
 			progress = std::clamp(inc + progress, 0.f, 1.f);
 		}
 		break;
-		case Type::shader:
+		case Type::atlas:
 		{
-			std::ifstream vert(next->id + ".vert");
-			std::ifstream frag(next->id + ".frag");
-			std::ifstream geom(next->id + ".geom");
-			bool v = vert.good();
-			bool f = frag.good();
-			bool g = geom.good();
-			vert.close();
-			frag.close();
-			geom.close();
-			sf::Shader* shader = new sf::Shader();
-
-			if (v && f && g) {
-				if (!shader->loadFromFile(next->id + ".vert", next->id + ".geom", next->id + ".frag"))
-					std::exception("vertex/ geom/ fragment failed");
-			} else if (v && f) {
-				if (!shader->loadFromFile(next->id + ".vert", next->id + ".frag"))
-					std::exception("vertex/ fragment failed");
-			} else std::exception("cant load shader");
-
-			next->data = shader;
+			TextureAtlasLoader loader;
+			next->data = loader(next->id);
 			next->isLoaded = true;
 			next->isLocked = false;
 			progress = std::clamp(inc + progress, 0.f, 1.f);
@@ -368,3 +330,119 @@ void Heerbann::AssetManager::toggleState() {
 	}
 }
 
+sf::Sprite* AtlasRegion::createSprite() {
+	if (sprite != nullptr) return sprite;
+	sprite = new sf::Sprite();
+	sprite->setTextureRect(sf::IntRect(sf::Vector2i(x, y), sf::Vector2i(width, height)));
+	return sprite;
+}
+
+sf::Vector2f AtlasRegion::getU() {
+	return sf::Vector2f(1.f / (float)tex->getSize().x * (float) x, 1.f / (float)tex->getSize().x * (float)(x + width));
+}
+
+sf::Vector2f AtlasRegion::getV() {
+	return sf::Vector2f(1.f / (float)tex->getSize().y * (float)y, 1.f / (float)tex->getSize().y * (float)(y + height));
+}
+
+AtlasRegion* TextureAtlas::operator[](std::string _id) {
+	if (regions.count(_id) == 0) std::exception((std::string("region does not exist [") + _id + std::string("]")).c_str());
+	return regions[_id];
+}
+
+TextureAtlas* TextureAtlasLoader::operator()(std::string _id) {
+	TextureAtlas* atlas = new TextureAtlas();
+	std::ifstream file(_id + std::string(".atlas"));
+
+	int lineNr = 1;
+	int imgNr = 0;
+
+	bool newImg = false;
+
+	AtlasRegion* cR = nullptr;
+	int regionNr = 1;
+
+	for (std::string line; getline(file, line); ++lineNr) {
+
+		//first 5 lines
+		switch (lineNr) {
+			case 1:
+			{
+				sf::Image* img = new sf::Image();
+				img->loadFromFile(_id.substr(0, _id.find_last_of("/") + 1) + line);
+				atlas->img.emplace_back(img);
+				continue;
+			}
+			break;
+			case 2: continue;
+			case 3: continue;
+			case 4: continue;
+			case 5: continue;
+		}
+
+		//new img
+		if (line.empty()) {
+			++imgNr;
+			lineNr = 0;
+			continue;
+		}
+
+		//atlasregion
+		switch (regionNr) {
+			case 1: //name
+			{
+				++regionNr;
+				cR = new AtlasRegion();
+				cR->texIndex = imgNr;
+				atlas->regions[line] = cR;
+				continue;
+			}
+			break;
+			case 2: 
+				++regionNr;
+				continue;
+			case 3: //xy
+			{
+				++regionNr;
+				int pos1 = line.find_first_of(":") + 2;
+				int pos2 = line.find_first_of(",");
+				int pos3 = line.length() - (pos2 + 1);
+
+				auto x = line.substr(pos1, pos2 - pos1);
+				auto y = line.substr(pos2 + 2, pos3 + 1);
+
+				cR->x = std::stoi(x);
+				cR->y = std::stoi(y);
+			}
+			break;
+			case 4: //size
+			{
+				++regionNr;
+				int pos1 = line.find_first_of(":") + 2;
+				int pos2 = line.find_first_of(",");
+				int pos3 = line.length() - (pos2 + 1);
+
+				auto w = line.substr(pos1, pos2 - pos1);
+				auto h = line.substr(pos2 + 2, pos3 + 1);
+
+				cR->width = std::stoi(w);
+				cR->height = std::stoi(h);
+			}
+			break;
+			case 5: 
+				++regionNr;
+				continue;
+			case 6: 
+				++regionNr;
+				continue;
+			case 7:
+				regionNr = 1;
+				continue;
+		}
+
+
+	}
+
+	file.close();
+	return atlas;
+}
