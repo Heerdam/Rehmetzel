@@ -408,21 +408,21 @@ void AssetManager::asyncDiscreteLoad() {
 				std::ifstream frag(next->id + ".frag");
 				if (!frag.good()) std::exception((std::string("can't open file [") + next->id + std::string(".frag]")).data());
 
-				/*
+				
 				std::tuple<std::string, std::string, std::string, LoadItem*>* tuple = new std::tuple<std::string, std::string, std::string, LoadItem*>(
 					std::string{ std::istreambuf_iterator<char>(vert), std::istreambuf_iterator<char>() },
 					(gExists ? std::string{ std::istreambuf_iterator<char>(geom), std::istreambuf_iterator<char>() } : ""),
 					std::string{ std::istreambuf_iterator<char>(frag), std::istreambuf_iterator<char>() },
 					next
 					);
-*/
+				/*
 				std::tuple<std::string, std::string, std::string, LoadItem*>* tuple = new std::tuple<std::string, std::string, std::string, LoadItem*>(
 					next->id + std::string(".vert"),
 					gExists ? next->id + std::string(".geom") : std::string(""),
 					next->id + std::string(".frag"),
 					next
 					);
-
+					*/
 				vert.close();
 				geom.close();
 				frag.close();
@@ -436,22 +436,30 @@ void AssetManager::asyncDiscreteLoad() {
 					std::string frag = std::get<2>(*tuple);
 					LoadItem* item = std::get<3>(*tuple);
 					
+					auto asset = Main::getAssetManager();
 					sf::Shader* shader = new sf::Shader();
+					if (!geom.empty()) {
+						shader->loadFromMemory(vert, geom, frag);
+						item->bg = shader;
+					} else {
+						shader->loadFromMemory(vert, frag);
+						item->tr = shader;
+					}
+
 					//if (!geom.empty())
-					//	shader->loadFromMemory(vert, geom, frag);
-					//else shader->loadFromMemory(vert, frag);
+						//shader->loadFromFile(vert, geom, frag);
+					//else shader->loadFromFile(vert, frag);
 
-					if (!geom.empty())
-						shader->loadFromFile(vert, geom, frag);
-					else shader->loadFromFile(vert, frag);
+					//GLenum err;
+					//while ((err = glGetError()) != GL_NO_ERROR)
+						//std::cout << err << std::endl;
+					asset = Main::getAssetManager();
+					//GLint linked;
+					//glGetProgramiv(shader->getNativeHandle(), GL_LINK_STATUS, &linked);
+					std::cout << shader->getNativeHandle() << std::endl;
 
-					GLenum err;
-					while ((err = glGetError()) != GL_NO_ERROR)
-						std::cout << err << std::endl;
-
-					GLint linked;
-					glGetProgramiv(shader->getNativeHandle(), GL_LINK_STATUS, &linked);
-					std::cout << linked << std::endl;
+					//sf::Shader::bind(shader);
+					//sf::Shader::bind(0);
 
 					delete tuple;
 					item->data = shader;
@@ -603,7 +611,7 @@ void AssetManager::finish() {
 	loadingThread = new std::thread(&AssetManager::asyncDiscreteLoad, this);
 	if (loadingThread->joinable())
 		loadingThread->join();
-	//Main::get()->update();
+	Main::get()->update();
 	progress = 1;
 }
 

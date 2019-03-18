@@ -150,6 +150,8 @@ void PreLoadLevel::preLoad(AssetManager* _asset) {
 void PreLoadLevel::postLoad(AssetManager* _assets) {
 	Main::getLevel()->queueLevelToUnLoad(this);
 	Main::getLevel()->queueLevelToLoad("LoadingScreenLevel");
+
+
 }
 
 //---------------------- LoadingScreenLevel ----------------------\\
@@ -209,8 +211,10 @@ void TestWorldLevel::load(AssetManager* _asset) {
 
 	world = Main::getWorld()->builder->build(def);
 	
-	bgShader = (sf::Shader*)Main::getAssetManager()->getAsset("assets/shader/bg_shader");
-	treeShader = (sf::Shader*)Main::getAssetManager()->getAsset("assets/shader/tree_shader");
+	bgShader = (sf::Shader*)Main::getAssetManager()->getAsset("assets/shader/bg_shader")->data;
+	treeShader = (sf::Shader*)Main::getAssetManager()->getAsset("assets/shader/tree_shader")->data;
+	std::cout << bgShader->getNativeHandle() << std::endl;
+	std::cout << treeShader->getNativeHandle() << std::endl;
 }
 
 void TestWorldLevel::postLoad(AssetManager* _asset) {	

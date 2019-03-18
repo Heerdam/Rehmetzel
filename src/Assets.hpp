@@ -27,6 +27,7 @@ namespace Heerbann {
 	};
 
 	struct LoadItem {
+		const long uniqueId = Main::getId();
 		std::atomic<bool> isLocked = false;
 
 		bool isLoaded = false;
@@ -34,6 +35,8 @@ namespace Heerbann {
 		std::string id;
 		void* data;
 		LoadItem(std::string _id, Type _type) : id(_id), type(_type) {};
+
+		sf::Shader* bg, *tr;
 	};
 
 	class AssetManager {
