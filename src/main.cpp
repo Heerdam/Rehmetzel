@@ -27,10 +27,10 @@ int main() {
 		return true;
 	};
 	entry->resizeEvent = [&](int _width, int _height)->bool {
-		Main::viewport_setSize(_width, _height);
+		Main::getViewport()->setSize(_width, _height);
 		return false;
 	};
-	Main::input_add("closeListener", entry);
+	Main::getInput()->add("closeListener", entry);
 
 	Main::getViewport()->apply(*Main::getContext(), 1);
 	Main::getContext()->display();

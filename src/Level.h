@@ -68,13 +68,15 @@ namespace Heerbann {
 	};
 
 	class BGVAO;
+	struct WorldOut;
 
 	struct TestWorldLevel : public Level {
 		TestWorldLevel() : Level("TestWorldLevel") {};
 
 		sf::Shader* bgShader;
+		sf::Shader* treeShader;
 
-		BGVAO* vao;
+		WorldOut* world;
 
 		float* data;
 		int vertexCount;
@@ -97,6 +99,9 @@ namespace Heerbann {
 	private:
 		std::queue<Level*> toLoad;
 		std::queue<Level*> toUnload;
+
+		std::vector<Level*> loadCache;
+		std::vector<Level*> unloadCache;
 
 		void loadLevel(Level*);
 		void unloadLevel(Level*);

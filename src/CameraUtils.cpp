@@ -173,7 +173,7 @@ Viewport::Viewport(std::string _id, int _prio) {
 		return false;
 	};
 
-	Main::input_add(_id, entry);
+	Main::getInput()->add(_id, entry);
  };
 
  void Viewport::apply(sf::RenderWindow& _window, float _deltaTime) {
@@ -247,6 +247,7 @@ Viewport::Viewport(std::string _id, int _prio) {
 
 	 if (data->lastSeen == Main::getFrameId()) return true;
 	 if (!data->isLoaded) return true;
+	 if (data->isVAO) return true;
 	 data->lastSeen = Main::getFrameId();
 	 objects.emplace_back(data);
 

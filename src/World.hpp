@@ -24,14 +24,13 @@ namespace Heerbann {
 
 		bool isStatic = true;
 		bool isLoaded = false;
+		bool isVAO = false;
 
 		const long id = Main::getId();
 		unsigned long lastSeen;
 
 		EntityType type;
 		b2Body* body;
-
-		sf::Sprite* sprite;
 
 		Root* root; //behaviour
 
@@ -43,6 +42,8 @@ namespace Heerbann {
 	class DebugDraw;
 
 	class World {
+
+		friend WorldBuilder;
 
 		DebugDraw* debug;
 
@@ -76,12 +77,21 @@ namespace Heerbann {
 		long seed = 0;
 	};
 
+	class BGVAO;
+	class IndexedVAO;
+
 	struct WorldOut {
-		float** bgs;
-		int vertexcount;
+		std::vector<BGVAO*> bgVAOs;
+		std::vector<IndexedVAO*> indexVAOs;
+
+		void finalize(sf::Shader*, sf::Shader*);
 	};
 
 	class WorldBuilder : public b2QueryCallback {
+		
+		BGVAO* createBGVAO(sf::Vector2f, int);
+		IndexedVAO* createTrees(int, sf::Vector2f, sf::Vector2f);
+
 	public:
 		//thread safe and stateless
 		WorldOut* build(const WorldBuilderDefinition&);

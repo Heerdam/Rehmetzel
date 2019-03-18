@@ -69,6 +69,17 @@ void LevelManager::unloadLevel(Level* _level) {
 }
 
 void LevelManager::update(float _deltaTime) {
+	//this is used so that loading isnt caught in a loop
+	if (!loadCache.empty()) {
+		for (Level* l : loadCache)
+			toLoad.emplace(l);
+		loadCache.clear();
+	}
+	if (!unloadCache.empty()) {
+		for (Level* l : unloadCache)
+			toUnload.emplace(l);
+		unloadCache.clear();
+	}
 	while (!toUnload.empty()) {
 		Level* next = toUnload.front();
 		toUnload.pop();
@@ -95,28 +106,45 @@ void LevelManager::draw(float _deltaTime, sf::RenderWindow& _window) {
 void LevelManager::queueLevelToLoad(std::string _id) {
 	auto assets = Main::getAssetManager();
 	Level* level = assets->getLevel(_id);
-	toLoad.emplace(level);
+	queueLevelToLoad(level);
 }
 
 void LevelManager::queueLevelToUnLoad(std::string _id) {
 	auto assets = Main::getAssetManager();
 	Level* level = assets->getLevel(_id);
-	toUnload.emplace(level);
+	queueLevelToUnLoad(level);
 }
 
 void LevelManager::queueLevelToLoad(Level* _level) {
-	toLoad.emplace(_level);
+	loadCache.emplace_back(_level);
 }
 
 void LevelManager::queueLevelToUnLoad(Level* _level) {
-	toUnload.emplace(_level);
+	unloadCache.emplace_back(_level);
 }
 
 //---------------------- PreLoadLevel ----------------------\\
 
 void PreLoadLevel::preLoad(AssetManager* _asset) {
-	assetToLoad.emplace_back(new LoadItem("assets/fonts/black.ttf", Type::font));
-	assetToLoad.emplace_back(new LoadItem("assets/fonts/default.ttf", Type::font));
+	//assetToLoad.emplace_back(new LoadItem("assets/fonts/black.ttf", Type::font));
+	assetToLoad.emplace_back(new LoadItem("assets/tex/Forest_soil_diffuse.png", Type::texture_png));
+	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestCliff_basecolor.png", Type::texture_png));
+	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestDirt_diffuse.png", Type::texture_png));
+
+	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestGrass_basecolor.png", Type::texture_png));
+	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestMoss_basecolor.png", Type::texture_png));
+	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestMud_baseColor.png", Type::texture_png));
+
+	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestRoad_diffuse.png", Type::texture_png));
+	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestRock_basecolor.png", Type::texture_png));
+	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestWetMud_baseColor.png", Type::texture_png));
+
+	assetToLoad.emplace_back(new LoadItem("assets/shader/bg_shader", Type::shader));
+	assetToLoad.emplace_back(new LoadItem("assets/shader/tree_shader", Type::shader));
+
+	//assetToLoad.emplace_back(new LoadItem("assets/trees/poplar_07_top.png", Type::texture));
+
+	assetToLoad.emplace_back(new LoadItem("assets/trees/trees", Type::atlas));
 }
 
 void PreLoadLevel::postLoad(AssetManager* _assets) {
@@ -127,21 +155,7 @@ void PreLoadLevel::postLoad(AssetManager* _assets) {
 //---------------------- LoadingScreenLevel ----------------------\\
 
 void LoadingScreenLevel::preLoad(AssetManager *) {
-	assetToLoad.emplace_back(new LoadItem("assets/tex/Forest_soil_diffuse.png", Type::texture));
-	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestCliff_basecolor.png", Type::texture));
-	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestDirt_diffuse.png", Type::texture));
-
-	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestGrass_basecolor.png", Type::texture));
-	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestMoss_basecolor.png", Type::texture));
-	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestMud_baseColor.png", Type::texture));
-
-	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestRoad_diffuse.png", Type::texture));
-	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestRock_basecolor.png", Type::texture));
-	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestWetMud_baseColor.png", Type::texture));
-
-	//assetToLoad.emplace_back(new LoadItem("assets/trees/poplar_07_top.png", Type::texture));
-
-	assetToLoad.emplace_back(new LoadItem("assets/trees/trees", Type::atlas));
+	
 }
 
 void LoadingScreenLevel::load(AssetManager* _manager) {
@@ -193,26 +207,24 @@ void TestWorldLevel::load(AssetManager* _asset) {
 	
 	WorldBuilderDefinition def;
 
-	WorldOut* world = Main::getWorld()->builder->build(def);
-	data = world->bgs[0];
-	vertexCount = world->vertexcount;
-
-	Main::getWorld()->create(EntityType::tree, sf::Vector2f(0, 0));
+	world = Main::getWorld()->builder->build(def);
+	
+	bgShader = (sf::Shader*)Main::getAssetManager()->getAsset("assets/shader/bg_shader");
+	treeShader = (sf::Shader*)Main::getAssetManager()->getAsset("assets/shader/tree_shader");
 }
 
 void TestWorldLevel::postLoad(AssetManager* _asset) {	
-	bgShader = new sf::Shader();
-	if (!bgShader->loadFromFile("assets/shader/bg_shader.vert", "assets/shader/bg_shader.geom", "assets/shader/bg_shader.frag"))
-		std::exception("vertex/ geom/ fragment failed");
 
-	vao = new BGVAO();
-	vao->setData(bgShader, data, vertexCount);
+	world->finalize(bgShader, treeShader);
 }
 
 void TestWorldLevel::update(float _delta) {
 }
 
 void TestWorldLevel::draw(float _delta, sf::RenderWindow& _window) {
-	vao->draw(bgShader);
+	for (auto v : world->bgVAOs)
+		v->draw(bgShader);
+	for (auto v : world->indexVAOs)
+		v->draw(treeShader);
 }
 

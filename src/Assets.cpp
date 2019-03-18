@@ -164,7 +164,7 @@ void Heerbann::AssetManager::startLoading() {
 	if (state == continuous) std::exception("state needs to be discrete!");
 	if (locked) std::exception("already loading!");
 	locked = true;
-	loadingThread = std::thread(&AssetManager::asyncDiscreteLoad, this);	
+	loadingThread = new std::thread(&AssetManager::asyncDiscreteLoad, this);	
 }
 
 bool Heerbann::AssetManager::isLoading() {
@@ -173,7 +173,7 @@ bool Heerbann::AssetManager::isLoading() {
 
 void Heerbann::AssetManager::asyncContinuousLoad() {
 	std::unique_lock<std::mutex> guard(cvLock);
-
+	/**
 	while (state == continuous) {
 		cv.wait(guard, [&]()->bool {
 			return !isContinuousLoadQueueEmpty() ||
@@ -229,6 +229,7 @@ void Heerbann::AssetManager::asyncContinuousLoad() {
 
 	}
 	guard.unlock();
+	*/
 }
 
 void Heerbann::AssetManager::levelLoader(Level* _level) {
@@ -243,40 +244,323 @@ void AssetManager::asyncDiscreteLoad() {
 	progress = 0;
 	float inc = 1.f / (float)(discreteLoadQueue.size() + discreteUnloadQueue.size());
 
+	struct WorkOrder {
+		//texture_png
+		std::function<void(char*, int, LoadItem*, std::atomic<bool>&)> pngLoader;
+		char* data;
+		int size;
+		LoadItem* item;
+		//atlas
+		std::function<void(char*, int, LoadItem*, int, std::atomic<bool>&)> atlasLoader;
+		int index;
+	};
+
+	std::atomic<bool> workThreadFinished = false;
+	std::queue<WorkOrder> orders;
+	std::mutex queueLock;
+
+	std::thread scheduler([&]()->void {
+		using namespace std::chrono_literals;
+
+		const int tc = 10;
+
+		std::unique_lock<std::mutex> lock(queueLock);
+		lock.unlock();
+
+		std::thread* threads[tc] = { 0 };
+		std::atomic<bool> status[tc];
+
+		for (int i = 0; i < tc; ++i)
+			status[i] = true;
+
+		while (!workThreadFinished || !orders.empty()) {
+
+			while (orders.empty() && !workThreadFinished) {
+				std::this_thread::sleep_for(0.5ms);
+			}
+						
+			if (orders.empty() && workThreadFinished) {
+				break;
+			}
+
+			lock.lock();
+			//std::cout << orders.size() << std::endl;
+			WorkOrder order = orders.front();
+			orders.pop();			
+			lock.unlock();
+		
+			int index = 0;
+			while (true) {
+				bool ready = false;
+				for (index = 0; index < tc; ++index)
+					if (ready = status[index])
+						break;
+				if (ready) break;
+				std::this_thread::sleep_for(0.5ms);
+			}
+
+			//for (int i = 0; i < tc; ++i)
+				//std::cout << status[i] << " ";
+			//std::cout << std::endl << std::endl;
+
+			if (threads[index] != nullptr && threads[index]->joinable()) {
+				threads[index]->join();
+				delete threads[index];
+			}
+				
+			status[index] = false;
+
+			if (order.pngLoader != nullptr) {			
+				threads[index] = new std::thread(order.pngLoader, order.data, order.size, order.item, std::ref(status[index]));
+			} else if (order.atlasLoader != nullptr) {
+				threads[index] = new std::thread(order.atlasLoader, order.data, order.size, order.item, order.index, std::ref(status[index]));
+			}
+		}
+
+		for (int i = 0; i < tc; ++i) {
+			if (threads[i] != nullptr) {
+				if (threads[i]->joinable())
+					threads[i]->join();
+				delete threads[i];
+			}
+				
+		}
+
+	});
+
+	//thread to load files into memory and dispatch work threads
 	while (!discreteLoadQueue.empty()) {
 		LoadItem* next = discreteLoadQueue.front();
 		discreteLoadQueue.pop();
+		std::unique_lock<std::mutex> lock(queueLock);
+		lock.unlock();
 		switch (next->type) {
-		case Type::texture:
-		{
-			sf::Image* tex = new sf::Image();
-			tex->loadFromFile(next->id);
-			next->data = tex;
-			next->isLoaded = true;
-			next->isLocked = false;
-			progress = std::clamp(inc + progress, 0.f, 1.f);
+			case Type::texture_png:
+			{
+				std::ifstream ifs(next->id, std::ios::binary);
+				if (!ifs.good()) std::exception((std::string("can't open file [") + next->id + std::string("]")).data());			
+
+				//length
+				ifs.seekg(0, std::ios::end);
+				int length = (int)ifs.tellg();
+				ifs.seekg(0, std::ios::beg);
+
+				char* data = new char[length];
+
+				//auto start = std::chrono::system_clock::now();
+				ifs.read(data, length);
+				auto end = std::chrono::system_clock::now();
+				//std::chrono::duration<double> elapsed_seconds = end - start;
+				//std::cout << elapsed_seconds.count() << std::endl;
+
+				ifs.close();
+
+				WorkOrder order;
+				order.data = data;
+				order.item = next;
+				order.size = length;
+				order.pngLoader = [](char* _data, int _size, LoadItem* _item, std::atomic<bool>& _ready)->void {
+					//std::cout << "started loading png " << _item->id << std::endl;
+					sf::Image* tex = new sf::Image();
+					tex->loadFromMemory(_data, _size);
+					_item->data = tex;
+					
+					
+					Main::addJob([](void* _entry)->void {
+						//std::cout << "started finishing png" << std::endl;
+						LoadItem* item = (LoadItem*)_entry;
+						sf::Image* im = (sf::Image*)item->data;
+						sf::Texture* tex = new sf::Texture();
+						tex->loadFromImage(*im);
+						delete im;
+						item->data = tex;
+						item->isLoaded = true;
+						item->isLocked = false;
+						//std::cout << "ended finishing png" << std::endl;
+					}, _item);
+					//std::cout << "ended loading png " << _item->id << std::endl;
+					_ready = true;
+				};
+				
+				lock.lock();
+				orders.emplace(order);
+				lock.unlock();
+			}
+			break;
+			case Type::texture_dds:
+			{
+				//TODO
+			}
+			break;
+			case Type::shader:
+			{
+				bool gExists = true;
+
+				std::ifstream vert(next->id + ".vert");
+				if (!vert.good()) std::exception((std::string("can't open file [") + next->id + std::string(".vert]")).data());
+
+				std::ifstream geom(next->id + ".geom");
+				if (!geom.good()) {
+					gExists = false;
+					
+				}
+
+				std::ifstream frag(next->id + ".frag");
+				if (!frag.good()) std::exception((std::string("can't open file [") + next->id + std::string(".frag]")).data());
+
+				/*
+				std::tuple<std::string, std::string, std::string, LoadItem*>* tuple = new std::tuple<std::string, std::string, std::string, LoadItem*>(
+					std::string{ std::istreambuf_iterator<char>(vert), std::istreambuf_iterator<char>() },
+					(gExists ? std::string{ std::istreambuf_iterator<char>(geom), std::istreambuf_iterator<char>() } : ""),
+					std::string{ std::istreambuf_iterator<char>(frag), std::istreambuf_iterator<char>() },
+					next
+					);
+*/
+				std::tuple<std::string, std::string, std::string, LoadItem*>* tuple = new std::tuple<std::string, std::string, std::string, LoadItem*>(
+					next->id + std::string(".vert"),
+					gExists ? next->id + std::string(".geom") : std::string(""),
+					next->id + std::string(".frag"),
+					next
+					);
+
+				vert.close();
+				geom.close();
+				frag.close();
+
+				Main::addJob([](void* _entry)->void {
+					//std::cout << "started finishing shader" << std::endl;
+					std::tuple<std::string, std::string, std::string, LoadItem*>* tuple = (std::tuple<std::string, std::string, std::string, LoadItem*>*)_entry;
+
+					std::string vert = std::get<0>(*tuple);
+					std::string geom = std::get<1>(*tuple);
+					std::string frag = std::get<2>(*tuple);
+					LoadItem* item = std::get<3>(*tuple);
+					
+					sf::Shader* shader = new sf::Shader();
+					//if (!geom.empty())
+					//	shader->loadFromMemory(vert, geom, frag);
+					//else shader->loadFromMemory(vert, frag);
+
+					if (!geom.empty())
+						shader->loadFromFile(vert, geom, frag);
+					else shader->loadFromFile(vert, frag);
+
+					GLenum err;
+					while ((err = glGetError()) != GL_NO_ERROR)
+						std::cout << err << std::endl;
+
+					GLint linked;
+					glGetProgramiv(shader->getNativeHandle(), GL_LINK_STATUS, &linked);
+					std::cout << linked << std::endl;
+
+					delete tuple;
+					item->data = shader;
+					item->isLoaded = true;
+					item->isLocked = false;
+					//std::cout << "ended finishing shader" << std::endl;
+				}, tuple);
+			}
+			break;
+			case Type::font:
+			{
+				std::ifstream ifs(next->id);
+				if (!ifs.good()) std::exception((std::string("can't open file [") + next->id + std::string(".vert]")).data());
+
+				//length
+				ifs.seekg(0, std::ios::end);
+				int length = (int)ifs.tellg();
+				ifs.seekg(0, std::ios::beg);
+
+				char* data = new char[length];
+				next->data = data;
+
+				ifs.read(data, length);
+				ifs.close();
+
+				std::tuple<LoadItem*, int>* tuple = new std::tuple<LoadItem*, int>(next, length);
+
+				Main::addJob([](void* _entry)->void {
+					//std::cout << "started finishing font" << std::endl;
+					std::tuple<LoadItem*, int>* tuple = (std::tuple<LoadItem*, int>*)_entry;
+					sf::Font* font = new sf::Font();
+					LoadItem* item = std::get<0>(*tuple);
+					font->loadFromMemory(item->data, std::get<1>(*tuple));
+					delete tuple;
+					item->data = font;
+					item->isLoaded = true;
+					item->isLocked = false;
+					//std::cout << "ended finishing font" << std::endl;
+				}, tuple);
+			}
+			break;
+			case Type::atlas:
+			{
+				TextureAtlasLoader loader;
+				TextureAtlas* atlas = loader(next->id);
+				next->data = atlas;
+
+				for (unsigned int i = 0; i < atlas->files.size(); ++i) {
+
+					std::ifstream ifs(atlas->files[i], std::ios::binary);
+					if (!ifs.good()) std::exception((std::string("can't open file [") + atlas->files[i] + std::string("]")).data());
+
+					//length
+					ifs.seekg(0, std::ios::end);
+					int length = (int)ifs.tellg();
+					ifs.seekg(0, std::ios::beg);
+
+					char* data = new char[length];
+
+					ifs.read(data, length);
+					ifs.close();
+
+					WorkOrder order;
+					order.data = data;
+					order.item = next;
+					order.size = length;
+					order.index = (int)i;
+					order.atlasLoader = [](char* _data, int _size, LoadItem* _item, int _index, std::atomic<bool>& _ready)->void {
+						//std::cout << "started loading atlas [" << _index << "]" << std::endl;
+						TextureAtlas* atlas = (TextureAtlas*)_item->data;
+						atlas->img[_index] = new sf::Image();
+						atlas->img[_index]->loadFromMemory(_data, _size);
+
+						std::tuple<LoadItem*, int>* tuple = new std::tuple<LoadItem*, int>(_item, _index);
+
+						Main::addJob([](void* _entry)->void {
+							//std::cout << "started finishing atlas" << std::endl;
+							std::tuple<LoadItem*, int>* tuple = (std::tuple<LoadItem*, int>*)_entry;
+							int index = std::get<1>(*tuple);
+							LoadItem* item = std::get<0>(*tuple);
+							TextureAtlas* atlas = (TextureAtlas*)item->data;
+
+							atlas->tex[index] = new sf::Texture();
+							atlas->tex[index]->loadFromImage(*atlas->img[index]);
+							delete atlas->img[index];
+							atlas->img[index] = nullptr;
+
+							delete tuple;
+							//std::cout << "ended finishing atlas" << std::endl;
+							for (unsigned int i = 0; i < atlas->tex.size(); ++i) {
+								if (atlas->tex[i] == nullptr) return;
+							}
+
+							item->isLoaded = true;
+							item->isLocked = false;
+
+						}, tuple);
+						//std::cout << "ended loading atlas [" << _index << "]" << std::endl;
+						_ready = true;
+					};
+					
+					lock.lock();
+					orders.emplace(order);
+					lock.unlock();
+				}
+			}
+			break;
 		}
-		break;
-		case Type::font:
-		{
-			sf::Font* font = new sf::Font();
-			font->loadFromFile(next->id);
-			next->data = font;
-			next->isLoaded = true;
-			next->isLocked = false;
-			progress = std::clamp(inc + progress, 0.f, 1.f);
-		}
-		break;
-		case Type::atlas:
-		{
-			TextureAtlasLoader loader;
-			next->data = loader(next->id);
-			next->isLoaded = true;
-			next->isLocked = false;
-			progress = std::clamp(inc + progress, 0.f, 1.f);
-		}
-		break;
-		}
+		progress = 1.0;
 	}
 
 	while (!discreteUnloadQueue.empty()) {
@@ -303,6 +587,11 @@ void AssetManager::asyncDiscreteLoad() {
 		level->isLoaded = false;
 		level->isLocked = false;
 	}
+
+	workThreadFinished = true;
+	if (scheduler.joinable()) {
+		scheduler.join();
+	}
 	progress = 1;
 	locked = false;
 }
@@ -311,23 +600,26 @@ void AssetManager::finish() {
 	if (state == continuous) std::exception("state needs to be discrete!");
 	if(locked) std::exception("already loading!");
 	locked = true;
-	loadingThread = std::thread(&AssetManager::asyncDiscreteLoad, this);
-	if (loadingThread.joinable())
-		loadingThread.join();
+	loadingThread = new std::thread(&AssetManager::asyncDiscreteLoad, this);
+	if (loadingThread->joinable())
+		loadingThread->join();
+	//Main::get()->update();
 	progress = 1;
 }
 
 void Heerbann::AssetManager::toggleState() {
+	/*
 	if (state == discrete) {
 		state = continuous;
-		if (loadingThread.joinable())
-			loadingThread.join();
+		if (loadingThread->joinable())
+			loadingThread->join();
 		loadingThread = std::thread(&AssetManager::asyncContinuousLoad, this);
 	} else {
 		state = discrete;
 		if (loadingThread.joinable())
 			loadingThread.join();
 	}
+	*/
 }
 
 sf::Sprite* AtlasRegion::createSprite() {
@@ -338,16 +630,20 @@ sf::Sprite* AtlasRegion::createSprite() {
 }
 
 sf::Vector2f AtlasRegion::getU() {
-	return sf::Vector2f(1.f / (float)tex->getSize().x * (float) x, 1.f / (float)tex->getSize().x * (float)(x + width));
+	return sf::Vector2f(1.f / (float)parent->tex[texIndex]->getSize().x * (float) x, 1.f / (float)parent->tex[texIndex]->getSize().x * (float)(x + width));
 }
 
 sf::Vector2f AtlasRegion::getV() {
-	return sf::Vector2f(1.f / (float)tex->getSize().y * (float)y, 1.f / (float)tex->getSize().y * (float)(y + height));
+	return sf::Vector2f(1.f / (float)parent->tex[texIndex]->getSize().y * (float)y, 1.f / (float)parent->tex[texIndex]->getSize().y * (float)(y + height));
 }
 
 AtlasRegion* TextureAtlas::operator[](std::string _id) {
 	if (regions.count(_id) == 0) std::exception((std::string("region does not exist [") + _id + std::string("]")).c_str());
 	return regions[_id];
+}
+
+AtlasRegion * Heerbann::TextureAtlas::operator[](int _index) {
+	return regionList[_index];
 }
 
 TextureAtlas* TextureAtlasLoader::operator()(std::string _id) {
@@ -368,9 +664,7 @@ TextureAtlas* TextureAtlasLoader::operator()(std::string _id) {
 		switch (lineNr) {
 			case 1:
 			{
-				sf::Image* img = new sf::Image();
-				img->loadFromFile(_id.substr(0, _id.find_last_of("/") + 1) + line);
-				atlas->img.emplace_back(img);
+				atlas->files.emplace_back(_id.substr(0, _id.find_last_of("/") + 1) + line);
 				continue;
 			}
 			break;
@@ -393,8 +687,10 @@ TextureAtlas* TextureAtlasLoader::operator()(std::string _id) {
 			{
 				++regionNr;
 				cR = new AtlasRegion();
+				cR->parent = atlas;
 				cR->texIndex = imgNr;
 				atlas->regions[line] = cR;
+				atlas->regionList.emplace_back(cR);
 				continue;
 			}
 			break;
@@ -443,6 +739,8 @@ TextureAtlas* TextureAtlasLoader::operator()(std::string _id) {
 
 	}
 
+	atlas->tex.resize(atlas->files.size());
+	atlas->img.resize(atlas->files.size());
 	file.close();
 	return atlas;
 }

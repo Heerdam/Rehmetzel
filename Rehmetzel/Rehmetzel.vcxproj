@@ -152,6 +152,8 @@
     <None Include="..\bin\assets\shader\bg_shader.frag" />
     <None Include="..\bin\assets\shader\bg_shader.geom" />
     <None Include="..\bin\assets\shader\bg_shader.vert" />
+    <None Include="..\bin\assets\shader\tree_shader.frag" />
+    <None Include="..\bin\assets\shader\tree_shader.vert" />
     <None Include="..\README.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

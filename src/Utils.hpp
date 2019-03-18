@@ -62,21 +62,47 @@ namespace Heerbann {
 		int vertexCount, vertexSize;
 
 	public:
-		virtual void setData(sf::Shader*, float*, int);
-		virtual void draw(sf::Shader*);
+		virtual void set(float*, int) = 0;
+		virtual void build(sf::Shader*) = 0;
+		virtual void draw(sf::Shader*) = 0;
 
 	};
 
-	class BGVAO : public VAO {
+	class BGVAO {
 
 		GLuint texLoc[9];
 		sf::Texture* tex[9];
 
+		GLuint vao, vbo;
 		GLint cameraUniformHandle;
 
+		float* data;
+
+		int vertexCount, vertexSize;
+
 	public:
-		void setData(sf::Shader*, float*, int) override;
-		void draw(sf::Shader*) override;
+		void set(float*, int, int);
+		void build(sf::Shader*);
+		void draw(sf::Shader*);
+	};
+
+	class IndexedVAO {
+
+		GLuint vao, vbo, index;
+		GLint cameraUniformHandle;
+
+		float* data;
+		GLuint* indices;
+
+		int vertexCount, vertexSize;
+
+		std::vector<GLuint> texLoc;
+		std::vector<sf::Texture*> tex;
+
+	public:
+		void set(float*, GLuint*, int, int);
+		void build(sf::Shader*);
+		void draw(sf::Shader*);
 	};
 
 	class DebugDraw : public b2Draw {

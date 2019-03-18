@@ -19,7 +19,7 @@ namespace Heerbann {
 	struct Level;
 
 	enum Type {
-		texture, font, level, atlas
+		texture_png, texture_dds, font, level, atlas, shader
 	};
 
 	enum State {
@@ -45,7 +45,7 @@ namespace Heerbann {
 		State state = State::discrete;
 		std::atomic<bool> locked = false;
 
-		std::thread loadingThread;
+		std::thread* loadingThread;
 
 		//discrete loading
 		std::queue<LoadItem*> discreteLoadQueue;
@@ -156,8 +156,10 @@ namespace Heerbann {
 
 	};
 
+	struct TextureAtlas;
+
 	struct AtlasRegion {
-		sf::Texture* tex;
+		TextureAtlas* parent;
 		sf::Sprite* sprite;
 		int texIndex = -1;
 		int x, y, width, height;
@@ -170,8 +172,11 @@ namespace Heerbann {
 	struct TextureAtlas {
 		std::vector<sf::Texture*> tex;
 		std::vector<sf::Image*> img;
+		std::vector<std::string> files;
 		std::unordered_map<std::string, AtlasRegion*> regions;
+		std::vector<AtlasRegion*> regionList;
 		AtlasRegion* operator[](std::string);
+		AtlasRegion* operator[](int);
 	};
 
 	class TextureAtlasLoader {

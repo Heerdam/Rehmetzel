@@ -14,6 +14,12 @@ Main::Main() {}
 
 void Heerbann::Main::update() {
 	++frameId;
+
+	while (!loadJob.empty()) {
+		std::tuple tuple = loadJob.front();
+		loadJob.pop();
+		std::get<0>(tuple)(std::get<1>(tuple));
+	}
 }
 
 void Heerbann::Main::intialize() {
@@ -40,7 +46,19 @@ void Heerbann::Main::intialize() {
 		std::exception("glew not ok");
 	}
 
+	getAssetManager()->addAsset("assets/fonts/default.ttf", Type::font);
+	getAssetManager()->load("assets/fonts/default.ttf");
+	getAssetManager()->finish();
+	update();
+
 	level->initialize();
+}
+
+//---------------------- Job ----------------------\\
+
+void Heerbann::Main::addJob(std::function<void(void*)> _job, void* _entry) {
+	std::lock_guard<std::mutex> guard(instance->jobLock);
+	instance->loadJob.emplace(std::make_tuple(_job, _entry));
 }
 
 //---------------------- Random ----------------------\\
@@ -73,14 +91,6 @@ InputMultiplexer* Main::getInput() {
 	return instance->inputListener;
 }
 
-void Main::input_add(std::string _id, InputEntry* _entry) {
-	getInput()->add(_id, _entry);
-}
-
-void Main::input_remove(InputEntry* _entry) {
-	getInput()->remove(_entry);
-}
-
 //---------------------- World ----------------------\\
 
 World* Main::getWorld() {
@@ -93,72 +103,20 @@ Viewport* Main::getViewport() {
 	return instance->mainCam;
 }
 
-sf::View Heerbann::Main::viewport_getCamera() {
-	return getViewport()->cam;
-}
-
-void Heerbann::Main::viewport_setSize(int _width, int _height) {
-	getViewport()->setSize(_width, _height);
-}
-
-void Heerbann::Main::viewport_setPosition(int _x, int _y) {
-	getViewport()->setPosition(_x, _y);
-}
-
 //---------------------- Assets ----------------------\\
 
 AssetManager* Main::getAssetManager() {
 	return instance->assets;
 }
 
-LoadItem* Main::asset_getAsset(std::string _id) {
-	return getAssetManager()->getAsset(_id);
-}
-
-void Main::asset_addAsset(std::string _id, Type _type) {
-	getAssetManager()->addAsset(_id, _type);
-}
-
-void Main::asset_load(std::string _id) {
-	getAssetManager()->load(_id);
-}
-
-void Main::asset_unload(std::string _id) {
-	getAssetManager()->unload(_id);
-}
-
-void Main::asset_startLoading() {
-	getAssetManager()->startLoading();
-}
-
-bool Main::asset_isLoading() {
-	return getAssetManager()->isLoading();
-}
-
-void Main::asset_finish() {
-	getAssetManager()->finish();
-}
-
-void Main::asset_toggleState() {
-	getAssetManager()->toggleState();
-}
-
-State Main::asset_getState() {
-	return getAssetManager()->getState();
-}
-
-sf::Font * Heerbann::Main::getDefaultFont() {	
-	return (sf::Font*)asset_getAsset("assets/fonts/default.ttf")->data;
+sf::Font* Main::getDefaultFont() {
+	return (sf::Font*)getAssetManager()->getAsset("assets/fonts/default.ttf")->data;
 }
 
 //---------------------- Stage ----------------------\\
 
 UI::Stage* Main::getStage() {
 	return get()->stage;
-}
-
-void Main::stage_add(UI::Actor* _actor) {
-	getStage()->add(_actor);
 }
 
 //---------------------- Level ----------------------\\

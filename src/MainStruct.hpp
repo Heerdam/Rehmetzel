@@ -6,6 +6,7 @@
 
 #include <unordered_map>
 #include <thread>
+#include <condition_variable>
 #include <mutex>
 #include <queue>
 #include <vector>
@@ -17,6 +18,9 @@
 #include <limits>
 #include <random>
 #include <sstream>
+#include <tuple>
+#include <chrono>
+#include <stdexcept>
 
 #include <Box2D/Box2D.h>
 
@@ -32,8 +36,13 @@ namespace Heerbann {
 #define UNRATIO (1.0F/RATIO)
 #define METERS_PER_PIXEL UNRATIO
 
-//formula to convert radians to degrees = (radians * (pi/180))
-#define RADTODEG (b2_pi / 180.0)
+#define DEGTORAD (b2_pi / 180.0)
+
+//diameter of a cell of the background
+#define BG_CELLDIAMETER 100
+
+//how many cells a background VAO holds
+#define BG_CELLCOUNT 50
 
 	class InputMultiplexer;
 	class World;
@@ -69,6 +78,9 @@ namespace Heerbann {
 
 		std::mt19937_64 random;
 
+		std::queue<std::tuple<std::function<void(void*)>, void*>> loadJob;
+		std::mutex jobLock;
+
 	public:
 
 		void update();
@@ -86,6 +98,11 @@ namespace Heerbann {
 			static long id = 1000;
 			return ++id;
 		}
+
+		//---------------------- Job ----------------------\\
+
+		//thread safe
+		static void addJob(std::function<void(void*)>, void*);
 
 		//---------------------- Random ----------------------\\
 
@@ -110,8 +127,6 @@ namespace Heerbann {
 		//---------------------- Inputs ----------------------\\
 
 		static InputMultiplexer* getInput();
-		static void input_add(std::string, InputEntry*);
-		static void input_remove(InputEntry*);
 
 		//---------------------- World ----------------------\\
 
@@ -120,28 +135,15 @@ namespace Heerbann {
 		//---------------------- Viewport ----------------------\\
 
 		static Viewport* getViewport();
-		static sf::View viewport_getCamera();
-		static void viewport_setSize(int, int);
-		static void viewport_setPosition(int, int);
 
 		//---------------------- Assets ----------------------\\
 
 		static AssetManager* getAssetManager();
-		static LoadItem* asset_getAsset(std::string);
-		static void asset_addAsset(std::string, Type);
-		static void asset_load(std::string);
-		static void asset_unload(std::string);
-		static void asset_startLoading();
-		static bool asset_isLoading();
-		static void asset_finish();
-		static void asset_toggleState();
-		static State asset_getState();
 		static sf::Font* getDefaultFont();
 
 		//---------------------- Stage ----------------------\\
 
 		static UI::Stage* getStage();
-		static void stage_add(UI::Actor*);
 
 		//---------------------- Level ----------------------\\
 

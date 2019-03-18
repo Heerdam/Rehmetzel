@@ -78,17 +78,15 @@ bool almost_equal(float _f1, float _f2) {
 	return std::abs(_f1 - _f2) <= std::numeric_limits<float>::epsilon();
 }
 
-void VAO::setData(sf::Shader* _shader, float* _data, int _vertexCount) {
+void BGVAO::set(float* _data, int _vertexCount, int _vertexSize) {
 	vertexCount = _vertexCount;
+	data = _data;
+	vertexSize = _vertexSize;
 }
 
-void VAO::draw(sf::Shader* _shader) {
 
-}
-
-void BGVAO::setData(sf::Shader* _shader, float *data, int _vertexCount) {
-	vertexCount = _vertexCount;
-
+void BGVAO::build(sf::Shader* _shader) {
+	
 	cameraUniformHandle = glGetUniformLocation(_shader->getNativeHandle(), "transform");
 
 	//create buffer
@@ -98,28 +96,25 @@ void BGVAO::setData(sf::Shader* _shader, float *data, int _vertexCount) {
 	glBindVertexArray(vao);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertexCount * 3, data, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertexCount * vertexSize, data, GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
-	for (int i = 0; i < 9; ++i)
-		tex[i] = new sf::Texture();
+	tex[0] = (sf::Texture*)(sf::Image*)(Main::getAssetManager()->getAsset("assets/tex/Forest_soil_diffuse.png")->data);
 
-	tex[0]->loadFromImage(*(sf::Image*)(Main::asset_getAsset("assets/tex/Forest_soil_diffuse.png")->data));
+	tex[1] = (sf::Texture*)(Main::getAssetManager()->getAsset("assets/tex/ForestCliff_basecolor.png")->data);
+	tex[2] = (sf::Texture*)(sf::Image*)(Main::getAssetManager()->getAsset("assets/tex/ForestDirt_diffuse.png")->data);
 
-	tex[1]->loadFromImage(*(sf::Image*)(Main::asset_getAsset("assets/tex/ForestCliff_basecolor.png")->data));
-	tex[2]->loadFromImage(*(sf::Image*)(Main::asset_getAsset("assets/tex/ForestDirt_diffuse.png")->data));
+	tex[3] = (sf::Texture*)(sf::Image*)(Main::getAssetManager()->getAsset("assets/tex/ForestGrass_basecolor.png")->data);
+	tex[4] = (sf::Texture*)(sf::Image*)(Main::getAssetManager()->getAsset("assets/tex/ForestMoss_basecolor.png")->data);
+	tex[5] = (sf::Texture*)(sf::Image*)(Main::getAssetManager()->getAsset("assets/tex/ForestMud_baseColor.png")->data);
 
-	tex[3]->loadFromImage(*(sf::Image*)(Main::asset_getAsset("assets/tex/ForestGrass_basecolor.png")->data));
-	tex[4]->loadFromImage(*(sf::Image*)(Main::asset_getAsset("assets/tex/ForestMoss_basecolor.png")->data));
-	tex[5]->loadFromImage(*(sf::Image*)(Main::asset_getAsset("assets/tex/ForestMud_baseColor.png")->data));
-
-	tex[6]->loadFromImage(*(sf::Image*)(Main::asset_getAsset("assets/tex/ForestRoad_diffuse.png")->data));
-	tex[7]->loadFromImage(*(sf::Image*)(Main::asset_getAsset("assets/tex/ForestRock_basecolor.png")->data));
-	tex[8]->loadFromImage(*(sf::Image*)(Main::asset_getAsset("assets/tex/ForestWetMud_baseColor.png")->data));
+	tex[6] = (sf::Texture*)(sf::Image*)(Main::getAssetManager()->getAsset("assets/tex/ForestRoad_diffuse.png")->data);
+	tex[7] = (sf::Texture*)(sf::Image*)(Main::getAssetManager()->getAsset("assets/tex/ForestRock_basecolor.png")->data);
+	tex[8] = (sf::Texture*)(sf::Image*)(Main::getAssetManager()->getAsset("assets/tex/ForestWetMud_baseColor.png")->data);
 
 	for (int i = 0; i < 9; ++i)
 		texLoc[i] = glGetUniformLocation(_shader->getNativeHandle(), (std::string("tex[") + std::to_string(i) + std::string("]")).c_str());
@@ -129,6 +124,7 @@ void BGVAO::setData(sf::Shader* _shader, float *data, int _vertexCount) {
 	//	std::cout << err << std::endl;
 	//}
 }
+
 
 void BGVAO::draw(sf::Shader* _shader) {
 	sf::Shader::bind(_shader);
@@ -152,8 +148,71 @@ void BGVAO::draw(sf::Shader* _shader) {
 	glUseProgram(0);
 }
 
-bool Heerbann::almost_equal(float _f1, float _f2) {
-	return false;
+void IndexedVAO::set(float* _data, GLuint* _indices, int _vertexCount, int _vertexSize) {
+	vertexCount = _vertexCount;
+	data = _data;
+	indices = _indices;
+	vertexSize = _vertexSize;
+}
+
+void IndexedVAO::build(sf::Shader* _shader) {
+	cameraUniformHandle = glGetUniformLocation(_shader->getNativeHandle(), "transform");
+
+	//create buffer
+	glGenVertexArrays(1, &vao);
+	glGenBuffers(1, &vbo);
+	glGenBuffers(1, &index);
+
+	glBindVertexArray(vao);
+
+	//vbo
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertexCount * 5, data, GL_STATIC_DRAW);	
+
+	//index
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * (vertexCount / 4 * 6), indices, GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
+	TextureAtlas* atlas = (TextureAtlas*)Main::getAssetManager()->getAsset("assets/trees/trees")->data;
+	tex.resize(atlas->tex.size());
+
+	for (int i = 0; i < (int)tex.size(); ++i) {
+		tex[i] = atlas->tex[i];
+	}
+
+	texLoc.resize(atlas->tex.size());
+	for (int i = 0; i < (int)tex.size(); ++i)
+		texLoc[i] = glGetUniformLocation(_shader->getNativeHandle(), (std::string("tex[") + std::to_string(i) + std::string("]")).c_str());
+}
+
+void IndexedVAO::draw(sf::Shader* _shader) {
+	sf::Shader::bind(_shader);
+	glUniformMatrix4fv(cameraUniformHandle, 1, false, Main::getViewport()->cam.getTransform().getMatrix());
+
+	for (int i = 0; i < (int)tex.size(); ++i) {
+		glActiveTexture(GL_TEXTURE0 + i);
+		glBindTexture(GL_TEXTURE_2D, tex[i]->getNativeHandle());
+		glUniform1i(texLoc[i], i);
+	}
+
+	glBindVertexArray(vao);
+	glDrawElements(GL_TRIANGLES, vertexCount / 4 * 6, GL_UNSIGNED_INT, nullptr);
+
+	for (int i = 0; i < (int)tex.size(); ++i) {
+		glActiveTexture(GL_TEXTURE0 + i);
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+
+	glBindVertexArray(0);
+	glUseProgram(0);
 }
 
 //convert a Box2D (float 0.0f - 1.0f range) color to a SFML color (uint8 0 - 255 range)
@@ -306,7 +365,6 @@ void DebugDraw::DrawPolygon(const b2Vec2* _vertices, int32 _vertexCount, const b
 	Main::getContext()->draw(polygon);
 }
 
-
 void DebugDraw::DrawMouseJoint(b2Vec2& p1, b2Vec2& p2, const b2Color &boxColor, const b2Color &lineColor) {
 	sf::ConvexShape polygon;
 	sf::ConvexShape polygon2;
@@ -350,3 +408,4 @@ void DebugDraw::DrawMouseJoint(b2Vec2& p1, b2Vec2& p2, const b2Color &boxColor, 
 
 	Main::getContext()->draw(line, 2, sf::Lines);
 }
+
