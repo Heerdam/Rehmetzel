@@ -428,7 +428,6 @@ void AssetManager::asyncDiscreteLoad() {
 				frag.close();
 
 				Main::addJob([](void* _entry)->void {
-					//std::cout << "started finishing shader" << std::endl;
 					std::tuple<std::string, std::string, std::string, LoadItem*>* tuple = (std::tuple<std::string, std::string, std::string, LoadItem*>*)_entry;
 
 					std::string vert = std::get<0>(*tuple);
@@ -438,34 +437,21 @@ void AssetManager::asyncDiscreteLoad() {
 					
 					auto asset = Main::getAssetManager();
 					sf::Shader* shader = new sf::Shader();
-					if (!geom.empty()) {
+					if (!geom.empty())
 						shader->loadFromMemory(vert, geom, frag);
-						item->bg = shader;
-					} else {
+					else 
 						shader->loadFromMemory(vert, frag);
-						item->tr = shader;
-					}
-
-					//if (!geom.empty())
-						//shader->loadFromFile(vert, geom, frag);
-					//else shader->loadFromFile(vert, frag);
 
 					//GLenum err;
 					//while ((err = glGetError()) != GL_NO_ERROR)
 						//std::cout << err << std::endl;
-					asset = Main::getAssetManager();
 					//GLint linked;
 					//glGetProgramiv(shader->getNativeHandle(), GL_LINK_STATUS, &linked);
-					std::cout << shader->getNativeHandle() << std::endl;
-
-					//sf::Shader::bind(shader);
-					//sf::Shader::bind(0);
-
+					//std::cout << linked << std::endl;
 					delete tuple;
 					item->data = shader;
 					item->isLoaded = true;
 					item->isLocked = false;
-					//std::cout << "ended finishing shader" << std::endl;
 				}, tuple);
 			}
 			break;
@@ -743,8 +729,6 @@ TextureAtlas* TextureAtlasLoader::operator()(std::string _id) {
 				regionNr = 1;
 				continue;
 		}
-
-
 	}
 
 	atlas->tex.resize(atlas->files.size());

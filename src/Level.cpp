@@ -213,8 +213,6 @@ void TestWorldLevel::load(AssetManager* _asset) {
 	
 	bgShader = (sf::Shader*)Main::getAssetManager()->getAsset("assets/shader/bg_shader")->data;
 	treeShader = (sf::Shader*)Main::getAssetManager()->getAsset("assets/shader/tree_shader")->data;
-	std::cout << bgShader->getNativeHandle() << std::endl;
-	std::cout << treeShader->getNativeHandle() << std::endl;
 }
 
 void TestWorldLevel::postLoad(AssetManager* _asset) {	

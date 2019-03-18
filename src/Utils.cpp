@@ -157,6 +157,8 @@ void IndexedVAO::set(float* _data, GLuint* _indices, int _vertexCount, int _vert
 
 void IndexedVAO::build(sf::Shader* _shader) {
 	cameraUniformHandle = glGetUniformLocation(_shader->getNativeHandle(), "transform");
+	viewportSizeUniformHandle = glGetUniformLocation(_shader->getNativeHandle(), "viewportSize");
+	radiusUniformHandle = glGetUniformLocation(_shader->getNativeHandle(), "radius");
 
 	//create buffer
 	glGenVertexArrays(1, &vao);
@@ -164,6 +166,7 @@ void IndexedVAO::build(sf::Shader* _shader) {
 	glGenBuffers(1, &index);
 
 	glBindVertexArray(vao);
+
 
 	//vbo
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -196,6 +199,8 @@ void IndexedVAO::build(sf::Shader* _shader) {
 void IndexedVAO::draw(sf::Shader* _shader) {
 	sf::Shader::bind(_shader);
 	glUniformMatrix4fv(cameraUniformHandle, 1, false, Main::getViewport()->cam.getTransform().getMatrix());
+	glUniform1f(radiusUniformHandle, viewRadius);
+	glUniform2f(viewportSizeUniformHandle, (float)Main::width(), (float)Main::height());
 
 	for (int i = 0; i < (int)tex.size(); ++i) {
 		glActiveTexture(GL_TEXTURE0 + i);
@@ -203,8 +208,14 @@ void IndexedVAO::draw(sf::Shader* _shader) {
 		glUniform1i(texLoc[i], i);
 	}
 
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	glBindVertexArray(vao);
 	glDrawElements(GL_TRIANGLES, vertexCount / 4 * 6, GL_UNSIGNED_INT, nullptr);
+
+	glDisable(GL_BLEND);
+
 
 	for (int i = 0; i < (int)tex.size(); ++i) {
 		glActiveTexture(GL_TEXTURE0 + i);

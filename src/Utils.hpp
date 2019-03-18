@@ -89,7 +89,7 @@ namespace Heerbann {
 	class IndexedVAO {
 
 		GLuint vao, vbo, index;
-		GLint cameraUniformHandle;
+		GLint cameraUniformHandle, viewportSizeUniformHandle, radiusUniformHandle;
 
 		float* data;
 		GLuint* indices;
@@ -100,6 +100,8 @@ namespace Heerbann {
 		std::vector<sf::Texture*> tex;
 
 	public:
+		float viewRadius = 500.f;
+
 		void set(float*, GLuint*, int, int);
 		void build(sf::Shader*);
 		void draw(sf::Shader*);

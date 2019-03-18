@@ -144,9 +144,10 @@ IndexedVAO* WorldBuilder::createTrees(int _treeCount, sf::Vector2f _low, sf::Vec
 	for (int i = 0; i < _treeCount; ++i) {
 
 		sf::Vector2f pos(Main::getRandom(_low.x, _high.x), Main::getRandom(_low.y, _high.y));
-
+		//sf::Vector2f pos(0, 0);
 		AtlasRegion* region = (*atlas)[(int)(Main::getRandom(0.f, (float)treeSpriteCount))];
 
+		//AtlasRegion* region = (*atlas)["strees_05_top"];
 		sf::Vector2f u = region->getU();
 		sf::Vector2f v = region->getV();
 
@@ -228,7 +229,7 @@ WorldOut * WorldBuilder::build(const WorldBuilderDefinition& _def) {
 	Main::setSeed(_def.seed);
 
 	out->bgVAOs.emplace_back(createBGVAO(sf::Vector2f(0, 0), 4));
-	out->indexVAOs.emplace_back(createTrees(10, sf::Vector2f(0, 0), sf::Vector2f(cosf(DEGTORAD * 30.f) * BG_CELLDIAMETER * BG_CELLCOUNT, 1.5f * BG_CELLDIAMETER * BG_CELLCOUNT)));
+	out->indexVAOs.emplace_back(createTrees(50, sf::Vector2f(0, 0), sf::Vector2f(cosf(DEGTORAD * 30.f) * BG_CELLDIAMETER * BG_CELLCOUNT, 1.5f * BG_CELLDIAMETER * BG_CELLCOUNT)));
 
 	return out;
 }
