@@ -21,6 +21,8 @@
 #include <tuple>
 #include <chrono>
 #include <stdexcept>
+#include <exception>
+#include <typeinfo>
 
 #include <Box2D/Box2D.h>
 

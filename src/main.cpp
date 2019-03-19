@@ -37,30 +37,37 @@ int main() {
 
 	Box2dRenderer boxRenderer;
 	
-
-
 	sf::Event event;
 	while (Main::getContext()->isOpen()) {
-		Main::get()->update();
-		while (Main::getContext()->pollEvent(event))
-			Main::getInput()->fire(event);
+		try {
+			auto start = std::chrono::system_clock::now();
+			Main::get()->update();
+			while (Main::getContext()->pollEvent(event))
+				Main::getInput()->fire(event);
 
-		const float delta = 1.f / 60.f;
+			const float delta = 1.f / 60.f;
 
-		Main::getWorld()->update(delta);
-		//update & apply
-		Main::getViewport()->apply(*Main::getContext(), delta);
+			Main::getWorld()->update(delta);
+			//update & apply
+			Main::getViewport()->apply(*Main::getContext(), delta);
 
-		Main::getLevel()->update(delta);
-		Main::getLevel()->draw(delta, *Main::getContext());
+			Main::getLevel()->update(delta);
+			Main::getLevel()->draw(delta, *Main::getContext());
 
-		boxRenderer.draw(delta, *Main::getContext());
+			boxRenderer.draw(delta, *Main::getContext());
 
-		//Main::getWorld()->debugDraw();
+			//Main::getWorld()->debugDraw();
 
-		//Main::getStage()->act(delta);
-		//Main::getStage()->draw(*Main::getContext());
+			//Main::getStage()->act(delta);
+			//Main::getStage()->draw(*Main::getContext());
 
+			auto end = std::chrono::system_clock::now();
+			std::chrono::duration<double> elapsed_seconds = end - start;
+			//std::cout << elapsed_seconds.count() << std::endl;
+		} catch (...) {
+			std::exception_ptr p = std::current_exception();
+			std::cout << (p ? p._Current_exception->name() : "null") << std::endl;
+		}
 		Main::getContext()->display();
 	}
 

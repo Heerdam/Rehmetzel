@@ -420,3 +420,205 @@ void DebugDraw::DrawMouseJoint(b2Vec2& p1, b2Vec2& p2, const b2Color &boxColor, 
 	Main::getContext()->draw(line, 2, sf::Lines);
 }
 
+void Heerbann::SpriteBatch::build() {
+	std::lock_guard<std::mutex> lock(queueLock);
+	int i = 0;
+	while (!drawQueue.empty()) {
+		sf::Sprite* next = drawQueue.front();
+		drawQueue.pop();
+
+		auto pos = next->getGlobalBounds();
+		auto uv = next->getTextureRect();
+
+		assert(textures.count(next->getTexture()->getNativeHandle()));
+		int index = textures[next->getTexture()->getNativeHandle()];
+
+		int k = 0;
+		//bottom right
+		data[vertexSize * i] = pos.left + pos.width;
+		data[vertexSize * i + ++k] = pos.top;
+		data[vertexSize * i + ++k] = (float)index;
+		data[vertexSize * i + ++k] = uv.left + uv.width;
+		data[vertexSize * i + ++k] = uv.top;
+		data[vertexSize * i + ++k] = color.r;
+		data[vertexSize * i + ++k] = color.g;
+		data[vertexSize * i + ++k] = color.b;
+		data[vertexSize * i + ++k] = color.a;
+
+		//top right
+		data[vertexSize * i + ++k] = pos.left + pos.width;
+		data[vertexSize * i + ++k] = pos.top + pos.height;
+		data[vertexSize * i + ++k] = (float)index;
+		data[vertexSize * i + ++k] = uv.left + uv.width;
+		data[vertexSize * i + ++k] = uv.top + uv.height;
+		data[vertexSize * i + ++k] = color.r;
+		data[vertexSize * i + ++k] = color.g;
+		data[vertexSize * i + ++k] = color.b;
+		data[vertexSize * i + ++k] = color.a;
+
+		//top left
+		data[vertexSize * i + ++k] = pos.left;
+		data[vertexSize * i + ++k] = pos.top + pos.height;
+		data[vertexSize * i + ++k] = (float)index;
+		data[vertexSize * i + ++k] = uv.left;
+		data[vertexSize * i + ++k] = uv.top + uv.height;
+		data[vertexSize * i + ++k] = color.r;
+		data[vertexSize * i + ++k] = color.g;
+		data[vertexSize * i + ++k] = color.b;
+		data[vertexSize * i + ++k] = color.a;
+
+		//bottom left
+		data[vertexSize * i + ++k] = pos.left;
+		data[vertexSize * i + ++k] = pos.top;
+		data[vertexSize * i + ++k] = (float)index;
+		data[vertexSize * i + ++k] = uv.left;
+		data[vertexSize * i + ++k] = uv.top;
+		data[vertexSize * i + ++k] = color.r;
+		data[vertexSize * i + ++k] = color.g;
+		data[vertexSize * i + ++k] = color.b;
+		data[vertexSize * i + ++k] = color.a;
+	}
+}
+
+void Heerbann::SpriteBatch::recompile(int _tex) {
+	const std::string vertex =
+		"#version 330 core"
+		"layout (location = 0) in vec2 aPos;"
+		"layout (location = 1) in float ain;"
+		"layout (location = 2) in vec2 auv;"
+		"layout (location = 3) in vec4 acol;"
+		"flat out int index;"
+		"out vec2 uv;"
+		"out vec4 col;"
+		"uniform mat4 transform;"
+		"void main() {"
+			"gl_Position = transform * vec4(aPos.x, aPos.y, 0.0, 1.0);"
+			"index = ain;"
+			"uv = auv;"
+			"col = acol;"
+		"}";
+
+	std::string fragment =
+		"#version 330 core"
+		"out vec4 FragColor;"
+		"flat in int index;"
+		"in vec2 uv;"
+		"in vec4 col;"
+		"uniform sampler2D tex[" + std::string(_tex + "") + "];"
+		"void main(){"
+			"FragColor = texture(tex[index], uv) + col;"
+		"}";
+
+	if (!shader->loadFromMemory(vertex, fragment))
+		std::exception("failed to compile shader in SpriteBatch");
+}
+
+SpriteBatch::SpriteBatch(TextureAtlas* _atlas) {
+	SpriteBatch(_atlas, 1000);
+}
+
+SpriteBatch::SpriteBatch(TextureAtlas* _atlas, int _maxSprites) {
+	setTextureAtlas(_atlas);
+	vertexCount = _maxSprites * 4;
+	maxSpritesInBatch = _maxSprites;
+
+	GLuint* idata = new GLuint[_maxSprites * 6];
+	data = new float[vertexCount * vertexSize]{ 0 };
+
+	shader = new sf::Shader();
+
+	//create buffer
+	glGenVertexArrays(1, &vao);
+	glGenBuffers(1, &vbo);
+	glGenBuffers(1, &index);
+
+	glBindVertexArray(vao);
+
+	//vbo
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);	
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * _maxSprites * 4 * vertexSize, data, GL_DYNAMIC_DRAW);
+
+	//index
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * (_maxSprites * 6), idata, GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, vertexSize * sizeof(float), (void*)0);
+
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, vertexSize * sizeof(float), (void*)(2 * sizeof(float)));
+
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, vertexSize * sizeof(float), (void*)(3 * sizeof(float)));
+
+	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, vertexSize * sizeof(float), (void*)(5 * sizeof(float)));
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
+	texLoc.resize(atlas->tex.size());
+	for (unsigned int i = 0; i < (int)atlas->tex.size(); ++i)
+		texLoc[i] = glGetUniformLocation(shader->getNativeHandle(), (std::string("tex[") + std::to_string(i) + std::string("]")).c_str());
+}
+
+void SpriteBatch::begin() {
+	assert(workthread == nullptr && !locked);
+	workthread = new std::thread(&SpriteBatch::build, this);
+	locked = true;
+}
+
+void SpriteBatch::end(sf::Transform& _cam) {
+	assert(workthread != nullptr);
+	if (workthread->joinable())
+		workthread->join();
+	delete workthread;
+	workthread = nullptr;
+	locked = false;
+	if (spriteCount == 0) return;
+	sf::Shader::bind(shader);
+	glUniformMatrix4fv(camLocation, 1, false, _cam.getMatrix());
+
+	for (unsigned int i = 0; i < atlas->tex.size(); ++i) {
+		glActiveTexture(GL_TEXTURE0 + i);
+		glBindTexture(GL_TEXTURE_2D, atlas->tex[i]->getNativeHandle());
+		glUniform1i(texLoc[i], i);
+	}
+
+	if (isBlending) {
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	}
+
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, spriteCount * 4 * sizeof(float), data);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	glBindVertexArray(vao);
+	glDrawElements(GL_TRIANGLES, spriteCount * 6, GL_UNSIGNED_INT, nullptr);
+
+	if (isBlending) glDisable(GL_BLEND);
+
+	for (unsigned int i = 0; i < atlas->tex.size(); ++i) {
+		glActiveTexture(GL_TEXTURE0 + i);
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+
+	glBindVertexArray(0);
+	glUseProgram(0);
+}
+
+void SpriteBatch::draw(sf::Sprite* _drawable) {
+	assert(!locked);
+	drawQueue.emplace(_drawable);
+}
+
+void Heerbann::SpriteBatch::setTextureAtlas(TextureAtlas* _atlas) {
+	textures.clear();
+	for (unsigned int i = 0; i < _atlas->tex.size(); ++i) {
+		auto tex = _atlas->tex[i];
+		textures[tex->getNativeHandle()] = i;
+	}
+	recompile(_atlas->tex.size());
+}
+

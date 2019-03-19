@@ -123,4 +123,75 @@ namespace Heerbann {
 		void DrawMouseJoint(b2Vec2&, b2Vec2&, const b2Color&, const b2Color&);
 	};
 
+	class TextureAtlas;
+
+	class SpriteBatch {
+
+
+		const std::string fragment;
+
+		sf::Shader* shader;
+
+		int renderCalls = 0;
+		int totalRenderCalls = 0;
+		int maxSpritesInBatch = 0;
+		int spriteCount = 0;
+
+		std::atomic<bool> locked = false;
+		bool isBlending = true;
+
+		sf::Color color = sf::Color::White;
+
+		std::queue< sf::Sprite*> drawQueue;
+		std::mutex queueLock;
+
+		std::thread* workthread;
+
+		TextureAtlas* atlas;
+		std::vector<GLuint> texLoc;
+		std::unordered_map<GLuint, int> textures;
+
+		void build();
+
+		GLuint vao, vbo, index;
+		float* data;
+		int vertexCount;
+		int vertexSize = 2 + 1 + 2 + 4; //pos + index + uv + color
+
+		GLuint camLocation;
+
+		void recompile(int);
+
+	public:
+		SpriteBatch(TextureAtlas*);
+		SpriteBatch(TextureAtlas*, int);
+
+		//builds the buffer asynchronous
+		void begin();
+
+		//draws the batch
+		void end(sf::Transform&);
+
+		inline void setColor(sf::Color _color) {
+			color = _color;
+		};
+
+		//add to renderqueue
+		void draw(sf::Sprite*);
+
+		inline void enableBlending() {
+			isBlending = true;
+		};
+
+		inline void disableBlending() {
+			isBlending = false;
+		};
+
+		inline bool isDrawing() {
+			return locked;
+		}
+
+		void setTextureAtlas(TextureAtlas*);
+	};
+
 }
