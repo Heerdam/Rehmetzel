@@ -51,6 +51,8 @@ void Heerbann::Main::intialize() {
 	getAssetManager()->finish();
 	update();
 
+	intializeFont(getDefaultFont());
+	
 	level->initialize();
 }
 
@@ -112,6 +114,31 @@ AssetManager* Main::getAssetManager() {
 sf::Font* Main::getDefaultFont() {
 	return (sf::Font*)getAssetManager()->getAsset("assets/fonts/default.ttf")->data;
 }
+
+void Heerbann::Main::intializeFont(sf::Font* _font) {
+	//basic latins
+	for (uint32 i = 32; i <= 126; ++i) {
+		_font->getGlyph(i, SMALLFONTSIZE, false);
+		_font->getGlyph(i, MEDIUMFONTSIZE, false);
+		_font->getGlyph(i, BIGFONTSIZE, false);
+
+		_font->getGlyph(i, SMALLFONTSIZE, true);
+		_font->getGlyph(i, MEDIUMFONTSIZE, true);
+		_font->getGlyph(i, BIGFONTSIZE, true);
+	}
+	//Latin-1 Supplement
+	for (uint32 i = 160; i <= 255; ++i) {
+		_font->getGlyph(i, SMALLFONTSIZE, false);
+		_font->getGlyph(i, MEDIUMFONTSIZE, false);
+		_font->getGlyph(i, BIGFONTSIZE, false);
+
+		_font->getGlyph(i, SMALLFONTSIZE, true);
+		_font->getGlyph(i, MEDIUMFONTSIZE, true);
+		_font->getGlyph(i, BIGFONTSIZE, true);
+	}
+}
+
+
 
 //---------------------- Stage ----------------------\\
 

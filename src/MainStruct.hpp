@@ -46,6 +46,10 @@ namespace Heerbann {
 //how many cells a background VAO holds
 #define BG_CELLCOUNT 50
 
+#define SMALLFONTSIZE 18
+#define MEDIUMFONTSIZE 24
+#define BIGFONTSIZE 32
+
 	class InputMultiplexer;
 	class World;
 	class Viewport;
@@ -142,6 +146,7 @@ namespace Heerbann {
 
 		static AssetManager* getAssetManager();
 		static sf::Font* getDefaultFont();
+		static void intializeFont(sf::Font*);
 
 		//---------------------- Stage ----------------------\\
 

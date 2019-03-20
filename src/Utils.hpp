@@ -4,7 +4,11 @@
 
 namespace Heerbann {
 
-	bool almost_equal(float _f1, float _f2); //TODO
+#define VERTEXSIZE 9 //pos + index + uv + color
+
+	bool almost_equal(float _f1, float _f2) {
+		return false; //TODO
+	}
 
 	class BoundingBox2f {
 
@@ -127,6 +131,15 @@ namespace Heerbann {
 
 	class SpriteBatch {
 
+		enum Type {
+			sprite, font
+		};
+
+		struct Item {
+			Item(Type _type, void* _data) : type(_type), data(_data) {};
+			Type type;
+			void* data;
+		};
 
 		const std::string fragment;
 
@@ -142,7 +155,7 @@ namespace Heerbann {
 
 		sf::Color color = sf::Color::White;
 
-		std::queue< sf::Sprite*> drawQueue;
+		std::queue<Item*> drawQueue;
 		std::mutex queueLock;
 
 		std::thread* workthread;
@@ -156,7 +169,6 @@ namespace Heerbann {
 		GLuint vao, vbo, index;
 		float* data;
 		int vertexCount;
-		int vertexSize = 2 + 1 + 2 + 4; //pos + index + uv + color
 
 		GLuint camLocation;
 
@@ -178,6 +190,7 @@ namespace Heerbann {
 
 		//add to renderqueue
 		void draw(sf::Sprite*);
+		void draw(sf::Font*);
 
 		inline void enableBlending() {
 			isBlending = true;
@@ -191,7 +204,32 @@ namespace Heerbann {
 			return locked;
 		}
 
-		void setTextureAtlas(TextureAtlas*);
+		void setTextureAtlas(TextureAtlas*); //TODO font textures
+	};
+
+	class FontCache {
+
+		sf::Font* font;
+
+		std::wstring text;
+		bool isDirty;
+
+		float* cache;
+		int size = 0;
+
+	public:
+
+		sf::Vector2f pos;
+		sf::Vector2f bounds;
+
+		FontCache();
+		FontCache(sf::Font*);
+
+		void setText(std::wstring);
+
+		//thread safe. only called by spritebatch
+		float* draw(int&);
+		
 	};
 
 }

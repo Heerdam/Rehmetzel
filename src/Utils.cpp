@@ -420,67 +420,85 @@ void DebugDraw::DrawMouseJoint(b2Vec2& p1, b2Vec2& p2, const b2Color &boxColor, 
 	Main::getContext()->draw(line, 2, sf::Lines);
 }
 
-void Heerbann::SpriteBatch::build() {
+void SpriteBatch::build() {
 	std::lock_guard<std::mutex> lock(queueLock);
 	int i = 0;
 	while (!drawQueue.empty()) {
-		sf::Sprite* next = drawQueue.front();
+		Item* next = drawQueue.front();
 		drawQueue.pop();
 
-		auto pos = next->getGlobalBounds();
-		auto uv = next->getTextureRect();
+		switch (next->type) {
+			case Type::sprite:
+			{
+				sf::Sprite* sprite = (sf::Sprite*) next->data;
+				auto pos = sprite->getGlobalBounds();
+				auto uv = sprite->getTextureRect();
 
-		assert(textures.count(next->getTexture()->getNativeHandle()));
-		int index = textures[next->getTexture()->getNativeHandle()];
+				assert(textures.count(sprite->getTexture()->getNativeHandle()));
+				int index = textures[sprite->getTexture()->getNativeHandle()];
 
-		int k = 0;
-		//bottom right
-		data[vertexSize * i] = pos.left + pos.width;
-		data[vertexSize * i + ++k] = pos.top;
-		data[vertexSize * i + ++k] = (float)index;
-		data[vertexSize * i + ++k] = uv.left + uv.width;
-		data[vertexSize * i + ++k] = uv.top;
-		data[vertexSize * i + ++k] = color.r;
-		data[vertexSize * i + ++k] = color.g;
-		data[vertexSize * i + ++k] = color.b;
-		data[vertexSize * i + ++k] = color.a;
+				int k = 0;
+				//bottom right
+				data[VERTEXSIZE * i] = pos.left + pos.width;
+				data[VERTEXSIZE * i + ++k] = pos.top;
+				data[VERTEXSIZE * i + ++k] = (float)index;
+				data[VERTEXSIZE * i + ++k] = uv.left + uv.width;
+				data[VERTEXSIZE * i + ++k] = uv.top;
+				data[VERTEXSIZE * i + ++k] = color.r;
+				data[VERTEXSIZE * i + ++k] = color.g;
+				data[VERTEXSIZE * i + ++k] = color.b;
+				data[VERTEXSIZE * i + ++k] = color.a;
 
-		//top right
-		data[vertexSize * i + ++k] = pos.left + pos.width;
-		data[vertexSize * i + ++k] = pos.top + pos.height;
-		data[vertexSize * i + ++k] = (float)index;
-		data[vertexSize * i + ++k] = uv.left + uv.width;
-		data[vertexSize * i + ++k] = uv.top + uv.height;
-		data[vertexSize * i + ++k] = color.r;
-		data[vertexSize * i + ++k] = color.g;
-		data[vertexSize * i + ++k] = color.b;
-		data[vertexSize * i + ++k] = color.a;
+				//top right
+				data[VERTEXSIZE * i + ++k] = pos.left + pos.width;
+				data[VERTEXSIZE * i + ++k] = pos.top + pos.height;
+				data[VERTEXSIZE * i + ++k] = (float)index;
+				data[VERTEXSIZE * i + ++k] = uv.left + uv.width;
+				data[VERTEXSIZE * i + ++k] = uv.top + uv.height;
+				data[VERTEXSIZE * i + ++k] = color.r;
+				data[VERTEXSIZE * i + ++k] = color.g;
+				data[VERTEXSIZE * i + ++k] = color.b;
+				data[VERTEXSIZE * i + ++k] = color.a;
 
-		//top left
-		data[vertexSize * i + ++k] = pos.left;
-		data[vertexSize * i + ++k] = pos.top + pos.height;
-		data[vertexSize * i + ++k] = (float)index;
-		data[vertexSize * i + ++k] = uv.left;
-		data[vertexSize * i + ++k] = uv.top + uv.height;
-		data[vertexSize * i + ++k] = color.r;
-		data[vertexSize * i + ++k] = color.g;
-		data[vertexSize * i + ++k] = color.b;
-		data[vertexSize * i + ++k] = color.a;
+				//top left
+				data[VERTEXSIZE * i + ++k] = pos.left;
+				data[VERTEXSIZE * i + ++k] = pos.top + pos.height;
+				data[VERTEXSIZE * i + ++k] = (float)index;
+				data[VERTEXSIZE * i + ++k] = uv.left;
+				data[VERTEXSIZE * i + ++k] = uv.top + uv.height;
+				data[VERTEXSIZE * i + ++k] = color.r;
+				data[VERTEXSIZE * i + ++k] = color.g;
+				data[VERTEXSIZE * i + ++k] = color.b;
+				data[VERTEXSIZE * i + ++k] = color.a;
 
-		//bottom left
-		data[vertexSize * i + ++k] = pos.left;
-		data[vertexSize * i + ++k] = pos.top;
-		data[vertexSize * i + ++k] = (float)index;
-		data[vertexSize * i + ++k] = uv.left;
-		data[vertexSize * i + ++k] = uv.top;
-		data[vertexSize * i + ++k] = color.r;
-		data[vertexSize * i + ++k] = color.g;
-		data[vertexSize * i + ++k] = color.b;
-		data[vertexSize * i + ++k] = color.a;
+				//bottom left
+				data[VERTEXSIZE * i + ++k] = pos.left;
+				data[VERTEXSIZE * i + ++k] = pos.top;
+				data[VERTEXSIZE * i + ++k] = (float)index;
+				data[VERTEXSIZE * i + ++k] = uv.left;
+				data[VERTEXSIZE * i + ++k] = uv.top;
+				data[VERTEXSIZE * i + ++k] = color.r;
+				data[VERTEXSIZE * i + ++k] = color.g;
+				data[VERTEXSIZE * i + ++k] = color.b;
+				data[VERTEXSIZE * i + ++k] = color.a;
+			}
+			break;
+			case Type::font:
+			{
+				FontCache* font = (FontCache*)next->data;
+				int size;
+				float* fontData = font->draw(size);
+				for (int k = 0; k < size; ++k)
+					data[VERTEXSIZE * i + k] = data[k];
+			}
+			break;
+		}
+		delete next;
 	}
+	spriteCount = i;
 }
 
-void Heerbann::SpriteBatch::recompile(int _tex) {
+void SpriteBatch::recompile(int _tex) {
 	const std::string vertex =
 		"#version 330 core"
 		"layout (location = 0) in vec2 aPos;"
@@ -523,7 +541,7 @@ SpriteBatch::SpriteBatch(TextureAtlas* _atlas, int _maxSprites) {
 	maxSpritesInBatch = _maxSprites;
 
 	GLuint* idata = new GLuint[_maxSprites * 6];
-	data = new float[vertexCount * vertexSize]{ 0 };
+	data = new float[vertexCount * VERTEXSIZE]{ 0 };
 
 	shader = new sf::Shader();
 
@@ -536,23 +554,23 @@ SpriteBatch::SpriteBatch(TextureAtlas* _atlas, int _maxSprites) {
 
 	//vbo
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);	
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * _maxSprites * 4 * vertexSize, data, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * _maxSprites * 4 * VERTEXSIZE, data, GL_DYNAMIC_DRAW);
 
 	//index
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * (_maxSprites * 6), idata, GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, vertexSize * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, VERTEXSIZE * sizeof(float), (void*)0);
 
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, vertexSize * sizeof(float), (void*)(2 * sizeof(float)));
+	glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, VERTEXSIZE * sizeof(float), (void*)(2 * sizeof(float)));
 
 	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, vertexSize * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, VERTEXSIZE * sizeof(float), (void*)(3 * sizeof(float)));
 
 	glEnableVertexAttribArray(3);
-	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, vertexSize * sizeof(float), (void*)(5 * sizeof(float)));
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, VERTEXSIZE * sizeof(float), (void*)(5 * sizeof(float)));
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
@@ -610,10 +628,15 @@ void SpriteBatch::end(sf::Transform& _cam) {
 
 void SpriteBatch::draw(sf::Sprite* _drawable) {
 	assert(!locked);
-	drawQueue.emplace(_drawable);
+	drawQueue.emplace(new Item(Type::sprite, _drawable));
 }
 
-void Heerbann::SpriteBatch::setTextureAtlas(TextureAtlas* _atlas) {
+void SpriteBatch::draw(sf::Font* _font) {
+	assert(!locked);
+	drawQueue.emplace(new Item(Type::font, _font));
+}
+
+void SpriteBatch::setTextureAtlas(TextureAtlas* _atlas) {
 	textures.clear();
 	for (unsigned int i = 0; i < _atlas->tex.size(); ++i) {
 		auto tex = _atlas->tex[i];
@@ -622,3 +645,127 @@ void Heerbann::SpriteBatch::setTextureAtlas(TextureAtlas* _atlas) {
 	recompile(_atlas->tex.size());
 }
 
+FontCache::FontCache() {
+	auto font = Main::getDefaultFont();
+	FontCache(font);	
+}
+
+FontCache::FontCache(sf::Font* _font) {
+	font = _font;
+	pos = sf::Vector2f(0, 0);
+	bounds = sf::Vector2f(100, 100);
+}
+
+void FontCache::setText(std::wstring _text) {
+	text = _text;
+	isDirty = true;
+}
+
+float * FontCache::draw(int& _size) {
+	_size = size;
+	if (size == 0 || !isDirty) return cache;
+
+	if (cache != nullptr)
+		delete cache;
+	cache = new float[size = text.length() * 4 * VERTEXSIZE];
+
+	struct Style {
+		float lSpacing;
+		float cLine;
+		float cHead;
+		sf::Color color;
+		sf::Glyph glyph;
+		sf::IntRect uv;
+		sf::FloatRect bounds;
+		int index;
+	};
+
+	Style style;
+	//set default style
+	//TODO
+
+	for (int i = 0; i < text.length(); ++i) {
+		/*
+		allowed markups:
+		font: {f=font name}
+		color: {c=rrrgggbbbaaa}
+		border color: {bc=rrrgggbbbaaa}
+		border thickness: {bt=uint}
+		size: {s=uint}
+		bold: {b=true}
+		combination: {{f=font name},{c=rrrgggbbbaaa},{s=uint}}  
+		*/
+		const std::function<uint32()> extractStyle = [&]()->uint32 {
+		
+			float lSpacing = font->getLineSpacing(MEDIUMFONTSIZE);
+			sf::Glyph glyph = font->getGlyph(letter, MEDIUMFONTSIZE, false);
+
+			sf::Color color = sf::Color::Black;
+
+			sf::IntRect uv;
+
+			auto bounds = glyph.bounds;
+
+			int index = 0;
+		
+		};
+
+		uint32 letter;
+		try {
+			letter = extractStyle();
+		} catch (std::exception& _exp) {
+			letter = (uint32)text[i];
+
+			std::cout << text.data() << std::endl;
+			for (int j = 0; j < i; ++j)
+				std::cout << " ";
+			std::cout << "I" << std::endl;
+		}
+
+		int k = 0;
+		cache[VERTEXSIZE * i] = style.cHead + style.bounds.width;
+		cache[VERTEXSIZE * i + ++k] = style.cLine;
+		cache[VERTEXSIZE * i + ++k] = (float)style.index;
+		cache[VERTEXSIZE * i + ++k] = style.uv.left + style.uv.width;
+		cache[VERTEXSIZE * i + ++k] = style.uv.top;
+		cache[VERTEXSIZE * i + ++k] = style.color.r;
+		cache[VERTEXSIZE * i + ++k] = style.color.g;
+		cache[VERTEXSIZE * i + ++k] = style.color.b;
+		cache[VERTEXSIZE * i + ++k] = style.color.a;
+
+		//top right
+		cache[VERTEXSIZE * i + ++k] = style.cHead + style.bounds.width;
+		cache[VERTEXSIZE * i + ++k] = style.cLine + style.bounds.height;
+		cache[VERTEXSIZE * i + ++k] = (float)style.index;
+		cache[VERTEXSIZE * i + ++k] = style.uv.left + style.uv.width;
+		cache[VERTEXSIZE * i + ++k] = style.uv.top + style.uv.height;
+		cache[VERTEXSIZE * i + ++k] = style.color.r;
+		cache[VERTEXSIZE * i + ++k] = style.color.g;
+		cache[VERTEXSIZE * i + ++k] = style.color.b;
+		cache[VERTEXSIZE * i + ++k] = style.color.a;
+
+		//top left
+		cache[VERTEXSIZE * i + ++k] = style.cHead;
+		cache[VERTEXSIZE * i + ++k] = style.cLine + style.bounds.height;
+		cache[VERTEXSIZE * i + ++k] = (float)style.index;
+		cache[VERTEXSIZE * i + ++k] = style.uv.left;
+		cache[VERTEXSIZE * i + ++k] = style.uv.top + style.uv.height;
+		cache[VERTEXSIZE * i + ++k] = style.color.r;
+		cache[VERTEXSIZE * i + ++k] = style.color.g;
+		cache[VERTEXSIZE * i + ++k] = style.color.b;
+		cache[VERTEXSIZE * i + ++k] = style.color.a;
+
+		//bottom left
+		cache[VERTEXSIZE * i + ++k] = style.cHead;
+		cache[VERTEXSIZE * i + ++k] = style.cLine;
+		cache[VERTEXSIZE * i + ++k] = (float)style.index;
+		cache[VERTEXSIZE * i + ++k] = style.uv.left;
+		cache[VERTEXSIZE * i + ++k] = style.uv.top;
+		cache[VERTEXSIZE * i + ++k] = style.color.r;
+		cache[VERTEXSIZE * i + ++k] = style.color.g;
+		cache[VERTEXSIZE * i + ++k] = style.color.b;
+		cache[VERTEXSIZE * i + ++k] = style.color.a;
+		
+	}
+	return cache;
+}
