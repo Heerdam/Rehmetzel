@@ -4,7 +4,9 @@
 
 namespace Heerbann {
 
-#define VERTEXSIZE 9 //pos + index + uv + color
+#define VERTEXSIZE 8 //pos + index + typ + uv + color1 + color2
+#define TYP_SPRITE 0.f
+#define TYP_FONT 1.f
 
 	bool almost_equal(float _f1, float _f2) {
 		return false; //TODO
@@ -160,8 +162,8 @@ namespace Heerbann {
 
 		std::thread* workthread;
 
-		TextureAtlas* atlas;
 		std::vector<GLuint> texLoc;
+		std::vector<sf::Texture*> texCache;
 		std::unordered_map<GLuint, int> textures;
 
 		void build();
@@ -175,14 +177,13 @@ namespace Heerbann {
 		void recompile(int);
 
 	public:
-		SpriteBatch(TextureAtlas*);
-		SpriteBatch(TextureAtlas*, int);
+		SpriteBatch(int, int);
 
 		//builds the buffer asynchronous
-		void begin();
+		void build();
 
 		//draws the batch
-		void end(sf::Transform&);
+		void draw(sf::Transform&);
 
 		inline void setColor(sf::Color _color) {
 			color = _color;
@@ -204,12 +205,73 @@ namespace Heerbann {
 			return locked;
 		}
 
-		void setTextureAtlas(TextureAtlas*); //TODO font textures
+		void addTexture(TextureAtlas*);
+		void addTexture(sf::Texture*);
 	};
 
 	class FontCache {
 
-		sf::Font* font;
+		/*
+		allowed markups:
+		font: {fn=font name}
+		color: {fc=rrrgggbbbaaa}
+		border color: {bc=rrrgggbbbaaa}
+		border thickness: {bt=float}
+		size: {sz=uint}
+		bold: {bl=true}
+		combination: {fn=font name,fc=rrrgggbbbaaa,sz=uint}
+		end of style: {en}
+		*/
+
+		enum Align {
+			left, centre
+		};
+
+		struct Letter {
+			Letter() {};
+			Letter(Letter&&);
+			uint32 letter;
+			unsigned int size;
+			float ot; //outline thickness
+			sf::Color color;
+			sf::Color oColor; //outline color
+			sf::Vector2f pos; //relative to line
+			int texIndex;
+			bool bold;
+			sf::Font* font;
+			const sf::Glyph& getGlyph() {
+				return font->getGlyph(letter, size, bold, ot);
+			}
+		};
+
+		struct Line {
+			std::vector<Letter> letters;
+			float spacing;
+			sf::Vector2f pos; //relative to origin
+			float maxWidth;
+			//return false if line full
+			bool insert(float&, Letter&);
+		};
+
+		struct TextBlock {
+			std::vector<Line> lines;
+			Align align = Align::left;
+			sf::Vector2f pos; //origin			
+		};
+
+		struct Style {
+			Style() {};
+			Style(Style&);
+			Align align = Align::left;
+			sf::Font* font;
+			sf::Color fontColor = sf::Color::Black;
+			sf::Color outlineColor = sf::Color(71, 71, 71, 255);
+			unsigned int fontSize;
+			float outlineThickness;
+			bool bold = false;
+		};
+
+		TextBlock block;
 
 		std::wstring text;
 		bool isDirty;
@@ -217,13 +279,21 @@ namespace Heerbann {
 		float* cache;
 		int size = 0;
 
+		void layout();
+		void build();
+
+		std::unordered_map<std::wstring, sf::Font*> fonts;
+
 	public:
 
 		sf::Vector2f pos;
-		sf::Vector2f bounds;
+		float width = 200;
+		Style defaultStyle;
+		
 
 		FontCache();
-		FontCache(sf::Font*);
+
+		void addFont(std::wstring, sf::Font*);
 
 		void setText(std::wstring);
 

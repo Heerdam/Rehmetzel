@@ -23,6 +23,8 @@
 #include <stdexcept>
 #include <exception>
 #include <typeinfo>
+#include <regex>
+#include <Stringapiset.h>
 
 #include <Box2D/Box2D.h>
 
@@ -104,6 +106,18 @@ namespace Heerbann {
 			static long id = 1000;
 			return ++id;
 		}
+
+		static std::wstring s2ws(const char*);
+		static std::wstring s2ws(const std::string&);
+
+		constexpr static float toFloatBits(int _r, int _g, int _b, int _a) {
+			int color = (((int)(255 * _a) << 24) | ((int)(255 * _b) << 16) | ((int)(255 * _g) << 8) | ((int)(255 * _r))) & 0xfeffffff;
+			return *reinterpret_cast<float*>(&color);
+		};
+
+		static float toFloatBits(sf::Color _color) {
+			return toFloatBits(_color.r, _color.g, _color.b, _color.a);
+		};
 
 		//---------------------- Job ----------------------\\
 

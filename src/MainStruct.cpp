@@ -56,9 +56,20 @@ void Heerbann::Main::intialize() {
 	level->initialize();
 }
 
+std::wstring Main::s2ws(const char* _in) {
+	return s2ws(std::string(_in));
+}
+
+std::wstring Main::s2ws(const std::string& _str) {
+	int size_needed = MultiByteToWideChar(CP_UTF8, 0, &_str[0], (int)_str.size(), NULL, 0);
+	std::wstring wstrTo(size_needed, 0);
+	MultiByteToWideChar(CP_UTF8, 0, &_str[0], (int)_str.size(), &wstrTo[0], size_needed);
+	return wstrTo;
+}
+
 //---------------------- Job ----------------------\\
 
-void Heerbann::Main::addJob(std::function<void(void*)> _job, void* _entry) {
+void Main::addJob(std::function<void(void*)> _job, void* _entry) {
 	std::lock_guard<std::mutex> guard(instance->jobLock);
 	instance->loadJob.emplace(std::make_tuple(_job, _entry));
 }

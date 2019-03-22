@@ -86,7 +86,7 @@ void BGVAO::set(float* _data, int _vertexCount, int _vertexSize) {
 
 
 void BGVAO::build(sf::Shader* _shader) {
-	
+
 	cameraUniformHandle = glGetUniformLocation(_shader->getNativeHandle(), "transform");
 
 	//create buffer
@@ -142,7 +142,7 @@ void BGVAO::draw(sf::Shader* _shader) {
 	for (int i = 0; i < 9; ++i) {
 		glActiveTexture(GL_TEXTURE0 + i);
 		glBindTexture(GL_TEXTURE_2D, 0);
-	}		
+	}
 
 	glBindVertexArray(0);
 	glUseProgram(0);
@@ -170,7 +170,7 @@ void IndexedVAO::build(sf::Shader* _shader) {
 
 	//vbo
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertexCount * 5, data, GL_STATIC_DRAW);	
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertexCount * 5, data, GL_STATIC_DRAW);
 
 	//index
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index);
@@ -227,7 +227,7 @@ void IndexedVAO::draw(sf::Shader* _shader) {
 }
 
 //convert a Box2D (float 0.0f - 1.0f range) color to a SFML color (uint8 0 - 255 range)
-sf::Color DebugDraw::B2SFColor(const b2Color& _color, int _alpha = 255) {	
+sf::Color DebugDraw::B2SFColor(const b2Color& _color, int _alpha = 255) {
 	return sf::Color((sf::Uint8)(_color.r * 255), (sf::Uint8)(_color.g * 255), (sf::Uint8)(_color.b * 255), (sf::Uint8) _alpha);
 }
 
@@ -428,70 +428,68 @@ void SpriteBatch::build() {
 		drawQueue.pop();
 
 		switch (next->type) {
-			case Type::sprite:
-			{
-				sf::Sprite* sprite = (sf::Sprite*) next->data;
-				auto pos = sprite->getGlobalBounds();
-				auto uv = sprite->getTextureRect();
+		case Type::sprite:
+		{
+			sf::Sprite* sprite = (sf::Sprite*) next->data;
+			auto pos = sprite->getGlobalBounds();
+			auto uv = sprite->getTextureRect();
 
-				assert(textures.count(sprite->getTexture()->getNativeHandle()));
-				int index = textures[sprite->getTexture()->getNativeHandle()];
+			assert(textures.count(sprite->getTexture()->getNativeHandle()));
+			int index = textures[sprite->getTexture()->getNativeHandle()];
 
-				int k = 0;
-				//bottom right
-				data[VERTEXSIZE * i] = pos.left + pos.width;
-				data[VERTEXSIZE * i + ++k] = pos.top;
-				data[VERTEXSIZE * i + ++k] = (float)index;
-				data[VERTEXSIZE * i + ++k] = uv.left + uv.width;
-				data[VERTEXSIZE * i + ++k] = uv.top;
-				data[VERTEXSIZE * i + ++k] = color.r;
-				data[VERTEXSIZE * i + ++k] = color.g;
-				data[VERTEXSIZE * i + ++k] = color.b;
-				data[VERTEXSIZE * i + ++k] = color.a;
+			float col = Main::toFloatBits(color);
 
-				//top right
-				data[VERTEXSIZE * i + ++k] = pos.left + pos.width;
-				data[VERTEXSIZE * i + ++k] = pos.top + pos.height;
-				data[VERTEXSIZE * i + ++k] = (float)index;
-				data[VERTEXSIZE * i + ++k] = uv.left + uv.width;
-				data[VERTEXSIZE * i + ++k] = uv.top + uv.height;
-				data[VERTEXSIZE * i + ++k] = color.r;
-				data[VERTEXSIZE * i + ++k] = color.g;
-				data[VERTEXSIZE * i + ++k] = color.b;
-				data[VERTEXSIZE * i + ++k] = color.a;
+			int k = 0;
+			//bottom right
+			data[VERTEXSIZE * i] = pos.left + pos.width;
+			data[VERTEXSIZE * i + ++k] = pos.top;
+			data[VERTEXSIZE * i + ++k] = (float)index;
+			data[VERTEXSIZE * i + ++k] = TYP_SPRITE;
+			data[VERTEXSIZE * i + ++k] = uv.left + uv.width;
+			data[VERTEXSIZE * i + ++k] = uv.top;
+			data[VERTEXSIZE * i + ++k] = col;
+			data[VERTEXSIZE * i + ++k] = 0;
 
-				//top left
-				data[VERTEXSIZE * i + ++k] = pos.left;
-				data[VERTEXSIZE * i + ++k] = pos.top + pos.height;
-				data[VERTEXSIZE * i + ++k] = (float)index;
-				data[VERTEXSIZE * i + ++k] = uv.left;
-				data[VERTEXSIZE * i + ++k] = uv.top + uv.height;
-				data[VERTEXSIZE * i + ++k] = color.r;
-				data[VERTEXSIZE * i + ++k] = color.g;
-				data[VERTEXSIZE * i + ++k] = color.b;
-				data[VERTEXSIZE * i + ++k] = color.a;
+			//top right
+			data[VERTEXSIZE * i + ++k] = pos.left + pos.width;
+			data[VERTEXSIZE * i + ++k] = pos.top + pos.height;
+			data[VERTEXSIZE * i + ++k] = (float)index;
+			data[VERTEXSIZE * i + ++k] = TYP_SPRITE;
+			data[VERTEXSIZE * i + ++k] = uv.left + uv.width;
+			data[VERTEXSIZE * i + ++k] = uv.top + uv.height;
+			data[VERTEXSIZE * i + ++k] = col;
+			data[VERTEXSIZE * i + ++k] = 0;
 
-				//bottom left
-				data[VERTEXSIZE * i + ++k] = pos.left;
-				data[VERTEXSIZE * i + ++k] = pos.top;
-				data[VERTEXSIZE * i + ++k] = (float)index;
-				data[VERTEXSIZE * i + ++k] = uv.left;
-				data[VERTEXSIZE * i + ++k] = uv.top;
-				data[VERTEXSIZE * i + ++k] = color.r;
-				data[VERTEXSIZE * i + ++k] = color.g;
-				data[VERTEXSIZE * i + ++k] = color.b;
-				data[VERTEXSIZE * i + ++k] = color.a;
-			}
-			break;
-			case Type::font:
-			{
-				FontCache* font = (FontCache*)next->data;
-				int size;
-				float* fontData = font->draw(size);
-				for (int k = 0; k < size; ++k)
-					data[VERTEXSIZE * i + k] = data[k];
-			}
-			break;
+			//top left
+			data[VERTEXSIZE * i + ++k] = pos.left;
+			data[VERTEXSIZE * i + ++k] = pos.top + pos.height;
+			data[VERTEXSIZE * i + ++k] = (float)index;
+			data[VERTEXSIZE * i + ++k] = TYP_SPRITE;
+			data[VERTEXSIZE * i + ++k] = uv.left;
+			data[VERTEXSIZE * i + ++k] = uv.top + uv.height;
+			data[VERTEXSIZE * i + ++k] = col;
+			data[VERTEXSIZE * i + ++k] = 0;
+
+			//bottom left
+			data[VERTEXSIZE * i + ++k] = pos.left;
+			data[VERTEXSIZE * i + ++k] = pos.top;
+			data[VERTEXSIZE * i + ++k] = (float)index;
+			data[VERTEXSIZE * i + ++k] = TYP_SPRITE;
+			data[VERTEXSIZE * i + ++k] = uv.left;
+			data[VERTEXSIZE * i + ++k] = uv.top;
+			data[VERTEXSIZE * i + ++k] = col;
+			data[VERTEXSIZE * i + ++k] = 0;
+		}
+		break;
+		case Type::font:
+		{
+			FontCache* font = (FontCache*)next->data;
+			int size;
+			float* fontData = font->draw(size);
+			for (int k = 0; k < size; ++k)
+				data[VERTEXSIZE * i + k] = data[k];
+		}
+		break;
 		}
 		delete next;
 	}
@@ -501,42 +499,52 @@ void SpriteBatch::build() {
 void SpriteBatch::recompile(int _tex) {
 	const std::string vertex =
 		"#version 330 core"
-		"layout (location = 0) in vec2 aPos;"
-		"layout (location = 1) in float ain;"
-		"layout (location = 2) in vec2 auv;"
-		"layout (location = 3) in vec4 acol;"
+		"layout (location = 0) in vec2 a_Pos;"
+		"layout (location = 1) in float a_index;"
+		"layout (location = 2) in float a_typ;"
+		"layout (location = 3) in vec2 a_uv;"
+		"layout (location = 4) in vec4 a_col1;"
+		"layout (location = 5) in vec4 a_col2;"
 		"flat out int index;"
+		"flat out int type;"
 		"out vec2 uv;"
-		"out vec4 col;"
+		"out vec4 col1;"
+		"out vec4 col2;"
 		"uniform mat4 transform;"
 		"void main() {"
-			"gl_Position = transform * vec4(aPos.x, aPos.y, 0.0, 1.0);"
-			"index = ain;"
-			"uv = auv;"
-			"col = acol;"
+		"gl_Position = transform * vec4(a_Pos.x, a_Pos.y, 0.0, 1.0);"
+		"index = a_index;"
+		"type = a_typ;"
+		"uv = a_uv;"
+		"col1 = a_col1;"
+		"col2 = a_col2;"
 		"}";
 
 	std::string fragment =
 		"#version 330 core"
 		"out vec4 FragColor;"
 		"flat in int index;"
+		"flat in int type;"
 		"in vec2 uv;"
-		"in vec4 col;"
-		"uniform sampler2D tex[" + std::string(_tex + "") + "];"
+		"in vec4 col1;"
+		"in vec4 col2;"
+		"uniform sampler2D tex[" + std::to_string(_tex) + "];"
 		"void main(){"
-			"FragColor = texture(tex[index], uv) + col;"
+		"switch(type){"
+		"case " + std::to_string((int)TYP_SPRITE) + ":"
+		"FragColor = texture(tex[index], uv) + col1;"
+		"break;"
+		"case" + std::to_string((int)TYP_FONT) + ":"
+		"FragColor = texture(tex[index], uv) + col1;"
+		"break;"	
+		"};"
 		"}";
 
 	if (!shader->loadFromMemory(vertex, fragment))
 		std::exception("failed to compile shader in SpriteBatch");
 }
 
-SpriteBatch::SpriteBatch(TextureAtlas* _atlas) {
-	SpriteBatch(_atlas, 1000);
-}
-
-SpriteBatch::SpriteBatch(TextureAtlas* _atlas, int _maxSprites) {
-	setTextureAtlas(_atlas);
+SpriteBatch::SpriteBatch(int _maxTex, int _maxSprites) {
 	vertexCount = _maxSprites * 4;
 	maxSpritesInBatch = _maxSprites;
 
@@ -544,6 +552,7 @@ SpriteBatch::SpriteBatch(TextureAtlas* _atlas, int _maxSprites) {
 	data = new float[vertexCount * VERTEXSIZE]{ 0 };
 
 	shader = new sf::Shader();
+	recompile(_maxTex);
 
 	//create buffer
 	glGenVertexArrays(1, &vao);
@@ -553,40 +562,46 @@ SpriteBatch::SpriteBatch(TextureAtlas* _atlas, int _maxSprites) {
 	glBindVertexArray(vao);
 
 	//vbo
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);	
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * _maxSprites * 4 * VERTEXSIZE, data, GL_DYNAMIC_DRAW);
 
 	//index
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * (_maxSprites * 6), idata, GL_STATIC_DRAW);
 
-	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(0); //pos(2)
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, VERTEXSIZE * sizeof(float), (void*)0);
 
-	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(1); //texture index(1)
 	glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, VERTEXSIZE * sizeof(float), (void*)(2 * sizeof(float)));
 
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, VERTEXSIZE * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(2); //type(1)
+	glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, VERTEXSIZE * sizeof(float), (void*)(3 * sizeof(float)));
 
-	glEnableVertexAttribArray(3);
-	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, VERTEXSIZE * sizeof(float), (void*)(5 * sizeof(float)));
+	glEnableVertexAttribArray(3); //color1 (1)
+	glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, VERTEXSIZE * sizeof(float), (void*)(4 * sizeof(float)));
+
+	glEnableVertexAttribArray(4); //color2 (1)
+	glVertexAttribPointer(4, 4, GL_UNSIGNED_BYTE, GL_TRUE, VERTEXSIZE * sizeof(float), (void*)(5 * sizeof(float)));
+
+	glEnableVertexAttribArray(5); //uv (2)
+	glVertexAttribPointer(5, 4, GL_UNSIGNED_BYTE, GL_TRUE, VERTEXSIZE * sizeof(float), (void*)(6 * sizeof(float)));
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
-	texLoc.resize(atlas->tex.size());
-	for (unsigned int i = 0; i < (int)atlas->tex.size(); ++i)
+	texLoc.resize(_maxTex);
+	for (unsigned int i = 0; i < _maxTex; ++i)
 		texLoc[i] = glGetUniformLocation(shader->getNativeHandle(), (std::string("tex[") + std::to_string(i) + std::string("]")).c_str());
 }
 
-void SpriteBatch::begin() {
+void SpriteBatch::build() {
 	assert(workthread == nullptr && !locked);
 	workthread = new std::thread(&SpriteBatch::build, this);
 	locked = true;
 }
 
-void SpriteBatch::end(sf::Transform& _cam) {
+void SpriteBatch::draw(sf::Transform& _cam) {
 	assert(workthread != nullptr);
 	if (workthread->joinable())
 		workthread->join();
@@ -597,9 +612,9 @@ void SpriteBatch::end(sf::Transform& _cam) {
 	sf::Shader::bind(shader);
 	glUniformMatrix4fv(camLocation, 1, false, _cam.getMatrix());
 
-	for (unsigned int i = 0; i < atlas->tex.size(); ++i) {
+	for (unsigned int i = 0; i < texCache.size(); ++i) {
 		glActiveTexture(GL_TEXTURE0 + i);
-		glBindTexture(GL_TEXTURE_2D, atlas->tex[i]->getNativeHandle());
+		glBindTexture(GL_TEXTURE_2D, texCache[i]->getNativeHandle());
 		glUniform1i(texLoc[i], i);
 	}
 
@@ -617,7 +632,7 @@ void SpriteBatch::end(sf::Transform& _cam) {
 
 	if (isBlending) glDisable(GL_BLEND);
 
-	for (unsigned int i = 0; i < atlas->tex.size(); ++i) {
+	for (unsigned int i = 0; i < texCache.size(); ++i) {
 		glActiveTexture(GL_TEXTURE0 + i);
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
@@ -636,24 +651,27 @@ void SpriteBatch::draw(sf::Font* _font) {
 	drawQueue.emplace(new Item(Type::font, _font));
 }
 
-void SpriteBatch::setTextureAtlas(TextureAtlas* _atlas) {
-	textures.clear();
+void SpriteBatch::addTexture(TextureAtlas* _atlas) {
+	assert(!locked && texCache.size() + _atlas->tex.size() <= texLoc.size());
 	for (unsigned int i = 0; i < _atlas->tex.size(); ++i) {
 		auto tex = _atlas->tex[i];
 		textures[tex->getNativeHandle()] = i;
+		texCache.emplace_back(tex);
 	}
-	recompile(_atlas->tex.size());
+}
+
+void SpriteBatch::addTexture(sf::Texture* _tex) {
+	assert(!locked && texCache.size() + 1 <= texLoc.size());
+	texCache.emplace_back(_tex);
+	textures[_tex->getNativeHandle()] = texCache.size();
 }
 
 FontCache::FontCache() {
-	auto font = Main::getDefaultFont();
-	FontCache(font);	
+	addFont(Main::s2ws("default"), Main::getDefaultFont());
 }
 
-FontCache::FontCache(sf::Font* _font) {
-	font = _font;
-	pos = sf::Vector2f(0, 0);
-	bounds = sf::Vector2f(100, 100);
+void FontCache::addFont(std::wstring _id, sf::Font* _font) {
+	fonts[_id] = _font;
 }
 
 void FontCache::setText(std::wstring _text) {
@@ -661,111 +679,229 @@ void FontCache::setText(std::wstring _text) {
 	isDirty = true;
 }
 
-float * FontCache::draw(int& _size) {
+float* FontCache::draw(int& _size) {
 	_size = size;
 	if (size == 0 || !isDirty) return cache;
+	layout();
+	build();
+	return cache;
+}
+
+void FontCache::layout() {
+
+	block.lines.clear();
+	Line line = block.lines.emplace_back(Line());
+
+	Style style(defaultStyle);
+	float cw = 0;
+	int cl = 1;
+
+	for (int i = 0; i < text.length(); ++i) {
+
+		//next letter
+		uint32 letter = text[i];
+
+		const std::function<void(std::wstring, std::wstring, std::vector<std::wstring>&)> split =
+
+			[](std::wstring _input, std::wstring _delimeter, std::vector<std::wstring>& output)->std::vector<std::wstring> {
+
+			std::wregex ws_re(_delimeter);
+			std::copy(std::wsregex_token_iterator(_input.begin(), _input.end(), ws_re, -1),
+				std::wsregex_token_iterator(), output);
+		};
+
+		//beginning of style found
+		if (letter == 132) {
+
+			const std::wstring fn = Main::s2ws("fn");
+			const std::wstring fc = Main::s2ws("fc");
+			const std::wstring bc = Main::s2ws("bc");
+			const std::wstring bt = Main::s2ws("bt");
+			const std::wstring sz = Main::s2ws("sz");
+			const std::wstring bl = Main::s2ws("bl");
+			const std::wstring tr = Main::s2ws("true");
+			const std::wstring fl = Main::s2ws("false");
+			const std::wstring end = Main::s2ws("end");
+
+			int j = text.substr(i + 1).find(Main::s2ws("}"));
+			std::wstring styleString = text.substr(i + 1, j - 1);
+			i = j;
+
+			if (styleString == end) {
+				style = Style(defaultStyle);
+				continue;
+			}
+
+			std::vector<std::wstring> styles;
+			split(styleString, Main::s2ws(","), styles);
+
+			for (const auto& s : styles) {
+
+				std::wstring type = s.substr(0, 2);
+				std::wstring data = s.substr(3);
+
+				if (type == fn) {
+
+					style.font = fonts[data];
+
+				} else if (type == fc) {
+
+					int r = std::stoi(data.substr(0, 3));
+					int g = std::stoi(data.substr(3, 6));
+					int b = std::stoi(data.substr(6, 9));
+					int a = std::stoi(data.substr(9, 12));
+					style.fontColor = sf::Color(r, g, b, a);
+
+				} else if (type == bc) {
+
+					int r = std::stoi(data.substr(0, 3));
+					int g = std::stoi(data.substr(3, 6));
+					int b = std::stoi(data.substr(6, 9));
+					int a = std::stoi(data.substr(9, 12));
+					style.outlineColor = sf::Color(r, g, b, a);
+
+				} else if (type == bt) {
+
+					style.outlineThickness = std::stof(data);
+
+				} else if (type == sz) {
+
+					style.fontSize = std::stoi(data);
+
+				} else if (type == bl) {
+
+					if (data == tr)
+						style.bold = true;
+					else if (data == fl)
+						style.bold = false;
+
+				} else continue;
+
+			}
+		}
+
+		float lSpacing = style.font->getLineSpacing(style.fontSize);
+		sf::Glyph glyph = style.font->getGlyph(letter, style.fontSize, style.bold, style.outlineThickness);
+		auto bounds = glyph.bounds;
+
+		Letter l;
+		l.letter = letter;
+		l.color = style.fontColor;
+		l.oColor = style.outlineColor;
+		l.size = style.fontSize;
+		l.ot = style.outlineThickness;
+		if (!line.insert(cw, l)) {
+			cw = 0;
+			line = block.lines.emplace_back(Line());
+			bool failed = line.insert(cw, l);
+			assert(failed);
+		}
+	}
+
+	for (unsigned int i = 1; i < block.lines.size(); ++i) {
+		block.lines[i].pos.y = block.lines[i - 1].pos.y + block.lines[i - 1].spacing;
+	}
+}
+
+void FontCache::build() {
 
 	if (cache != nullptr)
 		delete cache;
-	cache = new float[size = text.length() * 4 * VERTEXSIZE];
 
-	struct Style {
-		float lSpacing;
-		float cLine;
-		float cHead;
-		sf::Color color;
-		sf::Glyph glyph;
-		sf::IntRect uv;
-		sf::FloatRect bounds;
-		int index;
-	};
+	size = 0;
+	for (unsigned int i = 0; i < block.lines.size(); ++i)
+		size += block.lines[i].letters.size();
 
-	Style style;
-	//set default style
-	//TODO
+	cache = new float[size * 4 * VERTEXSIZE];
 
-	for (int i = 0; i < text.length(); ++i) {
-		/*
-		allowed markups:
-		font: {f=font name}
-		color: {c=rrrgggbbbaaa}
-		border color: {bc=rrrgggbbbaaa}
-		border thickness: {bt=uint}
-		size: {s=uint}
-		bold: {b=true}
-		combination: {{f=font name},{c=rrrgggbbbaaa},{s=uint}}  
-		*/
-		const std::function<uint32()> extractStyle = [&]()->uint32 {
-		
-			float lSpacing = font->getLineSpacing(MEDIUMFONTSIZE);
-			sf::Glyph glyph = font->getGlyph(letter, MEDIUMFONTSIZE, false);
+	int i = 0;
+	for (auto& line : block.lines) {
 
-			sf::Color color = sf::Color::Black;
+		sf::Vector2f lPos = line.pos + block.pos;
 
-			sf::IntRect uv;
+		for (auto& letter : line.letters) {
 
+			auto pos = lPos + letter.pos;
+			auto glyph = letter.font->getGlyph(letter.letter, letter.size, letter.bold, letter.ot);
 			auto bounds = glyph.bounds;
+			auto uv = glyph.textureRect;
 
-			int index = 0;
-		
-		};
+			float fCol = Main::toFloatBits(letter.color);
+			float oCol = Main::toFloatBits(letter.oColor);
 
-		uint32 letter;
-		try {
-			letter = extractStyle();
-		} catch (std::exception& _exp) {
-			letter = (uint32)text[i];
+			int k = 0;
+			cache[VERTEXSIZE * i] = pos.x + bounds.width;
+			cache[VERTEXSIZE * i + ++k] = pos.y;
+			cache[VERTEXSIZE * i + ++k] = (float)letter.texIndex;
+			cache[VERTEXSIZE * i + ++k] = TYP_FONT;
+			cache[VERTEXSIZE * i + ++k] = uv.left + uv.width;
+			cache[VERTEXSIZE * i + ++k] = uv.top;
+			cache[VERTEXSIZE * i + ++k] = fCol;
+			cache[VERTEXSIZE * i + ++k] = oCol;
 
-			std::cout << text.data() << std::endl;
-			for (int j = 0; j < i; ++j)
-				std::cout << " ";
-			std::cout << "I" << std::endl;
+			//top right
+			cache[VERTEXSIZE * i + ++k] = pos.x + bounds.width;
+			cache[VERTEXSIZE * i + ++k] = pos.y + bounds.height;
+			cache[VERTEXSIZE * i + ++k] = (float)letter.texIndex;
+			cache[VERTEXSIZE * i + ++k] = TYP_FONT;
+			cache[VERTEXSIZE * i + ++k] = uv.left + uv.width;
+			cache[VERTEXSIZE * i + ++k] = uv.top + uv.height;
+			cache[VERTEXSIZE * i + ++k] = fCol;
+			cache[VERTEXSIZE * i + ++k] = oCol;
+
+			//top left
+			cache[VERTEXSIZE * i + ++k] = pos.x;
+			cache[VERTEXSIZE * i + ++k] = pos.y + bounds.height;
+			cache[VERTEXSIZE * i + ++k] = (float)letter.texIndex;
+			cache[VERTEXSIZE * i + ++k] = TYP_FONT;
+			cache[VERTEXSIZE * i + ++k] = uv.left;
+			cache[VERTEXSIZE * i + ++k] = uv.top + uv.height;
+			cache[VERTEXSIZE * i + ++k] = fCol;
+			cache[VERTEXSIZE * i + ++k] = oCol;
+
+			//bottom left
+			cache[VERTEXSIZE * i + ++k] = pos.x;
+			cache[VERTEXSIZE * i + ++k] = pos.y;
+			cache[VERTEXSIZE * i + ++k] = (float)letter.texIndex;
+			cache[VERTEXSIZE * i + ++k] = TYP_FONT;
+			cache[VERTEXSIZE * i + ++k] = uv.left;
+			cache[VERTEXSIZE * i + ++k] = uv.top;
+			cache[VERTEXSIZE * i + ++k] = fCol;
+			cache[VERTEXSIZE * i + ++k] = oCol;
+
+			++i;
 		}
-
-		int k = 0;
-		cache[VERTEXSIZE * i] = style.cHead + style.bounds.width;
-		cache[VERTEXSIZE * i + ++k] = style.cLine;
-		cache[VERTEXSIZE * i + ++k] = (float)style.index;
-		cache[VERTEXSIZE * i + ++k] = style.uv.left + style.uv.width;
-		cache[VERTEXSIZE * i + ++k] = style.uv.top;
-		cache[VERTEXSIZE * i + ++k] = style.color.r;
-		cache[VERTEXSIZE * i + ++k] = style.color.g;
-		cache[VERTEXSIZE * i + ++k] = style.color.b;
-		cache[VERTEXSIZE * i + ++k] = style.color.a;
-
-		//top right
-		cache[VERTEXSIZE * i + ++k] = style.cHead + style.bounds.width;
-		cache[VERTEXSIZE * i + ++k] = style.cLine + style.bounds.height;
-		cache[VERTEXSIZE * i + ++k] = (float)style.index;
-		cache[VERTEXSIZE * i + ++k] = style.uv.left + style.uv.width;
-		cache[VERTEXSIZE * i + ++k] = style.uv.top + style.uv.height;
-		cache[VERTEXSIZE * i + ++k] = style.color.r;
-		cache[VERTEXSIZE * i + ++k] = style.color.g;
-		cache[VERTEXSIZE * i + ++k] = style.color.b;
-		cache[VERTEXSIZE * i + ++k] = style.color.a;
-
-		//top left
-		cache[VERTEXSIZE * i + ++k] = style.cHead;
-		cache[VERTEXSIZE * i + ++k] = style.cLine + style.bounds.height;
-		cache[VERTEXSIZE * i + ++k] = (float)style.index;
-		cache[VERTEXSIZE * i + ++k] = style.uv.left;
-		cache[VERTEXSIZE * i + ++k] = style.uv.top + style.uv.height;
-		cache[VERTEXSIZE * i + ++k] = style.color.r;
-		cache[VERTEXSIZE * i + ++k] = style.color.g;
-		cache[VERTEXSIZE * i + ++k] = style.color.b;
-		cache[VERTEXSIZE * i + ++k] = style.color.a;
-
-		//bottom left
-		cache[VERTEXSIZE * i + ++k] = style.cHead;
-		cache[VERTEXSIZE * i + ++k] = style.cLine;
-		cache[VERTEXSIZE * i + ++k] = (float)style.index;
-		cache[VERTEXSIZE * i + ++k] = style.uv.left;
-		cache[VERTEXSIZE * i + ++k] = style.uv.top;
-		cache[VERTEXSIZE * i + ++k] = style.color.r;
-		cache[VERTEXSIZE * i + ++k] = style.color.g;
-		cache[VERTEXSIZE * i + ++k] = style.color.b;
-		cache[VERTEXSIZE * i + ++k] = style.color.a;
-		
 	}
-	return cache;
+}
+
+FontCache::Style::Style(Style& _cpy) {
+	align = _cpy.align;
+	font = _cpy.font;
+	fontColor = _cpy.fontColor;
+	outlineColor = _cpy.outlineColor;
+	fontSize = _cpy.fontSize;
+	outlineThickness = _cpy.outlineThickness;
+}
+
+bool FontCache::Line::insert(float& _currentWidth, Letter& _l) {
+	auto glyph = _l.getGlyph();
+	if (glyph.advance + _currentWidth > maxWidth)
+		return false;
+	_l.pos = sf::Vector2f(0, _currentWidth);
+	_currentWidth += glyph.advance;
+	spacing = spacing <= _l.font->getLineSpacing(_l.size) ? spacing : _l.font->getLineSpacing(_l.size);
+	letters.emplace_back(_l);
+	return true;
+}
+
+FontCache::Letter::Letter(Letter&& _l) {
+	letter = _l.letter;
+	size = _l.size;
+	ot = _l.ot;
+	color = _l.color;
+	oColor = _l.oColor;
+	pos = _l.pos;
+	texIndex = _l.texIndex;
+	bold = _l.bold;
+	font = _l.font;
 }
