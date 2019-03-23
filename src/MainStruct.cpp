@@ -67,6 +67,10 @@ std::wstring Main::s2ws(const std::string& _str) {
 	return wstrTo;
 }
 
+std::vector<std::wstring> Heerbann::Main::split(std::wstring _in, std::wstring _del) {
+	return SplitFunctor(std::wregex(_del), _in);
+}
+
 //---------------------- Job ----------------------\\
 
 void Main::addJob(std::function<void(void*)> _job, void* _entry) {
@@ -148,8 +152,6 @@ void Heerbann::Main::intializeFont(sf::Font* _font) {
 		_font->getGlyph(i, BIGFONTSIZE, true);
 	}
 }
-
-
 
 //---------------------- Stage ----------------------\\
 

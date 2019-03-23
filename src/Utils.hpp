@@ -8,10 +8,6 @@ namespace Heerbann {
 #define TYP_SPRITE 0.f
 #define TYP_FONT 1.f
 
-	bool almost_equal(float _f1, float _f2) {
-		return false; //TODO
-	}
-
 	class BoundingBox2f {
 
 	public:
@@ -129,7 +125,7 @@ namespace Heerbann {
 		void DrawMouseJoint(b2Vec2&, b2Vec2&, const b2Color&, const b2Color&);
 	};
 
-	class TextureAtlas;
+	struct TextureAtlas;
 
 	class SpriteBatch {
 
@@ -166,7 +162,7 @@ namespace Heerbann {
 		std::vector<sf::Texture*> texCache;
 		std::unordered_map<GLuint, int> textures;
 
-		void build();
+		void buildData();
 
 		GLuint vao, vbo, index;
 		float* data;
@@ -229,7 +225,7 @@ namespace Heerbann {
 
 		struct Letter {
 			Letter() {};
-			Letter(Letter&&);
+			Letter(const Letter&);
 			uint32 letter;
 			unsigned int size;
 			float ot; //outline thickness
@@ -300,6 +296,31 @@ namespace Heerbann {
 		//thread safe. only called by spritebatch
 		float* draw(int&);
 		
+	};
+
+	class SplitFunctor {
+	public:
+		SplitFunctor(std::wregex _splitter, std::wstring _original)
+			: splitter{ std::move(_splitter) }
+			, original{ std::move(_original) }
+		{};
+
+		auto begin() const {
+			return std::wsregex_token_iterator{ original.begin(), original.end(), splitter, -1 };
+		};
+
+		auto end() const {
+			return std::wsregex_token_iterator{};
+		};
+
+		template <typename Container>
+		operator Container () const {
+			return { begin(), end() };
+		};
+
+	private:
+		std::wregex splitter;
+		std::wstring original;
 	};
 
 }

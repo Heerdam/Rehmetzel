@@ -66,7 +66,7 @@ int main() {
 			//std::cout << elapsed_seconds.count() << std::endl;
 		} catch (...) {
 			std::exception_ptr p = std::current_exception();
-			std::cout << (p ? p._Current_exception->name() : "null") << std::endl;
+			//std::cout << (p ? p._Current_exception->name : "null") << std::endl;
 		}
 		Main::getContext()->display();
 	}

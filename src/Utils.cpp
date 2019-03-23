@@ -420,7 +420,7 @@ void DebugDraw::DrawMouseJoint(b2Vec2& p1, b2Vec2& p2, const b2Color &boxColor, 
 	Main::getContext()->draw(line, 2, sf::Lines);
 }
 
-void SpriteBatch::build() {
+void SpriteBatch::buildData() {
 	std::lock_guard<std::mutex> lock(queueLock);
 	int i = 0;
 	while (!drawQueue.empty()) {
@@ -445,8 +445,8 @@ void SpriteBatch::build() {
 			data[VERTEXSIZE * i + ++k] = pos.top;
 			data[VERTEXSIZE * i + ++k] = (float)index;
 			data[VERTEXSIZE * i + ++k] = TYP_SPRITE;
-			data[VERTEXSIZE * i + ++k] = uv.left + uv.width;
-			data[VERTEXSIZE * i + ++k] = uv.top;
+			data[VERTEXSIZE * i + ++k] = (float)uv.left + (float)uv.width;
+			data[VERTEXSIZE * i + ++k] = (float)uv.top;
 			data[VERTEXSIZE * i + ++k] = col;
 			data[VERTEXSIZE * i + ++k] = 0;
 
@@ -455,8 +455,8 @@ void SpriteBatch::build() {
 			data[VERTEXSIZE * i + ++k] = pos.top + pos.height;
 			data[VERTEXSIZE * i + ++k] = (float)index;
 			data[VERTEXSIZE * i + ++k] = TYP_SPRITE;
-			data[VERTEXSIZE * i + ++k] = uv.left + uv.width;
-			data[VERTEXSIZE * i + ++k] = uv.top + uv.height;
+			data[VERTEXSIZE * i + ++k] = (float)uv.left + (float)uv.width;
+			data[VERTEXSIZE * i + ++k] = (float)uv.top + (float)uv.height;
 			data[VERTEXSIZE * i + ++k] = col;
 			data[VERTEXSIZE * i + ++k] = 0;
 
@@ -465,8 +465,8 @@ void SpriteBatch::build() {
 			data[VERTEXSIZE * i + ++k] = pos.top + pos.height;
 			data[VERTEXSIZE * i + ++k] = (float)index;
 			data[VERTEXSIZE * i + ++k] = TYP_SPRITE;
-			data[VERTEXSIZE * i + ++k] = uv.left;
-			data[VERTEXSIZE * i + ++k] = uv.top + uv.height;
+			data[VERTEXSIZE * i + ++k] = (float)uv.left;
+			data[VERTEXSIZE * i + ++k] = (float)uv.top + (float)uv.height;
 			data[VERTEXSIZE * i + ++k] = col;
 			data[VERTEXSIZE * i + ++k] = 0;
 
@@ -475,8 +475,8 @@ void SpriteBatch::build() {
 			data[VERTEXSIZE * i + ++k] = pos.top;
 			data[VERTEXSIZE * i + ++k] = (float)index;
 			data[VERTEXSIZE * i + ++k] = TYP_SPRITE;
-			data[VERTEXSIZE * i + ++k] = uv.left;
-			data[VERTEXSIZE * i + ++k] = uv.top;
+			data[VERTEXSIZE * i + ++k] = (float)uv.left;
+			data[VERTEXSIZE * i + ++k] = (float)uv.top;
 			data[VERTEXSIZE * i + ++k] = col;
 			data[VERTEXSIZE * i + ++k] = 0;
 		}
@@ -591,7 +591,7 @@ SpriteBatch::SpriteBatch(int _maxTex, int _maxSprites) {
 	glBindVertexArray(0);
 
 	texLoc.resize(_maxTex);
-	for (unsigned int i = 0; i < _maxTex; ++i)
+	for (int i = 0; i < _maxTex; ++i)
 		texLoc[i] = glGetUniformLocation(shader->getNativeHandle(), (std::string("tex[") + std::to_string(i) + std::string("]")).c_str());
 }
 
@@ -696,19 +696,10 @@ void FontCache::layout() {
 	float cw = 0;
 	int cl = 1;
 
-	for (int i = 0; i < text.length(); ++i) {
+	for (unsigned int i = 0; i < text.length(); ++i) {
 
 		//next letter
 		uint32 letter = text[i];
-
-		const std::function<void(std::wstring, std::wstring, std::vector<std::wstring>&)> split =
-
-			[](std::wstring _input, std::wstring _delimeter, std::vector<std::wstring>& output)->std::vector<std::wstring> {
-
-			std::wregex ws_re(_delimeter);
-			std::copy(std::wsregex_token_iterator(_input.begin(), _input.end(), ws_re, -1),
-				std::wsregex_token_iterator(), output);
-		};
 
 		//beginning of style found
 		if (letter == 132) {
@@ -732,8 +723,7 @@ void FontCache::layout() {
 				continue;
 			}
 
-			std::vector<std::wstring> styles;
-			split(styleString, Main::s2ws(","), styles);
+			std::vector<std::wstring> styles = Main::split(styleString, Main::s2ws(","));
 
 			for (const auto& s : styles) {
 
@@ -834,8 +824,8 @@ void FontCache::build() {
 			cache[VERTEXSIZE * i + ++k] = pos.y;
 			cache[VERTEXSIZE * i + ++k] = (float)letter.texIndex;
 			cache[VERTEXSIZE * i + ++k] = TYP_FONT;
-			cache[VERTEXSIZE * i + ++k] = uv.left + uv.width;
-			cache[VERTEXSIZE * i + ++k] = uv.top;
+			cache[VERTEXSIZE * i + ++k] = (float)uv.left + (float)uv.width;
+			cache[VERTEXSIZE * i + ++k] = (float)uv.top;
 			cache[VERTEXSIZE * i + ++k] = fCol;
 			cache[VERTEXSIZE * i + ++k] = oCol;
 
@@ -844,8 +834,8 @@ void FontCache::build() {
 			cache[VERTEXSIZE * i + ++k] = pos.y + bounds.height;
 			cache[VERTEXSIZE * i + ++k] = (float)letter.texIndex;
 			cache[VERTEXSIZE * i + ++k] = TYP_FONT;
-			cache[VERTEXSIZE * i + ++k] = uv.left + uv.width;
-			cache[VERTEXSIZE * i + ++k] = uv.top + uv.height;
+			cache[VERTEXSIZE * i + ++k] = (float)uv.left + (float)uv.width;
+			cache[VERTEXSIZE * i + ++k] = (float)uv.top + (float)uv.height;
 			cache[VERTEXSIZE * i + ++k] = fCol;
 			cache[VERTEXSIZE * i + ++k] = oCol;
 
@@ -854,8 +844,8 @@ void FontCache::build() {
 			cache[VERTEXSIZE * i + ++k] = pos.y + bounds.height;
 			cache[VERTEXSIZE * i + ++k] = (float)letter.texIndex;
 			cache[VERTEXSIZE * i + ++k] = TYP_FONT;
-			cache[VERTEXSIZE * i + ++k] = uv.left;
-			cache[VERTEXSIZE * i + ++k] = uv.top + uv.height;
+			cache[VERTEXSIZE * i + ++k] = (float)uv.left;
+			cache[VERTEXSIZE * i + ++k] = (float)uv.top + (float)uv.height;
 			cache[VERTEXSIZE * i + ++k] = fCol;
 			cache[VERTEXSIZE * i + ++k] = oCol;
 
@@ -864,8 +854,8 @@ void FontCache::build() {
 			cache[VERTEXSIZE * i + ++k] = pos.y;
 			cache[VERTEXSIZE * i + ++k] = (float)letter.texIndex;
 			cache[VERTEXSIZE * i + ++k] = TYP_FONT;
-			cache[VERTEXSIZE * i + ++k] = uv.left;
-			cache[VERTEXSIZE * i + ++k] = uv.top;
+			cache[VERTEXSIZE * i + ++k] = (float)uv.left;
+			cache[VERTEXSIZE * i + ++k] = (float)uv.top;
 			cache[VERTEXSIZE * i + ++k] = fCol;
 			cache[VERTEXSIZE * i + ++k] = oCol;
 
@@ -894,7 +884,7 @@ bool FontCache::Line::insert(float& _currentWidth, Letter& _l) {
 	return true;
 }
 
-FontCache::Letter::Letter(Letter&& _l) {
+Heerbann::FontCache::Letter::Letter(const Letter& _l) {
 	letter = _l.letter;
 	size = _l.size;
 	ot = _l.ot;
