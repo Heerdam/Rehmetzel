@@ -420,12 +420,10 @@ void DebugDraw::DrawMouseJoint(b2Vec2& p1, b2Vec2& p2, const b2Color &boxColor, 
 	Main::getContext()->draw(line, 2, sf::Lines);
 }
 
-void SpriteBatch::buildData() {
-	std::lock_guard<std::mutex> lock(queueLock);
-	int i = 0;
-	while (!drawQueue.empty()) {
-		Item* next = drawQueue.front();
-		drawQueue.pop();
+void SpriteBatch::buildData(std::vector<Item*>::iterator _begin, std::vector<Item*>::iterator _end) {
+	spriteCount = 0;
+	for(; _begin != _end; ++_begin){
+		Item* next = *_begin;
 
 		switch (next->type) {
 		case Type::sprite:
@@ -441,64 +439,65 @@ void SpriteBatch::buildData() {
 
 			int k = 0;
 			//bottom right
-			data[VERTEXSIZE * i] = pos.left + pos.width;
-			data[VERTEXSIZE * i + ++k] = pos.top;
-			data[VERTEXSIZE * i + ++k] = (float)index;
-			data[VERTEXSIZE * i + ++k] = TYP_SPRITE;
-			data[VERTEXSIZE * i + ++k] = (float)uv.left + (float)uv.width;
-			data[VERTEXSIZE * i + ++k] = (float)uv.top;
-			data[VERTEXSIZE * i + ++k] = col;
-			data[VERTEXSIZE * i + ++k] = 0;
+			data[4 * VERTEXSIZE * spriteCount] = pos.left + pos.width;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = pos.top;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)index;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = TYP_SPRITE;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)uv.left + (float)uv.width;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)uv.top;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = col;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = 0.f;
 
 			//top right
-			data[VERTEXSIZE * i + ++k] = pos.left + pos.width;
-			data[VERTEXSIZE * i + ++k] = pos.top + pos.height;
-			data[VERTEXSIZE * i + ++k] = (float)index;
-			data[VERTEXSIZE * i + ++k] = TYP_SPRITE;
-			data[VERTEXSIZE * i + ++k] = (float)uv.left + (float)uv.width;
-			data[VERTEXSIZE * i + ++k] = (float)uv.top + (float)uv.height;
-			data[VERTEXSIZE * i + ++k] = col;
-			data[VERTEXSIZE * i + ++k] = 0;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = pos.left + pos.width;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = pos.top + pos.height;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)index;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = TYP_SPRITE;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)uv.left + (float)uv.width;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)uv.top + (float)uv.height;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = col;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = 0.f;
 
 			//top left
-			data[VERTEXSIZE * i + ++k] = pos.left;
-			data[VERTEXSIZE * i + ++k] = pos.top + pos.height;
-			data[VERTEXSIZE * i + ++k] = (float)index;
-			data[VERTEXSIZE * i + ++k] = TYP_SPRITE;
-			data[VERTEXSIZE * i + ++k] = (float)uv.left;
-			data[VERTEXSIZE * i + ++k] = (float)uv.top + (float)uv.height;
-			data[VERTEXSIZE * i + ++k] = col;
-			data[VERTEXSIZE * i + ++k] = 0;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = pos.left;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = pos.top + pos.height;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)index;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = TYP_SPRITE;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)uv.left;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)uv.top + (float)uv.height;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = col;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = 0.f;
 
 			//bottom left
-			data[VERTEXSIZE * i + ++k] = pos.left;
-			data[VERTEXSIZE * i + ++k] = pos.top;
-			data[VERTEXSIZE * i + ++k] = (float)index;
-			data[VERTEXSIZE * i + ++k] = TYP_SPRITE;
-			data[VERTEXSIZE * i + ++k] = (float)uv.left;
-			data[VERTEXSIZE * i + ++k] = (float)uv.top;
-			data[VERTEXSIZE * i + ++k] = col;
-			data[VERTEXSIZE * i + ++k] = 0;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = pos.left;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = pos.top;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)index;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = TYP_SPRITE;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)uv.left;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)uv.top;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = col;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = 0.f;
+			++spriteCount;
 		}
 		break;
 		case Type::font:
 		{
 			FontCache* font = (FontCache*)next->data;
 			int size;
-			float* fontData = font->draw(size);
-			for (int k = 0; k < size; ++k)
-				data[VERTEXSIZE * i + k] = data[k];
+			float* fontData = font->draw(size);			
+			for (int k = 0; k < size * VERTEXSIZE * 4; ++k)
+				data[4 * VERTEXSIZE * spriteCount + k] = fontData[k];
+			spriteCount += size;
 		}
 		break;
 		}
 		delete next;
 	}
-	spriteCount = i;
 }
 
 void SpriteBatch::recompile(int _tex) {
 	const std::string vertex =
-		"#version 330 core"
+		"#version 330 core \n"
 		"layout (location = 0) in vec2 a_Pos;"
 		"layout (location = 1) in float a_index;"
 		"layout (location = 2) in float a_typ;"
@@ -513,15 +512,15 @@ void SpriteBatch::recompile(int _tex) {
 		"uniform mat4 transform;"
 		"void main() {"
 		"gl_Position = transform * vec4(a_Pos.x, a_Pos.y, 0.0, 1.0);"
-		"index = a_index;"
-		"type = a_typ;"
+		"index = int(a_index);"
+		"type = int(a_typ);"
 		"uv = a_uv;"
 		"col1 = a_col1;"
 		"col2 = a_col2;"
 		"}";
 
 	std::string fragment =
-		"#version 330 core"
+		"#version 330 core \n"
 		"out vec4 FragColor;"
 		"flat in int index;"
 		"flat in int type;"
@@ -530,18 +529,33 @@ void SpriteBatch::recompile(int _tex) {
 		"in vec4 col2;"
 		"uniform sampler2D tex[" + std::to_string(_tex) + "];"
 		"void main(){"
-		"switch(type){"
-		"case " + std::to_string((int)TYP_SPRITE) + ":"
+		"if(" + std::to_string((int)TYP_SPRITE) + "== 0){"
 		"FragColor = texture(tex[index], uv) + col1;"
-		"break;"
-		"case" + std::to_string((int)TYP_FONT) + ":"
-		"FragColor = texture(tex[index], uv) + col1;"
-		"break;"	
-		"};"
+		"} else if(" + std::to_string((int)TYP_FONT) + "== 1){"
+		"FragColor = texture(tex[index], uv) + col1;"	
+		"} else {"
+		"FragColor = vec4(0.5, 0.5, 0.5, 1);"
+		"}"
 		"}";
 
 	if (!shader->loadFromMemory(vertex, fragment))
 		std::exception("failed to compile shader in SpriteBatch");
+
+	GLenum err;
+	while ((err = glGetError()) != GL_NO_ERROR)
+		std::cout << err << std::endl;
+	GLint linked;
+	glGetProgramiv(shader->getNativeHandle(), GL_LINK_STATUS, &linked);
+	std::cout << linked << std::endl;
+
+	camLocation = glGetUniformLocation(shader->getNativeHandle(), "transform");
+
+	texLoc.resize(TEXTURECOUNT);
+	for (int i = 0; i < TEXTURECOUNT; ++i)
+		texLoc[i] = glGetUniformLocation(shader->getNativeHandle(), (std::string("tex[") + std::to_string(i) + std::string("]")).c_str());
+
+	while ((err = glGetError()) != GL_NO_ERROR)
+		std::cout << err << std::endl;
 }
 
 SpriteBatch::SpriteBatch(int _maxTex, int _maxSprites) {
@@ -549,6 +563,16 @@ SpriteBatch::SpriteBatch(int _maxTex, int _maxSprites) {
 	maxSpritesInBatch = _maxSprites;
 
 	GLuint* idata = new GLuint[_maxSprites * 6];
+	for (int i = 0; i < _maxSprites; ++i) {
+		int k = 0;
+		idata[i * 6] = 4 * i;
+		idata[i * 6 + ++k] = 4 * i + 1;
+		idata[i * 6 + ++k] = 4 * i + 2;
+
+		idata[i * 6 + ++k] = 4 * i + 2;
+		idata[i * 6 + ++k] = 4 * i + 3;
+		idata[i * 6 + ++k] = 4 * i;
+	}
 	data = new float[vertexCount * VERTEXSIZE]{ 0 };
 
 	shader = new sf::Shader();
@@ -578,35 +602,61 @@ SpriteBatch::SpriteBatch(int _maxTex, int _maxSprites) {
 	glEnableVertexAttribArray(2); //type(1)
 	glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, VERTEXSIZE * sizeof(float), (void*)(3 * sizeof(float)));
 
-	glEnableVertexAttribArray(3); //color1 (1)
-	glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, VERTEXSIZE * sizeof(float), (void*)(4 * sizeof(float)));
+	glEnableVertexAttribArray(3); //uv (2)
+	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, VERTEXSIZE * sizeof(float), (void*)(4 * sizeof(float)));
 
-	glEnableVertexAttribArray(4); //color2 (1)
-	glVertexAttribPointer(4, 4, GL_UNSIGNED_BYTE, GL_TRUE, VERTEXSIZE * sizeof(float), (void*)(5 * sizeof(float)));
+	glEnableVertexAttribArray(4); //color1 (1)
+	glVertexAttribPointer(4, 4, GL_UNSIGNED_BYTE, GL_TRUE, VERTEXSIZE * sizeof(float), (void*)(6 * sizeof(float)));
 
-	glEnableVertexAttribArray(5); //uv (2)
-	glVertexAttribPointer(5, 4, GL_UNSIGNED_BYTE, GL_TRUE, VERTEXSIZE * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(5); //color2 (1)
+	glVertexAttribPointer(5, 4, GL_UNSIGNED_BYTE, GL_TRUE, VERTEXSIZE * sizeof(float), (void*)(7 * sizeof(float)));
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
-	texLoc.resize(_maxTex);
-	for (int i = 0; i < _maxTex; ++i)
-		texLoc[i] = glGetUniformLocation(shader->getNativeHandle(), (std::string("tex[") + std::to_string(i) + std::string("]")).c_str());
 }
 
 void SpriteBatch::build() {
-	assert(workthread == nullptr && !locked);
-	workthread = new std::thread(&SpriteBatch::build, this);
+	assert(workthread[0] == nullptr && workthread[1] == nullptr && 
+		workthread[2] == nullptr && workthread[3] == nullptr && workthread[4] == nullptr && !locked);
+
+	unsigned int size = drawQueue.size();
+	if (size > 0) {
+		spriteCount = 0;
+		if (size <= 200) {
+			workthread[0] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin(), drawQueue.end());
+		} else if (size <= 400) {
+			workthread[0] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin(), drawQueue.begin() + 200);
+			workthread[1] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin() + 200, drawQueue.end());
+		} else if (size <= 600) {
+			workthread[0] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin(), drawQueue.begin() + 200);
+			workthread[1] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin() + 200, drawQueue.begin() + 400);
+			workthread[2] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin() + 400, drawQueue.end());
+		} else if (size <= 800) {
+			workthread[0] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin(), drawQueue.begin() + 200);
+			workthread[1] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin() + 200, drawQueue.begin() + 400);
+			workthread[2] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin() + 400, drawQueue.begin() + 600);
+			workthread[3] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin() + 600, drawQueue.end());
+		} else if (size <= 800) {
+			workthread[0] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin(), drawQueue.begin() + 200);
+			workthread[1] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin() + 200, drawQueue.begin() + 400);
+			workthread[2] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin() + 400, drawQueue.begin() + 600);
+			workthread[3] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin() + 600, drawQueue.begin() + 800);
+			workthread[4] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin() + 800, drawQueue.end());
+		}
+	}
 	locked = true;
 }
 
-void SpriteBatch::draw(sf::Transform& _cam) {
-	assert(workthread != nullptr);
-	if (workthread->joinable())
-		workthread->join();
-	delete workthread;
-	workthread = nullptr;
+void SpriteBatch::drawToScreen(const sf::Transform& _cam) {
+	for (int i = 0; i < 5; ++i) {
+		if (workthread[i] == nullptr) continue;			
+		if (workthread[i]->joinable())
+			workthread[i]->join();
+		delete workthread[i];
+		workthread[i] = nullptr;
+	}	
+	drawQueue.clear();
 	locked = false;
 	if (spriteCount == 0) return;
 	sf::Shader::bind(shader);
@@ -624,7 +674,7 @@ void SpriteBatch::draw(sf::Transform& _cam) {
 	}
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, spriteCount * 4 * sizeof(float), data);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, spriteCount * 4 * VERTEXSIZE * sizeof(float), data);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glBindVertexArray(vao);
@@ -643,12 +693,12 @@ void SpriteBatch::draw(sf::Transform& _cam) {
 
 void SpriteBatch::draw(sf::Sprite* _drawable) {
 	assert(!locked);
-	drawQueue.emplace(new Item(Type::sprite, _drawable));
+	drawQueue.emplace_back(new Item(Type::sprite, _drawable));
 }
 
-void SpriteBatch::draw(sf::Font* _font) {
+void SpriteBatch::draw(FontCache* _font) {
 	assert(!locked);
-	drawQueue.emplace(new Item(Type::font, _font));
+	drawQueue.emplace_back(new Item(Type::font, _font));
 }
 
 void SpriteBatch::addTexture(TextureAtlas* _atlas) {
@@ -660,10 +710,20 @@ void SpriteBatch::addTexture(TextureAtlas* _atlas) {
 	}
 }
 
-void SpriteBatch::addTexture(sf::Texture* _tex) {
+void SpriteBatch::addTexture(const sf::Texture* _tex) {
 	assert(!locked && texCache.size() + 1 <= texLoc.size());
 	texCache.emplace_back(_tex);
 	textures[_tex->getNativeHandle()] = texCache.size();
+}
+
+void SpriteBatch::addTexture(sf::Font* _font) {
+	addTexture(&_font->getTexture(SMALLFONTSIZE));
+	addTexture(&_font->getTexture(MEDIUMFONTSIZE));
+	addTexture(&_font->getTexture(BIGFONTSIZE));
+}
+
+void SpriteBatch::addTexture(sf::Sprite* _sprite) {
+	addTexture(_sprite->getTexture());
 }
 
 FontCache::FontCache() {
@@ -681,25 +741,44 @@ void FontCache::setText(std::wstring _text) {
 
 float* FontCache::draw(int& _size) {
 	_size = size;
-	if (size == 0 || !isDirty) return cache;
+	if (!isDirty) return cache;
 	layout();
+	_size = size;
+	if (size == 0) return cache;
 	build();
 	return cache;
 }
 
 void FontCache::layout() {
 
+	for (auto l : block.lines) {
+		for (auto g : l->letters) {
+			delete g;
+		}
+		delete l;
+	}
+
 	block.lines.clear();
-	Line line = block.lines.emplace_back(Line());
+	Line* line = block.lines.emplace_back(new Line(width));
+
+	auto batch = Main::getBatch();
 
 	Style style(defaultStyle);
 	float cw = 0;
 	int cl = 1;
-
+	size = 0;
 	for (unsigned int i = 0; i < text.length(); ++i) {
 
 		//next letter
 		uint32 letter = text[i];
+
+		//space
+		if (letter == 32) {
+			//TODO
+			continue;
+		}
+
+		++size;
 
 		//beginning of style found
 		if (letter == 132) {
@@ -774,22 +853,25 @@ void FontCache::layout() {
 		sf::Glyph glyph = style.font->getGlyph(letter, style.fontSize, style.bold, style.outlineThickness);
 		auto bounds = glyph.bounds;
 
-		Letter l;
-		l.letter = letter;
-		l.color = style.fontColor;
-		l.oColor = style.outlineColor;
-		l.size = style.fontSize;
-		l.ot = style.outlineThickness;
-		if (!line.insert(cw, l)) {
+		Letter* l = new Letter();
+		l->letter = letter;
+		l->color = style.fontColor;
+		l->oColor = style.outlineColor;
+		l->size = style.fontSize;
+		l->ot = style.outlineThickness;
+		l->glyph = &glyph;
+		l->font = style.font;
+		l->texIndex = batch->textures[style.font->getTexture(style.fontSize).getNativeHandle()];
+		if (!line->insert(cw, l)) {
 			cw = 0;
-			line = block.lines.emplace_back(Line());
-			bool failed = line.insert(cw, l);
+			line = block.lines.emplace_back(new Line(width));
+			bool failed = line->insert(cw, l);
 			assert(failed);
 		}
 	}
 
 	for (unsigned int i = 1; i < block.lines.size(); ++i) {
-		block.lines[i].pos.y = block.lines[i - 1].pos.y + block.lines[i - 1].spacing;
+		block.lines[i]->pos.y = block.lines[i - 1]->pos.y + block.lines[i - 1]->spacing;
 	}
 }
 
@@ -800,29 +882,29 @@ void FontCache::build() {
 
 	size = 0;
 	for (unsigned int i = 0; i < block.lines.size(); ++i)
-		size += block.lines[i].letters.size();
+		size += block.lines[i]->letters.size();
 
 	cache = new float[size * 4 * VERTEXSIZE];
 
 	int i = 0;
-	for (auto& line : block.lines) {
+	for (auto line : block.lines) {
 
-		sf::Vector2f lPos = line.pos + block.pos;
+		sf::Vector2f lPos = line->pos + block.pos;
 
-		for (auto& letter : line.letters) {
+		for (auto& letter : line->letters) {
 
-			auto pos = lPos + letter.pos;
-			auto glyph = letter.font->getGlyph(letter.letter, letter.size, letter.bold, letter.ot);
+			auto pos = lPos + letter->pos;
+			auto glyph = letter->font->getGlyph(letter->letter, letter->size, letter->bold, letter->ot);
 			auto bounds = glyph.bounds;
 			auto uv = glyph.textureRect;
 
-			float fCol = Main::toFloatBits(letter.color);
-			float oCol = Main::toFloatBits(letter.oColor);
+			float fCol = Main::toFloatBits(letter->color);
+			float oCol = Main::toFloatBits(letter->oColor);
 
 			int k = 0;
 			cache[VERTEXSIZE * i] = pos.x + bounds.width;
 			cache[VERTEXSIZE * i + ++k] = pos.y;
-			cache[VERTEXSIZE * i + ++k] = (float)letter.texIndex;
+			cache[VERTEXSIZE * i + ++k] = (float)letter->texIndex;
 			cache[VERTEXSIZE * i + ++k] = TYP_FONT;
 			cache[VERTEXSIZE * i + ++k] = (float)uv.left + (float)uv.width;
 			cache[VERTEXSIZE * i + ++k] = (float)uv.top;
@@ -832,7 +914,7 @@ void FontCache::build() {
 			//top right
 			cache[VERTEXSIZE * i + ++k] = pos.x + bounds.width;
 			cache[VERTEXSIZE * i + ++k] = pos.y + bounds.height;
-			cache[VERTEXSIZE * i + ++k] = (float)letter.texIndex;
+			cache[VERTEXSIZE * i + ++k] = (float)letter->texIndex;
 			cache[VERTEXSIZE * i + ++k] = TYP_FONT;
 			cache[VERTEXSIZE * i + ++k] = (float)uv.left + (float)uv.width;
 			cache[VERTEXSIZE * i + ++k] = (float)uv.top + (float)uv.height;
@@ -842,7 +924,7 @@ void FontCache::build() {
 			//top left
 			cache[VERTEXSIZE * i + ++k] = pos.x;
 			cache[VERTEXSIZE * i + ++k] = pos.y + bounds.height;
-			cache[VERTEXSIZE * i + ++k] = (float)letter.texIndex;
+			cache[VERTEXSIZE * i + ++k] = (float)letter->texIndex;
 			cache[VERTEXSIZE * i + ++k] = TYP_FONT;
 			cache[VERTEXSIZE * i + ++k] = (float)uv.left;
 			cache[VERTEXSIZE * i + ++k] = (float)uv.top + (float)uv.height;
@@ -852,7 +934,7 @@ void FontCache::build() {
 			//bottom left
 			cache[VERTEXSIZE * i + ++k] = pos.x;
 			cache[VERTEXSIZE * i + ++k] = pos.y;
-			cache[VERTEXSIZE * i + ++k] = (float)letter.texIndex;
+			cache[VERTEXSIZE * i + ++k] = (float)letter->texIndex;
 			cache[VERTEXSIZE * i + ++k] = TYP_FONT;
 			cache[VERTEXSIZE * i + ++k] = (float)uv.left;
 			cache[VERTEXSIZE * i + ++k] = (float)uv.top;
@@ -873,13 +955,13 @@ FontCache::Style::Style(Style& _cpy) {
 	outlineThickness = _cpy.outlineThickness;
 }
 
-bool FontCache::Line::insert(float& _currentWidth, Letter& _l) {
-	auto glyph = _l.getGlyph();
-	if (glyph.advance + _currentWidth > maxWidth)
+bool FontCache::Line::insert(float& _currentWidth, Letter* _l) {
+	auto glyph = _l->glyph;
+	if (glyph->advance + _currentWidth > maxWidth)
 		return false;
-	_l.pos = sf::Vector2f(0, _currentWidth);
-	_currentWidth += glyph.advance;
-	spacing = spacing <= _l.font->getLineSpacing(_l.size) ? spacing : _l.font->getLineSpacing(_l.size);
+	_l->pos = sf::Vector2f(0, _currentWidth);
+	_currentWidth += glyph->advance;
+	spacing = spacing <= _l->font->getLineSpacing(_l->size) ? spacing : _l->font->getLineSpacing(_l->size);
 	letters.emplace_back(_l);
 	return true;
 }

@@ -8,6 +8,7 @@
 #include "Assets.hpp"
 #include "UI.hpp"
 #include "Level.h"
+#include "Utils.hpp"
 
 using namespace Heerbann;
 
@@ -18,7 +19,7 @@ int main() {
 	Main::get()->intialize();
 
 	Main::setSize(1920, 1080);
-	Main::getViewport()->clearColor = sf::Color::Black;
+	Main::getViewport()->clearColor = sf::Color::White;
 	Main::getViewport()->setSize(1920, 1080);
 
 	InputEntry* entry = new InputEntry();
@@ -52,14 +53,19 @@ int main() {
 			Main::getViewport()->apply(*Main::getContext(), delta);
 
 			Main::getLevel()->update(delta);
-			Main::getLevel()->draw(delta, *Main::getContext());
-
-			boxRenderer.draw(delta, *Main::getContext());
-
-			//Main::getWorld()->debugDraw();
+			Main::getLevel()->draw(delta, Main::getBatch());
 
 			//Main::getStage()->act(delta);
-			//Main::getStage()->draw(*Main::getContext());
+			//Main::getStage()->draw(Main::getBatch());
+
+			Main::getBatch()->build();
+			Main::getBatch()->drawToScreen(Main::getViewport()->cam.getTransform());
+
+
+			//boxRenderer.draw(delta, *Main::getContext());
+			//Main::getWorld()->debugDraw();
+
+			
 
 			auto end = std::chrono::system_clock::now();
 			std::chrono::duration<double> elapsed_seconds = end - start;

@@ -7,6 +7,7 @@
 #include "CameraUtils.hpp"
 #include "UI.hpp"
 #include "Level.h"
+#include "Utils.hpp"
 
 using namespace Heerbann;
 
@@ -38,6 +39,7 @@ void Heerbann::Main::intialize() {
 	assets = new AssetManager();
 	stage = new UI::Stage();
 	level = new LevelManager();
+	
 	mainCam = new Viewport("main", -100);
 
 	glewExperimental = GL_TRUE;
@@ -46,12 +48,17 @@ void Heerbann::Main::intialize() {
 		std::exception("glew not ok");
 	}
 
+	//------------- Everything needing openGl goes below this line -------------\\
+
 	getAssetManager()->addAsset("assets/fonts/default.ttf", Type::font);
 	getAssetManager()->load("assets/fonts/default.ttf");
 	getAssetManager()->finish();
 	update();
 
 	intializeFont(getDefaultFont());
+
+	batch = new SpriteBatch(TEXTURECOUNT, 1000);
+	batch->addTexture(getDefaultFont());
 	
 	level->initialize();
 }
@@ -103,6 +110,10 @@ void Main::setSize(unsigned int _width, unsigned int _height) {
 }
 
 //---------------------- Inputs ----------------------\\
+
+SpriteBatch * Heerbann::Main::getBatch() {
+	return get()->batch;
+}
 
 InputMultiplexer* Main::getInput() {
 	return instance->inputListener;

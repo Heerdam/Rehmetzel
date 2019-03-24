@@ -1,6 +1,9 @@
 
 #include "UI.hpp"
 
+#include "Utils.hpp"
+#include "InputMultiplexer.hpp"
+
 using namespace Heerbann;
 using namespace UI;
 
@@ -15,44 +18,45 @@ void Actor::act(float _deltaTime) {
 		c->act(_deltaTime);
 }
 
-void Actor::draw(sf::RenderWindow& _window) {
+void Actor::draw(SpriteBatch* _batch) {
 	for (auto c : children)
-		c->draw(_window);
+		c->draw(_batch);
 }
 
+/*
 void Actor::getAABB(BoundingBox2f& _aabb) {
 	aabb += _aabb;
 	for (auto c : children)
 		c->getAABB(aabb);
 }
-
+*/
 bool Actor::mouseMoveEvent(int _x, int _y) {
-	if (aabb == sf::Vector2i(_x, _y)) {
+	//if (aabb == sf::Vector2i(_x, _y)) {
 		for (auto c : children) {
 			if (c->mouseMoveEvent(_x, _y))
 				return true;
 		}
-	}
+	//}
 	return false;
 }
 
 bool Actor::mouseButtonPressEvent(sf::Mouse::Button _button, int _x, int _y) {
-	if (aabb == sf::Vector2i(_x, _y)) {
+	//if (aabb == sf::Vector2i(_x, _y)) {
 		for (auto c : children) {
 			if (c->mouseButtonPressEvent(_button, _x, _y))
 				return true;
 		}
-	}
+	//}
 	return false;
 }
 
 bool Actor::mouseButtonReleaseEvent(sf::Mouse::Button _button, int _x, int _y) {
-	if (aabb == sf::Vector2i(_x, _y)) {
+	//if (aabb == sf::Vector2i(_x, _y)) {
 		for (auto c : children) {
 			if (c->mouseButtonReleaseEvent(_button, _x, _y))
 				return true;
 		}
-	}
+	//}
 	return false;
 }
 
@@ -73,20 +77,20 @@ void Actor::remove() {
 Stage::Stage() {
 	InputEntry* entry = new InputEntry();
 	entry->mouseButtonPressEvent = [&](sf::Mouse::Button _button, int _x, int _y)->bool {
-		if (aabb == sf::Vector2i(_x, _y))
-			return root->mouseButtonPressEvent(_button, _x, _y);
+		//if (aabb == sf::Vector2i(_x, _y))
+			//return root->mouseButtonPressEvent(_button, _x, _y);
 		return false;
 	};
 
 	entry->mouseButtonReleaseEvent = [&](sf::Mouse::Button _button, int _x, int _y)->bool {
-		if (aabb == sf::Vector2i(_x, _y))
-			return root->mouseButtonReleaseEvent(_button, _x, _y);
+		//if (aabb == sf::Vector2i(_x, _y))
+			//return root->mouseButtonReleaseEvent(_button, _x, _y);
 		return false;
 	};
 
 	entry->mouseMoveEvent = [&](int _x, int _y)->bool {
-		if (aabb == sf::Vector2i(_x, _y))
-			return root->mouseMoveEvent(_x, _y);
+		//if (aabb == sf::Vector2i(_x, _y))
+			//return root->mouseMoveEvent(_x, _y);
 		return false;
 	};
 }
@@ -103,15 +107,17 @@ void Stage::act(float _deltaTime) {
 	root->act(_deltaTime);
 }
 
-void Stage::draw(sf::RenderWindow& _window) {
-	root->draw(_window);
+void Stage::draw(SpriteBatch* _batch) {
+	root->draw(_batch);
 }
 
+/*
 const BoundingBox2f& Stage::getAABB() {
 	aabb.clr();
 	root->getAABB(aabb);
 	return aabb;
 }
+*/
 
 void Button::layout(sf::Vector2i _parent) {
 	if (s_up != nullptr) {
@@ -120,7 +126,7 @@ void Button::layout(sf::Vector2i _parent) {
 		//relative aabb of sprite
 		BoundingBox2f b(sf::Vector2f(bounds.left - _parent.x, bounds.top - _parent.y),
 			sf::Vector2f(bounds.left - _parent.x + bounds.width, bounds.top - _parent.y + bounds.height));
-		aabb += b;
+		//aabb += b;
 	}
 	if (s_pressed != nullptr) {
 		s_pressed->setPosition(sf::Vector2f(_parent) + sf::Vector2f(position));
@@ -128,7 +134,7 @@ void Button::layout(sf::Vector2i _parent) {
 		//relative aabb of sprite
 		BoundingBox2f b(sf::Vector2f(bounds.left - _parent.x, bounds.top - _parent.y),
 			sf::Vector2f(bounds.left - _parent.x + bounds.width, bounds.top - _parent.y + bounds.height));
-		aabb += b;
+		//aabb += b;
 	}
 	if (s_hover != nullptr) {
 		s_hover->setPosition(sf::Vector2f(_parent) + sf::Vector2f(position));
@@ -136,7 +142,7 @@ void Button::layout(sf::Vector2i _parent) {
 		//relative aabb of sprite
 		BoundingBox2f b(sf::Vector2f(bounds.left - _parent.x, bounds.top - _parent.y),
 			sf::Vector2f(bounds.left - _parent.x + bounds.width, bounds.top - _parent.y + bounds.height));
-		aabb += b;
+		//aabb += b;
 	}
 	if (s_inactive != nullptr) {
 		s_inactive->setPosition(sf::Vector2f(_parent) + sf::Vector2f(position));
@@ -144,35 +150,35 @@ void Button::layout(sf::Vector2i _parent) {
 		//relative aabb of sprite
 		BoundingBox2f b(sf::Vector2f(bounds.left - _parent.x, bounds.top - _parent.y),
 			sf::Vector2f(bounds.left - _parent.x + bounds.width, bounds.top - _parent.y + bounds.height));
-		aabb += b;
+		//aabb += b;
 	}
 	Actor::layout(_parent);
 }
 
-void Button::draw(sf::RenderWindow& _window) {
+void Button::draw(SpriteBatch* _batch) {
 	switch (state) {
 	case ButtonState::hover:
-		if (s_hover != nullptr) _window.draw(*s_hover);
-		else if (s_up != nullptr) _window.draw(*s_up);
+		if (s_hover != nullptr) _batch->draw(s_hover);
+		else if (s_up != nullptr) _batch->draw(s_up);
 		break;
 	case ButtonState::inactive:
-		if (s_inactive != nullptr) _window.draw(*s_inactive);
-		else if (s_up != nullptr) _window.draw(*s_up);
+		if (s_inactive != nullptr) _batch->draw(s_inactive);
+		else if (s_up != nullptr) _batch->draw(s_up);
 		break;
 	case ButtonState::pressed:
-		if (s_pressed != nullptr) _window.draw(*s_pressed);
-		else if (s_up != nullptr) _window.draw(*s_up);
+		if (s_pressed != nullptr) _batch->draw(s_pressed);
+		else if (s_up != nullptr) _batch->draw(s_up);
 		break;
 	case ButtonState::up:
-		if (s_up != nullptr) _window.draw(*s_up);
+		if (s_up != nullptr) _batch->draw(s_up);
 		break;
 	}
-	Actor::draw(_window);
+	Actor::draw(_batch);
 }
 
 bool Button::mouseMoveEvent(int _x, int _y) {
 
-	bool isOver = aabb == sf::Vector2i(_x, _y);
+	bool isOver = false; //aabb == sf::Vector2i(_x, _y);
 
 	if (!mouseLeftPressed && state != ButtonState::inactive) {
 		if (isOver && state == ButtonState::up) { //start hovering
@@ -223,13 +229,13 @@ void Label::layout(sf::Vector2i _parent) {
 	auto pos = _parent + position;
 	text.setPosition(sf::Vector2f(pos));
 	auto bounds = text.getGlobalBounds();
-	aabb.min = sf::Vector2f(position);
-	aabb.max = sf::Vector2f(position) + sf::Vector2f(bounds.width, bounds.height);
+	//aabb.min = sf::Vector2f(position);
+	//aabb.max = sf::Vector2f(position) + sf::Vector2f(bounds.width, bounds.height);
 	Actor::layout(_parent);
 }
 
-void Heerbann::UI::Label::draw(sf::RenderWindow & _window) {
-	_window.draw(text);
+void Heerbann::UI::Label::draw(SpriteBatch* _batch) {
+	//_batch->draw(text);
 }
 
 void ProgressBar::setValue(float _val) {
@@ -244,20 +250,20 @@ void ProgressBar::layout(sf::Vector2i _parent) {
 	if (background != nullptr) {
 		background->setPosition(sf::Vector2f(_parent) + sf::Vector2f(position));
 		auto bounds = background->getGlobalBounds();
-		aabb.min = sf::Vector2f(position);
-		aabb.max = sf::Vector2f(position) + sf::Vector2f(bounds.width, bounds.height);
+		//aabb.min = sf::Vector2f(position);
+		//aabb.max = sf::Vector2f(position) + sf::Vector2f(bounds.width, bounds.height);
 	}
 	if (bar != nullptr) {
 		bar->setPosition(sf::Vector2f(_parent) + sf::Vector2f(position));
 		auto bounds = bar->getGlobalBounds();
-		aabb.min = sf::Vector2f(position);
-		aabb.max = sf::Vector2f(position) + sf::Vector2f(bounds.width, bounds.height);
+		//aabb.min = sf::Vector2f(position);
+		//aabb.max = sf::Vector2f(position) + sf::Vector2f(bounds.width, bounds.height);
 	}
 	if (border != nullptr) {
 		border->setPosition(sf::Vector2f(_parent) + sf::Vector2f(position));
 		auto bounds = border->getGlobalBounds();
-		aabb.min = sf::Vector2f(position);
-		aabb.max = sf::Vector2f(position) + sf::Vector2f(bounds.width, bounds.height);
+		//aabb.min = sf::Vector2f(position);
+		//aabb.max = sf::Vector2f(position) + sf::Vector2f(bounds.width, bounds.height);
 	}
 }
 
@@ -267,29 +273,29 @@ void ProgressBar::act(float _deltaTime) {
 	}
 }
 
-void ProgressBar::draw(sf::RenderWindow& _window) {
+void ProgressBar::draw(SpriteBatch* _batch) {
 	if (background != nullptr)
-		_window.draw(*background);
+		_batch->draw(background);
 	if (bar != nullptr)
-		_window.draw(*bar);
+		_batch->draw(bar);
 	if (border != nullptr)
-		_window.draw(*border);
+		_batch->draw(border);
 	for (auto c : children)
-		c->draw(_window);
-	Actor::draw(_window);
+		c->draw(_batch);
+	Actor::draw(_batch);
 }
 
 void Image::layout(sf::Vector2i _parent) {
 	if (img != nullptr) {
 		img->setPosition(sf::Vector2f(_parent) + sf::Vector2f(position));
 		auto bounds = img->getGlobalBounds();
-		aabb.min = sf::Vector2f(position);
-		aabb.max = sf::Vector2f(position) + sf::Vector2f(bounds.width, bounds.height);
+		//aabb.min = sf::Vector2f(position);
+		//aabb.max = sf::Vector2f(position) + sf::Vector2f(bounds.width, bounds.height);
 	}
 	Actor::layout(_parent);
 }
 
-void Image::draw(sf::RenderWindow& _window) {
-	if (img != nullptr) _window.draw(*img);
-	Actor::draw(_window);
+void Image::draw(SpriteBatch* _batch) {
+	if (img != nullptr) _batch->draw(img);
+	Actor::draw(_batch);
 }

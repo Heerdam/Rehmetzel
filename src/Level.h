@@ -26,17 +26,23 @@ namespace Heerbann {
 		State neededLoadingState;
 		bool lockIfDiscrete = true;
 
+		//actual async loading 
 		virtual void load(AssetManager*) {};
+
+		//actual async unloading 
 		virtual void unload(AssetManager*) {};
 
+		//add assets to queue for loading
 		virtual void preLoad(AssetManager*) {};
+
+		//add assets to queue for unloading
+		virtual void preUnload(AssetManager*) {};
+
 		//on main thread for opengl
 		virtual void postLoad(AssetManager*) {};
 		
-		virtual void preUnload(AssetManager*) {};
-
 		virtual void update(float) {};
-		virtual void draw(float, sf::RenderWindow&) {};
+		virtual void draw(float, SpriteBatch*) {};
 	};
 
 	struct PreLoadLevel : public Level {
@@ -68,7 +74,9 @@ namespace Heerbann {
 	};
 
 	class BGVAO;
+
 	struct WorldOut;
+	class FontCache;
 
 	struct TestWorldLevel : public Level {
 		TestWorldLevel() : Level("TestWorldLevel") {};
@@ -81,11 +89,13 @@ namespace Heerbann {
 		float* data;
 		int vertexCount;
 
+		FontCache* testcache;
+
 		void preLoad(AssetManager*) override;
 		void load(AssetManager*) override;
 		void postLoad(AssetManager*) override;
 		void update(float) override;
-		void draw(float, sf::RenderWindow&) override;
+		void draw(float, SpriteBatch*) override;
 	};
 
 	class LevelManager {
@@ -108,7 +118,7 @@ namespace Heerbann {
 
 	public:
 		void update(float);
-		void draw(float, sf::RenderWindow&);
+		void draw(float, SpriteBatch*);
 
 		void queueLevelToLoad(std::string);
 		void queueLevelToUnLoad(std::string);

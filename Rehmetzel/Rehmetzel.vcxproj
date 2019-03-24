@@ -138,6 +138,7 @@
     <ClInclude Include="..\src\World.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\bin\assets\shader\testshader.frag" />
     <ClCompile Include="..\src\Assets.cpp" />
     <ClCompile Include="..\src\CameraUtils.cpp" />
     <ClCompile Include="..\src\InputMultiplexer.cpp" />

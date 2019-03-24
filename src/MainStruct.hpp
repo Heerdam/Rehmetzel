@@ -52,11 +52,15 @@ namespace Heerbann {
 #define MEDIUMFONTSIZE 24
 #define BIGFONTSIZE 32
 
+//how many sprites the spritebatch holds
+#define TEXTURECOUNT 10
+
 	class InputMultiplexer;
 	class World;
 	class Viewport;
 	class AssetManager;
 	class LevelManager;
+	class SpriteBatch;
 
 	struct InputEntry;
 	struct LoadItem;
@@ -78,6 +82,7 @@ namespace Heerbann {
 		AssetManager* assets;
 		UI::Stage* stage;
 		LevelManager* level;
+		SpriteBatch* batch;
 
 		unsigned long frameId = 1;
 
@@ -149,6 +154,10 @@ namespace Heerbann {
 		inline static unsigned int height() {
 			return get()->getContext()->getSize().y;
 		};
+
+		//---------------------- Batch ----------------------\\
+
+		static SpriteBatch* getBatch();
 
 		//---------------------- Inputs ----------------------\\
 

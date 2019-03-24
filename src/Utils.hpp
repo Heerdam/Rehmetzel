@@ -126,8 +126,11 @@ namespace Heerbann {
 	};
 
 	struct TextureAtlas;
+	class FontCache;
 
 	class SpriteBatch {
+
+		friend FontCache;
 
 		enum Type {
 			sprite, font
@@ -146,23 +149,24 @@ namespace Heerbann {
 		int renderCalls = 0;
 		int totalRenderCalls = 0;
 		int maxSpritesInBatch = 0;
-		int spriteCount = 0;
+
+		std::atomic<int> spriteCount = 0;
 
 		std::atomic<bool> locked = false;
-		bool isBlending = true;
+		bool isBlending = false;
 
 		sf::Color color = sf::Color::White;
 
-		std::queue<Item*> drawQueue;
+		std::vector<Item*> drawQueue;
 		std::mutex queueLock;
 
-		std::thread* workthread;
+		std::thread* workthread[5];
 
 		std::vector<GLuint> texLoc;
-		std::vector<sf::Texture*> texCache;
+		std::vector<const sf::Texture*> texCache;
 		std::unordered_map<GLuint, int> textures;
 
-		void buildData();
+		void buildData(std::vector<Item*>::iterator, std::vector<Item*>::iterator);
 
 		GLuint vao, vbo, index;
 		float* data;
@@ -179,7 +183,7 @@ namespace Heerbann {
 		void build();
 
 		//draws the batch
-		void draw(sf::Transform&);
+		void drawToScreen(const sf::Transform&);
 
 		inline void setColor(sf::Color _color) {
 			color = _color;
@@ -187,7 +191,7 @@ namespace Heerbann {
 
 		//add to renderqueue
 		void draw(sf::Sprite*);
-		void draw(sf::Font*);
+		void draw(FontCache*);
 
 		inline void enableBlending() {
 			isBlending = true;
@@ -202,7 +206,10 @@ namespace Heerbann {
 		}
 
 		void addTexture(TextureAtlas*);
-		void addTexture(sf::Texture*);
+		void addTexture(const sf::Texture*);
+		//for fonts textures needs to be pre initialized or manually added later
+		void addTexture(sf::Font*);
+		void addTexture(sf::Sprite*);
 	};
 
 	class FontCache {
@@ -235,22 +242,21 @@ namespace Heerbann {
 			int texIndex;
 			bool bold;
 			sf::Font* font;
-			const sf::Glyph& getGlyph() {
-				return font->getGlyph(letter, size, bold, ot);
-			}
+			sf::Glyph* glyph;
 		};
 
 		struct Line {
-			std::vector<Letter> letters;
-			float spacing;
+			Line(float _maxWidth) : maxWidth(_maxWidth) {};
+			std::vector<Letter*> letters;
+			float spacing = std::numeric_limits<float>::infinity();
 			sf::Vector2f pos; //relative to origin
 			float maxWidth;
 			//return false if line full
-			bool insert(float&, Letter&);
+			bool insert(float&, Letter*);
 		};
 
 		struct TextBlock {
-			std::vector<Line> lines;
+			std::vector<Line*> lines;
 			Align align = Align::left;
 			sf::Vector2f pos; //origin			
 		};
@@ -259,11 +265,11 @@ namespace Heerbann {
 			Style() {};
 			Style(Style&);
 			Align align = Align::left;
-			sf::Font* font;
+			sf::Font* font = Main::getDefaultFont();
 			sf::Color fontColor = sf::Color::Black;
 			sf::Color outlineColor = sf::Color(71, 71, 71, 255);
-			unsigned int fontSize;
-			float outlineThickness;
+			unsigned int fontSize = MEDIUMFONTSIZE;
+			float outlineThickness = 0.f;
 			bool bold = false;
 		};
 

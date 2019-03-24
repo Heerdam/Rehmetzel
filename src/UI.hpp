@@ -5,16 +5,18 @@
 #include <functional>
 
 #include "MainStruct.hpp"
-#include "InputMultiplexer.hpp"
-#include "Utils.hpp"
 
 namespace Heerbann {
+
+	class SpriteBatch;
+	class BoundingBox2f;
+
 	namespace UI {
 
 		class Actor {
 		protected:
 			std::vector<Actor*> children;
-			BoundingBox2f aabb;
+			//BoundingBox2f* aabb;
 			Actor* parent;			
 			bool isDirty = true;
 
@@ -23,8 +25,8 @@ namespace Heerbann {
 
 			virtual void layout(sf::Vector2i _parent);
 			virtual void act(float _deltaTime);
-			virtual void draw(sf::RenderWindow& _window);
-			virtual void getAABB(BoundingBox2f& _aabb);
+			virtual void draw(SpriteBatch*);
+			//virtual void getAABB(BoundingBox2f& _aabb);
 			virtual bool mouseMoveEvent(int _x, int _y);
 			virtual bool mouseButtonPressEvent(sf::Mouse::Button _button, int _x, int _y);
 			virtual bool mouseButtonReleaseEvent(sf::Mouse::Button _button, int _x, int _y);
@@ -35,15 +37,15 @@ namespace Heerbann {
 
 		class Stage {
 			Actor* root = new Actor();
-			BoundingBox2f aabb;
+			//BoundingBox2f aabb;
 		public:
 			Stage();
 
 			void add(Actor* _actor);
 			void layout();
 			void act(float _deltaTime);
-			void draw(sf::RenderWindow& _window);
-			const BoundingBox2f& getAABB();
+			void draw(SpriteBatch* _batch);
+			//const BoundingBox2f& getAABB();
 		};
 
 		class Button : public Actor {
@@ -66,7 +68,7 @@ namespace Heerbann {
 
 		public:
 			virtual void layout(sf::Vector2i _parent) override;
-			virtual void draw(sf::RenderWindow& _window) override;
+			virtual void draw(SpriteBatch*) override;
 			virtual bool mouseMoveEvent(int _x, int _y) override;
 			virtual bool mouseButtonPressEvent(sf::Mouse::Button _button, int _x, int _y) override;
 			virtual bool mouseButtonReleaseEvent(sf::Mouse::Button _button, int _x, int _y) override;
@@ -80,7 +82,7 @@ namespace Heerbann {
 			Label(std::string _text, sf::Font* _font);
 
 			virtual void layout(sf::Vector2i _parent) override;
-			virtual void draw(sf::RenderWindow& _window);
+			virtual void draw(SpriteBatch*);
 
 		};
 
@@ -104,7 +106,7 @@ namespace Heerbann {
 
 			virtual void layout(sf::Vector2i _parent) override;
 			virtual void act(float _deltaTime) override;
-			virtual void draw(sf::RenderWindow& _window) override;
+			virtual void draw(SpriteBatch*) override;
 		};
 
 		class Image : public Actor {
@@ -112,7 +114,7 @@ namespace Heerbann {
 			sf::Sprite* img;
 
 			virtual void layout(sf::Vector2i _parent) override;
-			virtual void draw(sf::RenderWindow& _window) override;
+			virtual void draw(SpriteBatch*) override;
 		};
 
 	}

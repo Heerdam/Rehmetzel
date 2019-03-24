@@ -96,10 +96,10 @@ void LevelManager::update(float _deltaTime) {
 	}
 }
 
-void LevelManager::draw(float _deltaTime, sf::RenderWindow& _window) {
+void LevelManager::draw(float _deltaTime, SpriteBatch* _batch) {
 	for (auto l : activeLevels) {
 		if (!l->isLocked && l->isLoaded)
-			l->draw(_deltaTime, _window);
+			l->draw(_deltaTime, _batch);
 	}
 }
 
@@ -211,6 +211,11 @@ void TestWorldLevel::load(AssetManager* _asset) {
 	//world = Main::getWorld()->builder->build(def);	
 	//bgShader = (sf::Shader*)Main::getAssetManager()->getAsset("assets/shader/bg_shader")->data;
 	//treeShader = (sf::Shader*)Main::getAssetManager()->getAsset("assets/shader/tree_shader")->data;
+
+
+	testcache = new FontCache();
+	testcache->width = 500.f;
+	testcache->setText(Main::s2ws("Test Test Test TESTTESTTESTTESTTTESTDSAASDASDASDASDASDSAD"));
 }
 
 void TestWorldLevel::postLoad(AssetManager* _asset) {	
@@ -220,10 +225,12 @@ void TestWorldLevel::postLoad(AssetManager* _asset) {
 void TestWorldLevel::update(float _delta) {
 }
 
-void TestWorldLevel::draw(float _delta, sf::RenderWindow& _window) {
+void TestWorldLevel::draw(float _delta, SpriteBatch* _batch) {
 	//for (auto v : world->bgVAOs)
 		//v->draw(bgShader);
 	//for (auto v : world->indexVAOs)
 		//v->draw(treeShader);
+
+	_batch->draw(testcache);
 }
 
