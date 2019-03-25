@@ -133,6 +133,7 @@
     <ClInclude Include="..\src\Level.h" />
     <ClInclude Include="..\src\MainStruct.hpp" />
     <ClInclude Include="..\src\MapGenerator.h" />
+    <ClInclude Include="..\src\TextUtil.hpp" />
     <ClInclude Include="..\src\UI.hpp" />
     <ClInclude Include="..\src\Utils.hpp" />
     <ClInclude Include="..\src\World.hpp" />
@@ -145,6 +146,7 @@
     <ClCompile Include="..\src\Level.cpp" />
     <ClCompile Include="..\src\main.cpp" />
     <ClCompile Include="..\src\MainStruct.cpp" />
+    <ClCompile Include="..\src\TextUtil.cpp" />
     <ClCompile Include="..\src\UI.cpp" />
     <ClCompile Include="..\src\Utils.cpp" />
     <ClCompile Include="..\src\World.cpp" />

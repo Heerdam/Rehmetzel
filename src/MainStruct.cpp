@@ -8,6 +8,7 @@
 #include "UI.hpp"
 #include "Level.h"
 #include "Utils.hpp"
+#include "TextUtil.hpp"
 
 using namespace Heerbann;
 

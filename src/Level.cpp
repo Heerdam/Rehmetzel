@@ -5,6 +5,7 @@
 #include "CameraUtils.hpp"
 #include "Utils.hpp"
 #include "World.hpp"
+#include "TextUtil.hpp"
 
 #include <iostream>
 
@@ -215,7 +216,7 @@ void TestWorldLevel::load(AssetManager* _asset) {
 
 	testcache = new FontCache();
 	testcache->width = 500.f;
-	testcache->setText(Main::s2ws("Silly Tingus!"));
+	testcache->setText(Main::s2ws("Test Test Test"));
 }
 
 void TestWorldLevel::postLoad(AssetManager* _asset) {	
