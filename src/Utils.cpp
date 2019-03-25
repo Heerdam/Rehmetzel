@@ -443,7 +443,7 @@ void SpriteBatch::buildData(std::vector<Item*>::iterator _begin, std::vector<Ite
 			data[4 * VERTEXSIZE * spriteCount + ++k] = pos.top;
 			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)index;
 			data[4 * VERTEXSIZE * spriteCount + ++k] = TYP_SPRITE;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)uv.left + (float)uv.width;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)uv.left + (float)uv.width; //TODO normalize
 			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)uv.top;
 			data[4 * VERTEXSIZE * spriteCount + ++k] = col;
 			data[4 * VERTEXSIZE * spriteCount + ++k] = 0.f;
@@ -532,7 +532,7 @@ void SpriteBatch::recompile(int _tex) {
 		"if(" + std::to_string((int)TYP_SPRITE) + "== type){"
 		"FragColor = texture(tex[index], uv) + col1;"
 		"} else if(" + std::to_string((int)TYP_FONT) + "== type){"
-		"vec4 sampled = vec4(1.0, 1.0, 1.0, texture(tex[index], uv).r);"
+		"vec4 sampled = vec4(1.0, 1.0, 1.0, texture(tex[index], uv).a);"
 		"FragColor = vec4(1.0, 1.0, 1.0, 1.0) * sampled;"	
 		"} else {"
 		"FragColor = vec4(0.75, 0.75, 0.75, 1);"
@@ -623,6 +623,7 @@ void SpriteBatch::build() {
 
 	unsigned int size = drawQueue.size();
 	if (size > 0) {
+		isDirty = true;
 		spriteCount = 0;
 		if (size <= 200) {
 			workthread[0] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin(), drawQueue.end());
@@ -660,7 +661,8 @@ void SpriteBatch::drawToScreen(const sf::Transform& _cam) {
 	drawQueue.clear();
 	locked = false;
 	if (spriteCount == 0) return;
-	sf::Shader::bind(shader);
+	//sf::Shader::bind(shader);
+	glUseProgram(shader->getNativeHandle());
 	glUniformMatrix4fv(camLocation, 1, false, _cam.getMatrix());
 
 	for (unsigned int i = 0; i < texCache.size(); ++i) {
@@ -674,9 +676,12 @@ void SpriteBatch::drawToScreen(const sf::Transform& _cam) {
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	}
 
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, spriteCount * 4 * VERTEXSIZE * sizeof(float), data);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	if (isDirty) {
+		isDirty = false;
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, spriteCount * 4 * VERTEXSIZE * sizeof(float), data);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	}
 
 	glBindVertexArray(vao);
 	glDrawElements(GL_TRIANGLES, spriteCount * 6, GL_UNSIGNED_INT, nullptr);
@@ -714,7 +719,7 @@ void SpriteBatch::addTexture(TextureAtlas* _atlas) {
 void SpriteBatch::addTexture(const sf::Texture* _tex) {
 	assert(!locked && texCache.size() + 1 <= texLoc.size());
 	texCache.emplace_back(_tex);
-	textures[_tex->getNativeHandle()] = texCache.size();
+	textures[_tex->getNativeHandle()] = texCache.size() - 1;
 }
 
 void SpriteBatch::addTexture(sf::Font* _font) {
@@ -892,53 +897,75 @@ void FontCache::build() {
 
 		sf::Vector2f lPos = line->pos + block.pos;
 
-		for (auto& letter : line->letters) {
-
-			auto pos = lPos + letter->pos;
+		for (auto letter : line->letters) {
+			
+			auto position = lPos + letter->pos;
 			auto glyph = letter->font->getGlyph(letter->letter, letter->size, letter->bold, letter->ot);
-			auto bounds = glyph.bounds;
-			auto uv = glyph.textureRect;
 
 			float fCol = Main::toFloatBits(letter->color);
 			float oCol = Main::toFloatBits(letter->oColor);
 
+			float padding = 1.0;
+			float outlineThickness = letter->ot;
+			float italicShear = 0;
+
+			float left = glyph.bounds.left - padding;
+			float top = glyph.bounds.top - padding;
+			float right = glyph.bounds.left + glyph.bounds.width + padding;
+			float bottom = glyph.bounds.top + glyph.bounds.height + padding;
+
+			float u1 = static_cast<float>(glyph.textureRect.left) - padding;
+			float v1 = static_cast<float>(glyph.textureRect.top) - padding;
+			float u2 = static_cast<float>(glyph.textureRect.left + glyph.textureRect.width) + padding;
+			float v2 = static_cast<float>(glyph.textureRect.top + glyph.textureRect.height) + padding;
+
+			auto texSize = sf::Vector2f(letter->font->getTexture(letter->size).getSize());
+			float fracW = 1.f / texSize.x;
+			float fracH = 1.f / texSize.y;
+
+			u1 *= fracW;
+			u2 *= fracW;
+			v1 *= fracH;
+			v2 *= fracH;
+
 			int k = 0;
-			cache[4 * VERTEXSIZE * i] = pos.x + bounds.left + bounds.width;
-			cache[4 * VERTEXSIZE * i + ++k] = pos.y + bounds.top;
+			//bottom right
+			cache[4 * VERTEXSIZE * i] = position.x + right - italicShear * top - outlineThickness;
+			cache[4 * VERTEXSIZE * i + ++k] = position.y + bottom - outlineThickness;
 			cache[4 * VERTEXSIZE * i + ++k] = (float)letter->texIndex;
 			cache[4 * VERTEXSIZE * i + ++k] = TYP_FONT;
-			cache[4 * VERTEXSIZE * i + ++k] = (float)uv.left + (float)uv.width;
-			cache[4 * VERTEXSIZE * i + ++k] = (float)uv.top;
+			cache[4 * VERTEXSIZE * i + ++k] = u2;
+			cache[4 * VERTEXSIZE * i + ++k] = v1;
 			cache[4 * VERTEXSIZE * i + ++k] = fCol;
 			cache[4 * VERTEXSIZE * i + ++k] = oCol;
-
+			
 			//top right
-			cache[4 * VERTEXSIZE * i + ++k] = pos.x + bounds.left + bounds.width;
-			cache[4 * VERTEXSIZE * i + ++k] = pos.y + bounds.top + bounds.height;
+			cache[4 * VERTEXSIZE * i + ++k] = position.x + right - italicShear * top - outlineThickness;
+			cache[4 * VERTEXSIZE * i + ++k] = position.y + top - outlineThickness;
 			cache[4 * VERTEXSIZE * i + ++k] = (float)letter->texIndex;
 			cache[4 * VERTEXSIZE * i + ++k] = TYP_FONT;
-			cache[4 * VERTEXSIZE * i + ++k] = (float)uv.left + (float)uv.width;
-			cache[4 * VERTEXSIZE * i + ++k] = (float)uv.top + (float)uv.height;
+			cache[4 * VERTEXSIZE * i + ++k] = u2;
+			cache[4 * VERTEXSIZE * i + ++k] = v2;
 			cache[4 * VERTEXSIZE * i + ++k] = fCol;
 			cache[4 * VERTEXSIZE * i + ++k] = oCol;
 
 			//top left
-			cache[4 * VERTEXSIZE * i + ++k] = pos.x + bounds.left;
-			cache[4 * VERTEXSIZE * i + ++k] = pos.y + bounds.top + bounds.height;
+			cache[4 * VERTEXSIZE * i + ++k] = position.x + left - italicShear * top - outlineThickness;
+			cache[4 * VERTEXSIZE * i + ++k] = position.y + top - outlineThickness;
 			cache[4 * VERTEXSIZE * i + ++k] = (float)letter->texIndex;
 			cache[4 * VERTEXSIZE * i + ++k] = TYP_FONT;
-			cache[4 * VERTEXSIZE * i + ++k] = (float)uv.left;
-			cache[4 * VERTEXSIZE * i + ++k] = (float)uv.top + (float)uv.height;
+			cache[4 * VERTEXSIZE * i + ++k] = u1;
+			cache[4 * VERTEXSIZE * i + ++k] = v2; 
 			cache[4 * VERTEXSIZE * i + ++k] = fCol;
 			cache[4 * VERTEXSIZE * i + ++k] = oCol;
 
 			//bottom left
-			cache[4 * VERTEXSIZE * i + ++k] = pos.x + bounds.left;
-			cache[4 * VERTEXSIZE * i + ++k] = pos.y + bounds.top;
+			cache[4 * VERTEXSIZE * i + ++k] = position.x + left - italicShear * bottom - outlineThickness;
+			cache[4 * VERTEXSIZE * i + ++k] = position.y + bottom - outlineThickness;
 			cache[4 * VERTEXSIZE * i + ++k] = (float)letter->texIndex;
 			cache[4 * VERTEXSIZE * i + ++k] = TYP_FONT;
-			cache[4 * VERTEXSIZE * i + ++k] = (float)uv.left;
-			cache[4 * VERTEXSIZE * i + ++k] = (float)uv.top;
+			cache[4 * VERTEXSIZE * i + ++k] = u1;
+			cache[4 * VERTEXSIZE * i + ++k] = v1;
 			cache[4 * VERTEXSIZE * i + ++k] = fCol;
 			cache[4 * VERTEXSIZE * i + ++k] = oCol;
 

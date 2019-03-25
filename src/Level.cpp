@@ -215,7 +215,7 @@ void TestWorldLevel::load(AssetManager* _asset) {
 
 	testcache = new FontCache();
 	testcache->width = 500.f;
-	testcache->setText(Main::s2ws("A"));
+	testcache->setText(Main::s2ws("Silly Tingus!"));
 }
 
 void TestWorldLevel::postLoad(AssetManager* _asset) {	

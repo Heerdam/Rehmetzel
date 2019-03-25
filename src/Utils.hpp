@@ -154,6 +154,7 @@ namespace Heerbann {
 
 		std::atomic<bool> locked = false;
 		bool isBlending = true;
+		bool isDirty = true;
 
 		sf::Color color = sf::Color::White;
 

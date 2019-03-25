@@ -37,7 +37,6 @@ int main() {
 	Main::getContext()->display();
 
 	Box2dRenderer boxRenderer;
-	
 	sf::Event event;
 	while (Main::getContext()->isOpen()) {
 		try {
