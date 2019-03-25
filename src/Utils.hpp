@@ -153,7 +153,7 @@ namespace Heerbann {
 		std::atomic<int> spriteCount = 0;
 
 		std::atomic<bool> locked = false;
-		bool isBlending = false;
+		bool isBlending = true;
 
 		sf::Color color = sf::Color::White;
 
@@ -266,7 +266,7 @@ namespace Heerbann {
 			Style(Style&);
 			Align align = Align::left;
 			sf::Font* font = Main::getDefaultFont();
-			sf::Color fontColor = sf::Color::Black;
+			sf::Color fontColor = sf::Color::White;
 			sf::Color outlineColor = sf::Color(71, 71, 71, 255);
 			unsigned int fontSize = MEDIUMFONTSIZE;
 			float outlineThickness = 0.f;

@@ -529,12 +529,13 @@ void SpriteBatch::recompile(int _tex) {
 		"in vec4 col2;"
 		"uniform sampler2D tex[" + std::to_string(_tex) + "];"
 		"void main(){"
-		"if(" + std::to_string((int)TYP_SPRITE) + "== 0){"
+		"if(" + std::to_string((int)TYP_SPRITE) + "== type){"
 		"FragColor = texture(tex[index], uv) + col1;"
-		"} else if(" + std::to_string((int)TYP_FONT) + "== 1){"
-		"FragColor = texture(tex[index], uv) + col1;"	
+		"} else if(" + std::to_string((int)TYP_FONT) + "== type){"
+		"vec4 sampled = vec4(1.0, 1.0, 1.0, texture(tex[index], uv).r);"
+		"FragColor = vec4(1.0, 1.0, 1.0, 1.0) * sampled;"	
 		"} else {"
-		"FragColor = vec4(0.5, 0.5, 0.5, 1);"
+		"FragColor = vec4(0.75, 0.75, 0.75, 1);"
 		"}"
 		"}";
 
@@ -717,9 +718,9 @@ void SpriteBatch::addTexture(const sf::Texture* _tex) {
 }
 
 void SpriteBatch::addTexture(sf::Font* _font) {
-	addTexture(&_font->getTexture(SMALLFONTSIZE));
+	//addTexture(&_font->getTexture(SMALLFONTSIZE));
 	addTexture(&_font->getTexture(MEDIUMFONTSIZE));
-	addTexture(&_font->getTexture(BIGFONTSIZE));
+	//addTexture(&_font->getTexture(BIGFONTSIZE));
 }
 
 void SpriteBatch::addTexture(sf::Sprite* _sprite) {
@@ -902,44 +903,44 @@ void FontCache::build() {
 			float oCol = Main::toFloatBits(letter->oColor);
 
 			int k = 0;
-			cache[VERTEXSIZE * i] = pos.x + bounds.width;
-			cache[VERTEXSIZE * i + ++k] = pos.y;
-			cache[VERTEXSIZE * i + ++k] = (float)letter->texIndex;
-			cache[VERTEXSIZE * i + ++k] = TYP_FONT;
-			cache[VERTEXSIZE * i + ++k] = (float)uv.left + (float)uv.width;
-			cache[VERTEXSIZE * i + ++k] = (float)uv.top;
-			cache[VERTEXSIZE * i + ++k] = fCol;
-			cache[VERTEXSIZE * i + ++k] = oCol;
+			cache[4 * VERTEXSIZE * i] = pos.x + bounds.left + bounds.width;
+			cache[4 * VERTEXSIZE * i + ++k] = pos.y + bounds.top;
+			cache[4 * VERTEXSIZE * i + ++k] = (float)letter->texIndex;
+			cache[4 * VERTEXSIZE * i + ++k] = TYP_FONT;
+			cache[4 * VERTEXSIZE * i + ++k] = (float)uv.left + (float)uv.width;
+			cache[4 * VERTEXSIZE * i + ++k] = (float)uv.top;
+			cache[4 * VERTEXSIZE * i + ++k] = fCol;
+			cache[4 * VERTEXSIZE * i + ++k] = oCol;
 
 			//top right
-			cache[VERTEXSIZE * i + ++k] = pos.x + bounds.width;
-			cache[VERTEXSIZE * i + ++k] = pos.y + bounds.height;
-			cache[VERTEXSIZE * i + ++k] = (float)letter->texIndex;
-			cache[VERTEXSIZE * i + ++k] = TYP_FONT;
-			cache[VERTEXSIZE * i + ++k] = (float)uv.left + (float)uv.width;
-			cache[VERTEXSIZE * i + ++k] = (float)uv.top + (float)uv.height;
-			cache[VERTEXSIZE * i + ++k] = fCol;
-			cache[VERTEXSIZE * i + ++k] = oCol;
+			cache[4 * VERTEXSIZE * i + ++k] = pos.x + bounds.left + bounds.width;
+			cache[4 * VERTEXSIZE * i + ++k] = pos.y + bounds.top + bounds.height;
+			cache[4 * VERTEXSIZE * i + ++k] = (float)letter->texIndex;
+			cache[4 * VERTEXSIZE * i + ++k] = TYP_FONT;
+			cache[4 * VERTEXSIZE * i + ++k] = (float)uv.left + (float)uv.width;
+			cache[4 * VERTEXSIZE * i + ++k] = (float)uv.top + (float)uv.height;
+			cache[4 * VERTEXSIZE * i + ++k] = fCol;
+			cache[4 * VERTEXSIZE * i + ++k] = oCol;
 
 			//top left
-			cache[VERTEXSIZE * i + ++k] = pos.x;
-			cache[VERTEXSIZE * i + ++k] = pos.y + bounds.height;
-			cache[VERTEXSIZE * i + ++k] = (float)letter->texIndex;
-			cache[VERTEXSIZE * i + ++k] = TYP_FONT;
-			cache[VERTEXSIZE * i + ++k] = (float)uv.left;
-			cache[VERTEXSIZE * i + ++k] = (float)uv.top + (float)uv.height;
-			cache[VERTEXSIZE * i + ++k] = fCol;
-			cache[VERTEXSIZE * i + ++k] = oCol;
+			cache[4 * VERTEXSIZE * i + ++k] = pos.x + bounds.left;
+			cache[4 * VERTEXSIZE * i + ++k] = pos.y + bounds.top + bounds.height;
+			cache[4 * VERTEXSIZE * i + ++k] = (float)letter->texIndex;
+			cache[4 * VERTEXSIZE * i + ++k] = TYP_FONT;
+			cache[4 * VERTEXSIZE * i + ++k] = (float)uv.left;
+			cache[4 * VERTEXSIZE * i + ++k] = (float)uv.top + (float)uv.height;
+			cache[4 * VERTEXSIZE * i + ++k] = fCol;
+			cache[4 * VERTEXSIZE * i + ++k] = oCol;
 
 			//bottom left
-			cache[VERTEXSIZE * i + ++k] = pos.x;
-			cache[VERTEXSIZE * i + ++k] = pos.y;
-			cache[VERTEXSIZE * i + ++k] = (float)letter->texIndex;
-			cache[VERTEXSIZE * i + ++k] = TYP_FONT;
-			cache[VERTEXSIZE * i + ++k] = (float)uv.left;
-			cache[VERTEXSIZE * i + ++k] = (float)uv.top;
-			cache[VERTEXSIZE * i + ++k] = fCol;
-			cache[VERTEXSIZE * i + ++k] = oCol;
+			cache[4 * VERTEXSIZE * i + ++k] = pos.x + bounds.left;
+			cache[4 * VERTEXSIZE * i + ++k] = pos.y + bounds.top;
+			cache[4 * VERTEXSIZE * i + ++k] = (float)letter->texIndex;
+			cache[4 * VERTEXSIZE * i + ++k] = TYP_FONT;
+			cache[4 * VERTEXSIZE * i + ++k] = (float)uv.left;
+			cache[4 * VERTEXSIZE * i + ++k] = (float)uv.top;
+			cache[4 * VERTEXSIZE * i + ++k] = fCol;
+			cache[4 * VERTEXSIZE * i + ++k] = oCol;
 
 			++i;
 		}
@@ -959,7 +960,7 @@ bool FontCache::Line::insert(float& _currentWidth, Letter* _l) {
 	auto glyph = _l->glyph;
 	if (glyph->advance + _currentWidth > maxWidth)
 		return false;
-	_l->pos = sf::Vector2f(0, _currentWidth);
+	_l->pos = sf::Vector2f(_currentWidth, 0);
 	_currentWidth += glyph->advance;
 	spacing = spacing <= _l->font->getLineSpacing(_l->size) ? spacing : _l->font->getLineSpacing(_l->size);
 	letters.emplace_back(_l);

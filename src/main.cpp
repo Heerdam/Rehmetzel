@@ -19,7 +19,7 @@ int main() {
 	Main::get()->intialize();
 
 	Main::setSize(1920, 1080);
-	Main::getViewport()->clearColor = sf::Color::White;
+	Main::getViewport()->clearColor = sf::Color::Blue;
 	Main::getViewport()->setSize(1920, 1080);
 
 	InputEntry* entry = new InputEntry();
