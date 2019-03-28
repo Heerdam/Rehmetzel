@@ -62,6 +62,10 @@ namespace Heerbann {
 	class LevelManager;
 	class SpriteBatch;
 
+	namespace Text {
+		class FontCache;
+	}
+
 	struct InputEntry;
 	struct LoadItem;
 
@@ -83,6 +87,7 @@ namespace Heerbann {
 		UI::Stage* stage;
 		LevelManager* level;
 		SpriteBatch* batch;
+		Text::FontCache* cache;
 
 		unsigned long frameId = 1;
 
@@ -130,6 +135,12 @@ namespace Heerbann {
 			return false; //TODO
 		}
 
+		//---------------------- Font ----------------------\\
+
+		static Text::FontCache* getFontCache();
+		static sf::Font* getDefaultFont();
+		static void intializeFont(sf::Font*);
+
 		//---------------------- Job ----------------------\\
 
 		//thread safe
@@ -174,8 +185,6 @@ namespace Heerbann {
 		//---------------------- Assets ----------------------\\
 
 		static AssetManager* getAssetManager();
-		static sf::Font* getDefaultFont();
-		static void intializeFont(sf::Font*);
 
 		//---------------------- Stage ----------------------\\
 

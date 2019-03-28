@@ -58,6 +58,9 @@ void Heerbann::Main::intialize() {
 
 	intializeFont(getDefaultFont());
 
+	cache = new Text::FontCache();
+	cache->addFont(s2ws("default"), getDefaultFont());
+
 	batch = new SpriteBatch(TEXTURECOUNT, 1000);
 	batch->addTexture(getDefaultFont());
 	
@@ -76,7 +79,7 @@ std::wstring Main::s2ws(const std::string& _str) {
 }
 
 std::vector<std::wstring> Heerbann::Main::split(std::wstring _in, std::wstring _del) {
-	return SplitFunctor(std::wregex(_del), _in);
+	return Text::SplitFunctor(std::wregex(_del), _in);
 }
 
 //---------------------- Job ----------------------\\
@@ -136,6 +139,10 @@ Viewport* Main::getViewport() {
 
 AssetManager* Main::getAssetManager() {
 	return instance->assets;
+}
+
+Text::FontCache* Main::getFontCache() {
+	return get()->cache;
 }
 
 sf::Font* Main::getDefaultFont() {

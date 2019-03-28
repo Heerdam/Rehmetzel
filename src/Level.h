@@ -76,8 +76,11 @@ namespace Heerbann {
 	class BGVAO;
 
 	struct WorldOut;
-	class FontCache;
 
+	namespace Text {
+		class TextBlock;
+	}
+	
 	struct TestWorldLevel : public Level {
 		TestWorldLevel() : Level("TestWorldLevel") {};
 
@@ -89,7 +92,7 @@ namespace Heerbann {
 		float* data;
 		int vertexCount;
 
-		FontCache* testcache;
+		Text::TextBlock* testblock;
 
 		void preLoad(AssetManager*) override;
 		void load(AssetManager*) override;

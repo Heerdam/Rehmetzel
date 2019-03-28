@@ -214,9 +214,9 @@ void TestWorldLevel::load(AssetManager* _asset) {
 	//treeShader = (sf::Shader*)Main::getAssetManager()->getAsset("assets/shader/tree_shader")->data;
 
 
-	testcache = new FontCache();
-	testcache->width = 500.f;
-	testcache->setText(Main::s2ws("Test Test Test"));
+	testblock = Main::getFontCache()->get(Main::s2ws("testblock"));
+	testblock->setWidth(500.f);
+	testblock->setText(Main::s2ws("TestTestTest"));
 }
 
 void TestWorldLevel::postLoad(AssetManager* _asset) {	
@@ -232,6 +232,6 @@ void TestWorldLevel::draw(float _delta, SpriteBatch* _batch) {
 	//for (auto v : world->indexVAOs)
 		//v->draw(treeShader);
 
-	_batch->draw(testcache);
+	_batch->draw(testblock);
 }
 

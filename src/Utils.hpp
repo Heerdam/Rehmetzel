@@ -7,6 +7,12 @@ namespace Heerbann {
 #define VERTEXSIZE 8 //pos + index + typ + uv + color1 + color2
 #define TYP_SPRITE 0.f
 #define TYP_FONT 1.f
+#define TYP_LINE 2.f
+#define TYP_BOX 3.f
+
+	namespace Text {
+		class TextBlock;
+	}
 
 	class BoundingBox2f {
 
@@ -192,7 +198,7 @@ namespace Heerbann {
 
 		//add to renderqueue
 		void draw(sf::Sprite*);
-		void draw(FontCache*);
+		void draw(Text::TextBlock*);
 
 		inline void enableBlending() {
 			isBlending = true;

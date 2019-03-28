@@ -483,11 +483,10 @@ void SpriteBatch::buildData(std::vector<Item*>::iterator _begin, std::vector<Ite
 		break;
 		case Type::font:
 		{
-			FontCache* font = (FontCache*)next->data;
-			int size;
-			float* fontData = font->draw(size);			
-			for (int k = 0; k < size * VERTEXSIZE * 4; ++k)
-				data[4 * VERTEXSIZE * spriteCount + k] = fontData[k];
+			Text::TextBlock* font = (Text::TextBlock*)next->data;
+			int size = 0;
+			float* fontData = font->draw(size);	
+			std::memcpy(data + 4 * VERTEXSIZE * spriteCount, fontData, size * VERTEXSIZE * 4);
 			spriteCount += size;
 		}
 		break;
@@ -703,7 +702,7 @@ void SpriteBatch::draw(sf::Sprite* _drawable) {
 	drawQueue.emplace_back(new Item(Type::sprite, _drawable));
 }
 
-void SpriteBatch::draw(FontCache* _font) {
+void SpriteBatch::draw(Text::TextBlock* _font) {
 	assert(!locked);
 	drawQueue.emplace_back(new Item(Type::font, _font));
 }
