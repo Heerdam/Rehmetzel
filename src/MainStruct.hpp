@@ -50,7 +50,7 @@ namespace Heerbann {
 
 #define SMALLFONTSIZE 18
 #define MEDIUMFONTSIZE 24
-#define BIGFONTSIZE 32
+#define BIGFONTSIZE 50
 
 //how many sprites the spritebatch holds
 #define TEXTURECOUNT 10

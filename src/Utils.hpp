@@ -12,6 +12,7 @@ namespace Heerbann {
 
 	namespace Text {
 		class TextBlock;
+		class FontCache;
 	}
 
 	class BoundingBox2f {
@@ -136,7 +137,8 @@ namespace Heerbann {
 
 	class SpriteBatch {
 
-		friend FontCache;
+		friend Text::FontCache;
+		friend Text::TextBlock;
 
 		enum Type {
 			sprite, font

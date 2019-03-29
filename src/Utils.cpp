@@ -486,7 +486,7 @@ void SpriteBatch::buildData(std::vector<Item*>::iterator _begin, std::vector<Ite
 			Text::TextBlock* font = (Text::TextBlock*)next->data;
 			int size = 0;
 			float* fontData = font->draw(size);	
-			std::memcpy(data + 4 * VERTEXSIZE * spriteCount, fontData, size * VERTEXSIZE * 4);
+			std::memcpy(data + 4 * VERTEXSIZE * spriteCount, fontData, size * VERTEXSIZE * 4 * sizeof(float));
 			spriteCount += size;
 		}
 		break;
@@ -723,9 +723,9 @@ void SpriteBatch::addTexture(const sf::Texture* _tex) {
 }
 
 void SpriteBatch::addTexture(sf::Font* _font) {
-	//addTexture(&_font->getTexture(SMALLFONTSIZE));
+	addTexture(&_font->getTexture(SMALLFONTSIZE));
 	addTexture(&_font->getTexture(MEDIUMFONTSIZE));
-	//addTexture(&_font->getTexture(BIGFONTSIZE));
+	addTexture(&_font->getTexture(BIGFONTSIZE));
 }
 
 void SpriteBatch::addTexture(sf::Sprite* _sprite) {
