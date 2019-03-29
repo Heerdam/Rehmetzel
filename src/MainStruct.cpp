@@ -71,6 +71,11 @@ std::wstring Main::s2ws(const char* _in) {
 	return s2ws(std::string(_in));
 }
 
+ float Main::toFloatBits(int _r, int _g, int _b, int _a) {
+	int color = (((int)(_a) << 24) | ((int)(_b) << 16) | ((int)(_g) << 8) | ((int)(_r)))&0xfeffffff;
+	return *reinterpret_cast<float*>(&color);
+};
+
 std::wstring Main::s2ws(const std::string& _str) {
 	int size_needed = MultiByteToWideChar(CP_UTF8, 0, &_str[0], (int)_str.size(), NULL, 0);
 	std::wstring wstrTo(size_needed, 0);

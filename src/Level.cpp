@@ -216,8 +216,18 @@ void TestWorldLevel::load(AssetManager* _asset) {
 
 	testblock = Main::getFontCache()->get(Main::s2ws("testblock"));
 	testblock->getStyle().fontSize = BIGFONTSIZE;
-	testblock->setWidth(500.f);
-	testblock->setText(Main::s2ws("Lorem ipsum dolor sit amet consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."));
+	testblock->getStyle().fontColor = sf::Color::White;
+	//testblock->getStyle().outlineColor = sf::Color::White;
+	//testblock->getStyle().outlineThickness = 0.5f;
+	testblock->setWidth(1000.f);
+	testblock->setAlign(Text::Align::centre);
+	testblock->setText(Main::s2ws("{fc=050050050250,sz=18}Lorem ipsum dolor{end} "
+		"it amet consectetur adipiscing elit, sed do eiusmod tempor incididunt ut "
+		"labore et dolore magna aliqua. {fc=250000000250,bt=0.5,sz=24,bc=255255255255}Ut enim ad minim veniam, quis nostrud exercitation "
+		"ullamco laboris nisi ut aliquip ex ea commodo consequat.{end} Duis aute irure dolor in "
+		"reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. "
+		"Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."));
+
 }
 
 void TestWorldLevel::postLoad(AssetManager* _asset) {	

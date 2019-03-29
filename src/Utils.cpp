@@ -532,10 +532,9 @@ void SpriteBatch::recompile(int _tex) {
 		"if(" + std::to_string((int)TYP_SPRITE) + "== type){"
 		"FragColor = texture(tex[index], uv) + col1;"
 		"} else if(" + std::to_string((int)TYP_FONT) + "== type){"
-		"vec4 sampled = vec4(1.0, 1.0, 1.0, texture(tex[index], uv).a);"
-		"FragColor = vec4(1.0, 1.0, 1.0, 1.0) * sampled;"	
+		"FragColor = vec4(col1.xyz, texture(tex[index], uv).a);"
 		"} else {"
-		"FragColor = vec4(0.75, 0.75, 0.75, 1);"
+		"FragColor = col1;"
 		"}"
 		"}";
 
@@ -639,7 +638,7 @@ void SpriteBatch::build() {
 			workthread[1] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin() + 200, drawQueue.begin() + 400);
 			workthread[2] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin() + 400, drawQueue.begin() + 600);
 			workthread[3] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin() + 600, drawQueue.end());
-		} else if (size <= 800) {
+		} else if (size <= 1000) {
 			workthread[0] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin(), drawQueue.begin() + 200);
 			workthread[1] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin() + 200, drawQueue.begin() + 400);
 			workthread[2] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin() + 400, drawQueue.begin() + 600);

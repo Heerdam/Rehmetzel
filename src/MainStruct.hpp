@@ -122,10 +122,7 @@ namespace Heerbann {
 
 		static std::vector<std::wstring> split(std::wstring, std::wstring);
 
-		constexpr static float toFloatBits(int _r, int _g, int _b, int _a) {
-			int color = (((int)(255 * _a) << 24) | ((int)(255 * _b) << 16) | ((int)(255 * _g) << 8) | ((int)(255 * _r))) & 0xfeffffff;
-			return *reinterpret_cast<float*>(&color);
-		};
+		static float toFloatBits(int _r, int _g, int _b, int _a);
 
 		static float toFloatBits(sf::Color _color) {
 			return toFloatBits(_color.r, _color.g, _color.b, _color.a);
