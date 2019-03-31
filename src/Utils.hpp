@@ -5,14 +5,17 @@
 namespace Heerbann {
 
 #define VERTEXSIZE 8 //pos + index + typ + uv + color1 + color2
+#define MAXSPRITES 1000
 #define TYP_SPRITE 0.f
 #define TYP_FONT 1.f
 #define TYP_LINE 2.f
 #define TYP_BOX 3.f
+#define TYP_FONT_STATIC 4.f
 
 	namespace Text {
 		class TextBlock;
 		class FontCache;
+		struct StaticTextBlock;
 	}
 
 	class BoundingBox2f {
@@ -141,7 +144,7 @@ namespace Heerbann {
 		friend Text::TextBlock;
 
 		enum Type {
-			sprite, font
+			sprite, font, static_font
 		};
 
 		struct Item {
@@ -149,6 +152,16 @@ namespace Heerbann {
 			Type type;
 			void* data;
 		};
+
+		struct DrawJob {
+			Type type = Type::sprite;
+			unsigned int count = 0;
+			unsigned int offset = 0;
+			std::vector<Text::StaticTextBlock*> blocks;
+		};
+
+		std::vector<DrawJob*> renderCache;
+		std::queue<DrawJob*> renderQueue;
 
 		const std::string fragment;
 
@@ -182,8 +195,11 @@ namespace Heerbann {
 		int vertexCount;
 
 		GLuint camLocation;
+		GLuint widgetPositionLocation;
 
 		void recompile(int);
+		void drawStaticText(sf::Shader*, GLuint, Text::StaticTextBlock);
+		void compressDrawJobs(std::vector<DrawJob*>&);
 
 	public:
 		SpriteBatch(int, int);
@@ -201,6 +217,7 @@ namespace Heerbann {
 		//add to renderqueue
 		void draw(sf::Sprite*);
 		void draw(Text::TextBlock*);
+		void draw(Text::StaticTextBlock*);
 
 		inline void enableBlending() {
 			isBlending = true;

@@ -220,7 +220,7 @@ void TestWorldLevel::load(AssetManager* _asset) {
 	//testblock->getStyle().outlineColor = sf::Color::White;
 	//testblock->getStyle().outlineThickness = 0.5f;
 	testblock->setWidth(1000.f);
-	testblock->setAlign(Text::Align::centre);
+	testblock->setAlign(Text::Align::right);
 	testblock->setText(Main::s2ws("{fc=050050050250,sz=18}Lorem ipsum dolor{end} "
 		"it amet consectetur adipiscing elit, sed do eiusmod tempor incididunt ut "
 		"labore et dolore magna aliqua. {fc=250000000250,bt=0.5,sz=24,bc=255255255255}Ut enim ad minim veniam, quis nostrud exercitation "

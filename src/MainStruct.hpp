@@ -99,6 +99,8 @@ namespace Heerbann {
 		std::queue<std::tuple<std::function<void(void*)>, void*>> loadJob;
 		std::mutex jobLock;
 
+		GLuint* indexBuffer;
+
 	public:
 
 		void update();
@@ -131,6 +133,8 @@ namespace Heerbann {
 		bool almost_equal(float _f1, float _f2) {
 			return false; //TODO
 		}
+
+		static GLuint* getIndexBuffer();
 
 		//---------------------- Font ----------------------\\
 

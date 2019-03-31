@@ -438,44 +438,47 @@ void SpriteBatch::buildData(std::vector<Item*>::iterator _begin, std::vector<Ite
 
 			float col = Main::toFloatBits(color);
 
+			float fracW = 1.f / sprite->getTexture()->getSize().x;
+			float fracH = 1.f / sprite->getTexture()->getSize().y;
+
 			int k = 0;
 			//bottom right
 			data[4 * VERTEXSIZE * spriteCount] = pos.left + pos.width;
 			data[4 * VERTEXSIZE * spriteCount + ++k] = pos.top;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)index;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = static_cast<float>(index);
 			data[4 * VERTEXSIZE * spriteCount + ++k] = TYP_SPRITE;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)uv.left + (float)uv.width; //TODO normalize
-			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)uv.top;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = static_cast<float>(uv.left + uv.width) * fracW; //TODO normalize
+			data[4 * VERTEXSIZE * spriteCount + ++k] = static_cast<float>(uv.top) * fracH;
 			data[4 * VERTEXSIZE * spriteCount + ++k] = col;
 			data[4 * VERTEXSIZE * spriteCount + ++k] = 0.f;
 
 			//top right
 			data[4 * VERTEXSIZE * spriteCount + ++k] = pos.left + pos.width;
 			data[4 * VERTEXSIZE * spriteCount + ++k] = pos.top + pos.height;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)index;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = static_cast<float>(index);
 			data[4 * VERTEXSIZE * spriteCount + ++k] = TYP_SPRITE;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)uv.left + (float)uv.width;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)uv.top + (float)uv.height;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = static_cast<float>(uv.left + uv.width) * fracW;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = static_cast<float>(uv.top + uv.height) * fracH;
 			data[4 * VERTEXSIZE * spriteCount + ++k] = col;
 			data[4 * VERTEXSIZE * spriteCount + ++k] = 0.f;
 
 			//top left
 			data[4 * VERTEXSIZE * spriteCount + ++k] = pos.left;
 			data[4 * VERTEXSIZE * spriteCount + ++k] = pos.top + pos.height;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)index;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = static_cast<float>(index);
 			data[4 * VERTEXSIZE * spriteCount + ++k] = TYP_SPRITE;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)uv.left;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)uv.top + (float)uv.height;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = static_cast<float>(uv.left) * fracW;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = static_cast<float>(uv.top + uv.height) * fracH;
 			data[4 * VERTEXSIZE * spriteCount + ++k] = col;
 			data[4 * VERTEXSIZE * spriteCount + ++k] = 0.f;
 
 			//bottom left
 			data[4 * VERTEXSIZE * spriteCount + ++k] = pos.left;
 			data[4 * VERTEXSIZE * spriteCount + ++k] = pos.top;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)index;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = static_cast<float>(index);
 			data[4 * VERTEXSIZE * spriteCount + ++k] = TYP_SPRITE;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)uv.left;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = (float)uv.top;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = static_cast<float>(uv.left) * fracW;
+			data[4 * VERTEXSIZE * spriteCount + ++k] = static_cast<float>(uv.top) * fracH;
 			data[4 * VERTEXSIZE * spriteCount + ++k] = col;
 			data[4 * VERTEXSIZE * spriteCount + ++k] = 0.f;
 			++spriteCount;
@@ -488,6 +491,10 @@ void SpriteBatch::buildData(std::vector<Item*>::iterator _begin, std::vector<Ite
 			float* fontData = font->draw(size);	
 			std::memcpy(data + 4 * VERTEXSIZE * spriteCount, fontData, size * VERTEXSIZE * 4 * sizeof(float));
 			spriteCount += size;
+		}
+		case Type::static_font:
+		{
+
 		}
 		break;
 		}
@@ -510,13 +517,18 @@ void SpriteBatch::recompile(int _tex) {
 		"out vec4 col1;"
 		"out vec4 col2;"
 		"uniform mat4 transform;"
+		"uniform vec2 widgetPos;"
 		"void main() {"
-		"gl_Position = transform * vec4(a_Pos.x, a_Pos.y, 0.0, 1.0);"
+		"vec2 iPos = a_Pos;"
+		"if(" + std::to_string(static_cast<int>(TYP_FONT_STATIC)) + "== a_typ){"
+		"iPos = iPos + widgetPos;"
+		"}"
+		"gl_Position = transform * vec4(iPos.xy, 0.0, 1.0);"
 		"index = int(a_index);"
 		"type = int(a_typ);"
 		"uv = a_uv;"
 		"col1 = a_col1;"
-		"col2 = a_col2;"
+		"col2 = a_col2;"		
 		"}";
 
 	std::string fragment =
@@ -529,9 +541,9 @@ void SpriteBatch::recompile(int _tex) {
 		"in vec4 col2;"
 		"uniform sampler2D tex[" + std::to_string(_tex) + "];"
 		"void main(){"
-		"if(" + std::to_string((int)TYP_SPRITE) + "== type){"
+		"if(" + std::to_string(static_cast<int>(TYP_SPRITE)) + "== type){"
 		"FragColor = texture(tex[index], uv) + col1;"
-		"} else if(" + std::to_string((int)TYP_FONT) + "== type){"
+		"} else if(" + std::to_string(static_cast<int>(TYP_FONT)) + "== type){"
 		"FragColor = vec4(col1.xyz, texture(tex[index], uv).a);"
 		"} else {"
 		"FragColor = col1;"
@@ -549,6 +561,7 @@ void SpriteBatch::recompile(int _tex) {
 	std::cout << linked << std::endl;
 
 	camLocation = glGetUniformLocation(shader->getNativeHandle(), "transform");
+	widgetPositionLocation = glGetUniformLocation(shader->getNativeHandle(), "widgetPos");
 
 	texLoc.resize(TEXTURECOUNT);
 	for (int i = 0; i < TEXTURECOUNT; ++i)
@@ -558,21 +571,45 @@ void SpriteBatch::recompile(int _tex) {
 		std::cout << err << std::endl;
 }
 
+void Heerbann::SpriteBatch::compressDrawJobs(std::vector<DrawJob*>& _jobs) {
+
+	for (unsigned int i = 0; i < _jobs.size(); ++i) {
+
+		auto start = _jobs[i];
+
+		unsigned int k = i;
+		while (k + 1 < _jobs.size() && start->type == _jobs[i + 1]->type) {
+			switch (start->type) {
+				case Type::sprite:
+				{
+					auto next = _jobs[i + 1];
+					start->count += next->count;
+				}					
+				break;
+				case Type::static_font:
+				{
+					auto next = _jobs[i + 1];
+					start->blocks.emplace_back(next->blocks);
+				}
+				break;
+			}
+		}
+
+		renderQueue.push(start);
+		i = k;
+
+		if (i == _jobs.size() - 1) {			
+			break;
+		}
+
+	}
+
+}
+
 SpriteBatch::SpriteBatch(int _maxTex, int _maxSprites) {
 	vertexCount = _maxSprites * 4;
 	maxSpritesInBatch = _maxSprites;
 
-	GLuint* idata = new GLuint[_maxSprites * 6];
-	for (int i = 0; i < _maxSprites; ++i) {
-		int k = 0;
-		idata[i * 6] = 4 * i;
-		idata[i * 6 + ++k] = 4 * i + 1;
-		idata[i * 6 + ++k] = 4 * i + 2;
-
-		idata[i * 6 + ++k] = 4 * i + 2;
-		idata[i * 6 + ++k] = 4 * i + 3;
-		idata[i * 6 + ++k] = 4 * i;
-	}
 	data = new float[vertexCount * VERTEXSIZE]{ 0 };
 
 	shader = new sf::Shader();
@@ -591,7 +628,7 @@ SpriteBatch::SpriteBatch(int _maxTex, int _maxSprites) {
 
 	//index
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * (_maxSprites * 6), idata, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * (_maxSprites * 6), Main::getIndexBuffer(), GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(0); //pos(2)
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, VERTEXSIZE * sizeof(float), (void*)0);
@@ -620,7 +657,7 @@ void SpriteBatch::build() {
 	assert(workthread[0] == nullptr && workthread[1] == nullptr && 
 		workthread[2] == nullptr && workthread[3] == nullptr && workthread[4] == nullptr && !locked);
 
-	unsigned int size = drawQueue.size();
+	unsigned int size = drawQueue.size(); //TODO wtf
 	if (size > 0) {
 		isDirty = true;
 		spriteCount = 0;
@@ -682,8 +719,21 @@ void SpriteBatch::drawToScreen(const sf::Transform& _cam) {
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
 
-	glBindVertexArray(vao);
-	glDrawElements(GL_TRIANGLES, spriteCount * 6, GL_UNSIGNED_INT, nullptr);
+	while (!renderQueue.empty()) {
+		DrawJob* job = renderQueue.front();
+		drawQueue.pop_back();
+
+		switch (job->type) {
+			case Type::sprite:
+				glBindVertexArray(vao);
+				glDrawElements(GL_TRIANGLES, job->count, GL_UNSIGNED_INT, (void*)(sizeof(unsigned int) * job->offset));
+			break;
+			case Type::font:
+				const auto fontCache = Main::getFontCache();
+				fontCache->drawStaticText(shader, widgetPositionLocation, job->blocks);
+			break;
+		}
+	}
 
 	if (isBlending) glDisable(GL_BLEND);
 
@@ -704,6 +754,11 @@ void SpriteBatch::draw(sf::Sprite* _drawable) {
 void SpriteBatch::draw(Text::TextBlock* _font) {
 	assert(!locked);
 	drawQueue.emplace_back(new Item(Type::font, _font));
+}
+
+void SpriteBatch::draw(Text::StaticTextBlock* _block) {
+	assert(!locked);
+	drawQueue.emplace_back(new Item(Type::static_font, _block));
 }
 
 void SpriteBatch::addTexture(TextureAtlas* _atlas) {

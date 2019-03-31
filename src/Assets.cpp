@@ -3,6 +3,7 @@
 
 #include "Assets.hpp"
 #include "Level.h"
+#include "TextUtil.hpp"
 
 using namespace Heerbann;
 
@@ -91,9 +92,21 @@ void AssetManager::addAsset(std::string _id, Type _type) {
 }
 
 void Heerbann::AssetManager::addAsset(LoadItem* _item) {
-	if (assets.count(_item->id) != 0) std::exception(std::string("Asset already exists [").append(_item->id).append("]").c_str());
 	std::lock_guard<std::mutex> guard(assetLock);
+	if (assets.count(_item->id) != 0) std::exception(std::string("Asset already exists [").append(_item->id).append("]").c_str());	
 	assets[_item->id] = _item;
+}
+
+void AssetManager::loadStaticText(std::string _id, std::wstring _text, float _width, Text::Align _align) {
+	std::lock_guard<std::mutex> guard(assetLock);
+	if (assets.count(_id) != 0) std::exception(std::string("Asset already exists [").append(_id).append("]").c_str());
+	auto item = new LoadItem(_id, static_text);
+	assets[_id] = item;
+	auto text = Main::getFontCache()->createStatic(_id);
+	text->block->setText(_text);
+	text->block->setWidth(_width);
+	text->block->setAlign(_align);
+	item->data = text;
 }
 
 LoadItem* AssetManager::getAsset(std::string _id) {
@@ -551,6 +564,20 @@ void AssetManager::asyncDiscreteLoad() {
 					orders.emplace(order);
 					lock.unlock();
 				}
+			}
+			break;
+			case static_text:
+			{
+				Text::StaticTextBlock* block = reinterpret_cast<Text::StaticTextBlock*>(next->data);
+				block->block->layoutAndRebuild();	
+				next->data = block;
+				Main::addJob([](void* _entry)->void {
+					LoadItem* item = reinterpret_cast<LoadItem*>(_entry);
+					Main::getFontCache()->sendToGPU(reinterpret_cast<Text::StaticTextBlock*>(item->data));
+					item->isLoaded = true;
+					item->isLocked = false;
+				}, next);
+				
 			}
 			break;
 		}

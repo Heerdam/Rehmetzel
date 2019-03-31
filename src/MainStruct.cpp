@@ -43,6 +43,19 @@ void Heerbann::Main::intialize() {
 	
 	mainCam = new Viewport("main", -100);
 
+	indexBuffer = new GLuint[MAXSPRITES * 6];
+	for (int i = 0; i < MAXSPRITES; ++i) {
+		int k = 0;
+		indexBuffer[i * 6] = 4 * i;
+		indexBuffer[i * 6 + ++k] = 4 * i + 1;
+		indexBuffer[i * 6 + ++k] = 4 * i + 2;
+
+		indexBuffer[i * 6 + ++k] = 4 * i + 2;
+		indexBuffer[i * 6 + ++k] = 4 * i + 3;
+		indexBuffer[i * 6 + ++k] = 4 * i;
+	}
+	
+
 	glewExperimental = GL_TRUE;
 	auto status = glewInit();
 	if (!status == GLEW_OK) {
@@ -61,7 +74,7 @@ void Heerbann::Main::intialize() {
 	cache = new Text::FontCache();
 	cache->addFont(s2ws("default"), getDefaultFont());
 
-	batch = new SpriteBatch(TEXTURECOUNT, 1000);
+	batch = new SpriteBatch(TEXTURECOUNT, MAXSPRITES);
 	batch->addTexture(getDefaultFont());
 	
 	level->initialize();
@@ -144,6 +157,10 @@ Viewport* Main::getViewport() {
 
 AssetManager* Main::getAssetManager() {
 	return instance->assets;
+}
+
+GLuint* Heerbann::Main::getIndexBuffer() {
+	return get()->indexBuffer;
 }
 
 Text::FontCache* Main::getFontCache() {

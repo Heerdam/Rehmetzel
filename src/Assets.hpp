@@ -15,11 +15,16 @@ namespace Heerbann {
 	using namespace Heerbann;
 
 	class AssetManager;
+	namespace Text {
+		struct StaticTextBlock;
+		class FontCache;
+		enum Align : int;
+	}
 
 	struct Level;
 
 	enum Type {
-		texture_png, texture_dds, font, level, atlas, shader
+		texture_png, texture_dds, font, level, atlas, shader, static_text
 	};
 
 	enum State {
@@ -38,6 +43,8 @@ namespace Heerbann {
 	};
 
 	class AssetManager {
+
+		friend Text::FontCache;
 
 	private:
 		std::unordered_map<std::string, LoadItem*> assets;
@@ -89,13 +96,15 @@ namespace Heerbann {
 		void queueLoad(Level*);
 		void queueUnLoad(Level*);
 
-
 		//loading functions
 		void asyncDiscreteLoad();
 		void asyncContinuousLoad();
 
 		void levelLoader(Level* _level);
 		void levelUnloader(Level* _level);
+
+		//creates a static text entry in the fontcache (thread safe)
+		void loadStaticText(std::string, std::wstring, float, Text::Align);
 		
 	public:
 		//thread safe method to get Asset
