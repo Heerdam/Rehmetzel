@@ -126,7 +126,6 @@ void BGVAO::build(sf::Shader* _shader) {
 	//}
 }
 
-
 void BGVAO::draw(sf::Shader* _shader) {
 	sf::Shader::bind(_shader);
 	glUniformMatrix4fv(cameraUniformHandle, 1, false, Main::getViewport()->cam.getTransform().getMatrix());
@@ -167,7 +166,6 @@ void IndexedVAO::build(sf::Shader* _shader) {
 	glGenBuffers(1, &index);
 
 	glBindVertexArray(vao);
-
 
 	//vbo
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -421,87 +419,6 @@ void DebugDraw::DrawMouseJoint(b2Vec2& p1, b2Vec2& p2, const b2Color &boxColor, 
 	Main::getContext()->draw(line, 2, sf::Lines);
 }
 
-void SpriteBatch::buildData(std::vector<Item*>::iterator _begin, std::vector<Item*>::iterator _end) {
-	spriteCount = 0;
-	for(; _begin != _end; ++_begin){
-		Item* next = *_begin;
-
-		switch (next->type) {
-		case Type::sprite:
-		{
-			sf::Sprite* sprite = (sf::Sprite*) next->data;
-			auto pos = sprite->getGlobalBounds();
-			auto uv = sprite->getTextureRect();
-
-			assert(textures.count(sprite->getTexture()->getNativeHandle()));
-			int index = textures[sprite->getTexture()->getNativeHandle()];
-
-			float col = Main::toFloatBits(color);
-
-			float fracW = 1.f / sprite->getTexture()->getSize().x;
-			float fracH = 1.f / sprite->getTexture()->getSize().y;
-
-			int k = 0;
-			//bottom right
-			data[4 * VERTEXSIZE * spriteCount] = pos.left + pos.width;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = pos.top;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = static_cast<float>(index);
-			data[4 * VERTEXSIZE * spriteCount + ++k] = TYP_SPRITE;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = static_cast<float>(uv.left + uv.width) * fracW; //TODO normalize
-			data[4 * VERTEXSIZE * spriteCount + ++k] = static_cast<float>(uv.top) * fracH;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = col;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = 0.f;
-
-			//top right
-			data[4 * VERTEXSIZE * spriteCount + ++k] = pos.left + pos.width;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = pos.top + pos.height;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = static_cast<float>(index);
-			data[4 * VERTEXSIZE * spriteCount + ++k] = TYP_SPRITE;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = static_cast<float>(uv.left + uv.width) * fracW;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = static_cast<float>(uv.top + uv.height) * fracH;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = col;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = 0.f;
-
-			//top left
-			data[4 * VERTEXSIZE * spriteCount + ++k] = pos.left;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = pos.top + pos.height;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = static_cast<float>(index);
-			data[4 * VERTEXSIZE * spriteCount + ++k] = TYP_SPRITE;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = static_cast<float>(uv.left) * fracW;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = static_cast<float>(uv.top + uv.height) * fracH;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = col;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = 0.f;
-
-			//bottom left
-			data[4 * VERTEXSIZE * spriteCount + ++k] = pos.left;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = pos.top;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = static_cast<float>(index);
-			data[4 * VERTEXSIZE * spriteCount + ++k] = TYP_SPRITE;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = static_cast<float>(uv.left) * fracW;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = static_cast<float>(uv.top) * fracH;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = col;
-			data[4 * VERTEXSIZE * spriteCount + ++k] = 0.f;
-			++spriteCount;
-		}
-		break;
-		case Type::font:
-		{
-			Text::TextBlock* font = (Text::TextBlock*)next->data;
-			int size = 0;
-			float* fontData = font->draw(size);	
-			std::memcpy(data + 4 * VERTEXSIZE * spriteCount, fontData, size * VERTEXSIZE * 4 * sizeof(float));
-			spriteCount += size;
-		}
-		case Type::static_font:
-		{
-
-		}
-		break;
-		}
-		delete next;
-	}
-}
-
 void SpriteBatch::recompile(int _tex) {
 	const std::string vertex =
 		"#version 330 core \n"
@@ -571,27 +488,27 @@ void SpriteBatch::recompile(int _tex) {
 		std::cout << err << std::endl;
 }
 
-void Heerbann::SpriteBatch::compressDrawJobs(std::vector<DrawJob*>& _jobs) {
+void SpriteBatch::compressDrawJobs(std::vector<DrawJob*>& _jobs) { //TODO nicht debugged!!
 
+	for (auto j : _jobs)
+		renderQueue.push(j);
+	_jobs.clear();
+	return;
+	//TODO
+	/*/
 	for (unsigned int i = 0; i < _jobs.size(); ++i) {
 
 		auto start = _jobs[i];
 
 		unsigned int k = i;
-		while (k + 1 < _jobs.size() && start->type == _jobs[i + 1]->type) {
+		while (start->type != Type::static_font && k + 1 < _jobs.size() && start->type == _jobs[i + 1]->type) {
 			switch (start->type) {
 				case Type::sprite:
 				{
 					auto next = _jobs[i + 1];
 					start->count += next->count;
-				}					
-				break;
-				case Type::static_font:
-				{
-					auto next = _jobs[i + 1];
-					start->blocks.emplace_back(next->blocks);
-				}
-				break;
+					delete next;
+				}							
 			}
 		}
 
@@ -603,7 +520,8 @@ void Heerbann::SpriteBatch::compressDrawJobs(std::vector<DrawJob*>& _jobs) {
 		}
 
 	}
-
+	_jobs.clear();
+	*/
 }
 
 SpriteBatch::SpriteBatch(int _maxTex, int _maxSprites) {
@@ -614,6 +532,11 @@ SpriteBatch::SpriteBatch(int _maxTex, int _maxSprites) {
 
 	shader = new sf::Shader();
 	recompile(_maxTex);
+
+	workthread[0] = new std::thread(&SpriteBatch::buildData, this, 0);
+	workthread[1] = new std::thread(&SpriteBatch::buildData, this, 1);
+	workthread[2] = new std::thread(&SpriteBatch::buildData, this, 2);
+	workthread[3] = new std::thread(&SpriteBatch::buildData, this, 3);
 
 	//create buffer
 	glGenVertexArrays(1, &vao);
@@ -653,50 +576,164 @@ SpriteBatch::SpriteBatch(int _maxTex, int _maxSprites) {
 
 }
 
-void SpriteBatch::build() {
-	assert(workthread[0] == nullptr && workthread[1] == nullptr && 
-		workthread[2] == nullptr && workthread[3] == nullptr && workthread[4] == nullptr && !locked);
-
-	unsigned int size = drawQueue.size(); //TODO wtf
-	if (size > 0) {
-		isDirty = true;
-		spriteCount = 0;
-		if (size <= 200) {
-			workthread[0] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin(), drawQueue.end());
-		} else if (size <= 400) {
-			workthread[0] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin(), drawQueue.begin() + 200);
-			workthread[1] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin() + 200, drawQueue.end());
-		} else if (size <= 600) {
-			workthread[0] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin(), drawQueue.begin() + 200);
-			workthread[1] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin() + 200, drawQueue.begin() + 400);
-			workthread[2] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin() + 400, drawQueue.end());
-		} else if (size <= 800) {
-			workthread[0] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin(), drawQueue.begin() + 200);
-			workthread[1] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin() + 200, drawQueue.begin() + 400);
-			workthread[2] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin() + 400, drawQueue.begin() + 600);
-			workthread[3] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin() + 600, drawQueue.end());
-		} else if (size <= 1000) {
-			workthread[0] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin(), drawQueue.begin() + 200);
-			workthread[1] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin() + 200, drawQueue.begin() + 400);
-			workthread[2] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin() + 400, drawQueue.begin() + 600);
-			workthread[3] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin() + 600, drawQueue.begin() + 800);
-			workthread[4] = new std::thread(&SpriteBatch::buildData, this, drawQueue.begin() + 800, drawQueue.end());
-		}
+Heerbann::SpriteBatch::~SpriteBatch() {
+	terminate = true;
+	for (int i = 0; i < 4; ++i) {
+		if (workthread[i]->joinable())
+			workthread[i]->join();
 	}
+}
+
+void SpriteBatch::buildData(int _index) {
+
+	static std::mutex renderM;
+
+	const std::vector<Item*>& cache = workCache[_index];
+
+	while (true) {
+
+		using namespace std::chrono_literals;
+
+		while (cache.empty() || threadStatus[_index]) {
+			std::this_thread::sleep_for(0.1ms);
+			if (terminate) return;
+		}
+
+		auto _begin = cache.begin();
+		auto _end = cache.end();
+
+		int sprites = 0;
+		int _offset = _index * 250;
+		for (; _begin != _end; ++_begin) {
+			Item* next = *_begin;
+
+			switch (next->type) {
+			case Type::sprite:
+			{
+				sf::Sprite* sprite = reinterpret_cast<sf::Sprite*>(next->data);
+				auto pos = sprite->getGlobalBounds();
+				auto uv = sprite->getTextureRect();
+
+				assert(textures.count(sprite->getTexture()->getNativeHandle()));
+				int index = textures[sprite->getTexture()->getNativeHandle()];
+
+				float col = Main::toFloatBits(color);
+
+				float fracW = 1.f / sprite->getTexture()->getSize().x;
+				float fracH = 1.f / sprite->getTexture()->getSize().y;
+
+				int k = 0;
+				//bottom right
+				data[4 * VERTEXSIZE * (_offset + sprites)] = pos.left + pos.width;
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = pos.top;
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = static_cast<float>(index);
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = TYP_SPRITE;
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = static_cast<float>(uv.left + uv.width) * fracW;
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = static_cast<float>(uv.top) * fracH;
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = col;
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = 0.f;
+
+				//top right
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = pos.left + pos.width;
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = pos.top + pos.height;
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = static_cast<float>(index);
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = TYP_SPRITE;
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = static_cast<float>(uv.left + uv.width) * fracW;
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = static_cast<float>(uv.top + uv.height) * fracH;
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = col;
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = 0.f;
+
+				//top left
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = pos.left;
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = pos.top + pos.height;
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = static_cast<float>(index);
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = TYP_SPRITE;
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = static_cast<float>(uv.left) * fracW;
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = static_cast<float>(uv.top + uv.height) * fracH;
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = col;
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = 0.f;
+
+				//bottom left
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = pos.left;
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = pos.top;
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = static_cast<float>(index);
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = TYP_SPRITE;
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = static_cast<float>(uv.left) * fracW;
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = static_cast<float>(uv.top) * fracH;
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = col;
+				data[4 * VERTEXSIZE * (_offset + sprites) + ++k] = 0.f;
+				++sprites;
+				++spriteCount;
+
+				DrawJob* job = new DrawJob();
+				job->count = k;
+				job->offset = _offset * 4 * VERTEXSIZE;
+				{
+					std::lock_guard<std::mutex> lock(renderM);
+					renderCache.push_back(job);
+				}
+
+			}
+			break;
+			case Type::font:
+			{
+				Text::TextBlock* font = reinterpret_cast<Text::TextBlock*>(next->data);
+				int size = 0;
+				float* fontData = font->draw(size);
+				std::memcpy(data + 4 * VERTEXSIZE * spriteCount, fontData, size * VERTEXSIZE * 4 * sizeof(float));
+				spriteCount += size;
+
+				DrawJob* job = new DrawJob();
+				job->count = size;
+				job->offset = _offset * 4 * VERTEXSIZE;
+				{
+					std::lock_guard<std::mutex> lock(renderM);
+					renderCache.push_back(job);
+				}
+			}
+			break;
+			case Type::static_font:
+			{
+				Text::StaticTextBlock* block = reinterpret_cast<Text::StaticTextBlock*>(next->data);
+
+				DrawJob* job = new DrawJob();
+				job->type = Type::static_font;
+				job->block = block;
+				{
+					std::lock_guard<std::mutex> lock(renderM);
+					renderCache.push_back(job);
+				}
+			}
+			break;
+			}
+			delete next;
+		}
+		threadStatus[_index] = true;
+	}
+}
+
+void SpriteBatch::build() {
+	spriteCount = 0;
 	locked = true;
+	for (int i = 0; i < 4; ++i)
+		threadStatus[i] = workCache[i].empty();
 }
 
 void SpriteBatch::drawToScreen(const sf::Transform& _cam) {
-	for (int i = 0; i < 5; ++i) {
-		if (workthread[i] == nullptr) continue;			
-		if (workthread[i]->joinable())
-			workthread[i]->join();
-		delete workthread[i];
-		workthread[i] = nullptr;
-	}	
-	drawQueue.clear();
+
+	using namespace std::chrono_literals;
+
+	while (!(threadStatus[0] && threadStatus[1] && threadStatus[2] && threadStatus[3])) {
+		std::this_thread::sleep_for(0.1ms);
+	}
+
+	for (int i = 0; i < 4; ++i)
+		workCache[i].clear();
+
+	compressDrawJobs(renderCache);
+
 	locked = false;
-	if (spriteCount == 0) return;
+	if (renderQueue.empty()) return;
 	//sf::Shader::bind(shader);
 	glUseProgram(shader->getNativeHandle());
 	glUniformMatrix4fv(camLocation, 1, false, _cam.getMatrix());
@@ -712,27 +749,38 @@ void SpriteBatch::drawToScreen(const sf::Transform& _cam) {
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	}
 
-	if (isDirty) {
+	if (isDirty) { //TODO spritecount gugus
 		isDirty = false;
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, spriteCount * 4 * VERTEXSIZE * sizeof(float), data);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
 
+	bool isDrawingText = false;
 	while (!renderQueue.empty()) {
 		DrawJob* job = renderQueue.front();
-		drawQueue.pop_back();
+		renderQueue.pop();
+	
+		const auto fontCache = Main::getFontCache();
 
 		switch (job->type) {
 			case Type::sprite:
+				if (isDrawingText) {
+					isDrawingText = false;
+					fontCache->end();
+				}
 				glBindVertexArray(vao);
-				glDrawElements(GL_TRIANGLES, job->count, GL_UNSIGNED_INT, (void*)(sizeof(unsigned int) * job->offset));
+				glDrawElements(GL_TRIANGLES, job->count * 6, GL_UNSIGNED_INT, (void*)(sizeof(unsigned int) * job->offset * 6));
 			break;
-			case Type::font:
-				const auto fontCache = Main::getFontCache();
-				fontCache->drawStaticText(shader, widgetPositionLocation, job->blocks);
+			case Type::static_font:			
+				if (!isDrawingText) {
+					isDrawingText = true;
+					fontCache->begin(job->block->vao);
+				}				
+				fontCache->drawStaticText(shader, widgetPositionLocation, job->block);
 			break;
 		}
+		delete job;
 	}
 
 	if (isBlending) glDisable(GL_BLEND);
@@ -746,19 +794,31 @@ void SpriteBatch::drawToScreen(const sf::Transform& _cam) {
 	glUseProgram(0);
 }
 
+void SpriteBatch::draw(Item* _item) {
+	if (workCache[0].size() < 250u)
+		workCache[0].emplace_back(_item);
+	else if (workCache[1].size() < 250u)
+		workCache[0].emplace_back(_item);
+	else if (workCache[2].size() < 250u)
+		workCache[0].emplace_back(_item);
+	else if (workCache[3].size() < 250u)
+		workCache[0].emplace_back(_item); 
+	else std::cout << "Sprite Limit reached!!" << std::endl;
+}
+
 void SpriteBatch::draw(sf::Sprite* _drawable) {
 	assert(!locked);
-	drawQueue.emplace_back(new Item(Type::sprite, _drawable));
+	draw(new Item(Type::sprite, _drawable));
 }
 
-void SpriteBatch::draw(Text::TextBlock* _font) {
+void SpriteBatch::draw(Text::TextBlock* _drawable) {
 	assert(!locked);
-	drawQueue.emplace_back(new Item(Type::font, _font));
+	draw(new Item(Type::font, _drawable));
 }
 
-void SpriteBatch::draw(Text::StaticTextBlock* _block) {
+void SpriteBatch::draw(Text::StaticTextBlock* _drawable) {
 	assert(!locked);
-	drawQueue.emplace_back(new Item(Type::static_font, _block));
+	draw(new Item(Type::static_font, _drawable));
 }
 
 void SpriteBatch::addTexture(TextureAtlas* _atlas) {

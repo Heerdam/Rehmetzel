@@ -157,11 +157,16 @@ namespace Heerbann {
 			Type type = Type::sprite;
 			unsigned int count = 0;
 			unsigned int offset = 0;
-			std::vector<Text::StaticTextBlock*> blocks;
+			Text::StaticTextBlock* block;
 		};
 
+
+		//used in work thread
 		std::vector<DrawJob*> renderCache;
 		std::queue<DrawJob*> renderQueue;
+
+		std::condition_variable workThreadCv;
+		std::condition_variable mainThreadCv;
 
 		const std::string fragment;
 
@@ -173,22 +178,22 @@ namespace Heerbann {
 
 		std::atomic<int> spriteCount = 0;
 
+		std::atomic<bool> terminate = false;
 		std::atomic<bool> locked = false;
 		bool isBlending = true;
 		bool isDirty = true;
 
 		sf::Color color = sf::Color::White;
 
-		std::vector<Item*> drawQueue;
-		std::mutex queueLock;
-
-		std::thread* workthread[5];
+		std::atomic_bool threadStatus[4]{ true, true, true, true };
+		std::thread* workthread[4];
+		std::vector<std::vector<Item*>> workCache = std::vector<std::vector<Item*>>(4);
 
 		std::vector<GLuint> texLoc;
 		std::vector<const sf::Texture*> texCache;
 		std::unordered_map<GLuint, int> textures;
 
-		void buildData(std::vector<Item*>::iterator, std::vector<Item*>::iterator);
+		void buildData(int);
 
 		GLuint vao, vbo, index;
 		float* data;
@@ -198,11 +203,13 @@ namespace Heerbann {
 		GLuint widgetPositionLocation;
 
 		void recompile(int);
-		void drawStaticText(sf::Shader*, GLuint, Text::StaticTextBlock);
 		void compressDrawJobs(std::vector<DrawJob*>&);
+
+		void draw(Item*);
 
 	public:
 		SpriteBatch(int, int);
+		~SpriteBatch();
 
 		//builds the buffer asynchronous
 		void build();

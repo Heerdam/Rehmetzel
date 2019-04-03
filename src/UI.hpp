@@ -1,120 +1,57 @@
 #pragma once
 
-#include <vector>
-#include <algorithm>
-#include <functional>
-
 #include "MainStruct.hpp"
 
 namespace Heerbann {
 
 	class SpriteBatch;
 	class BoundingBox2f;
+	class Viewport;
+	
+	namespace Text {
+		class FontCache;
+		struct StaticTextBlock;
+		enum Align : int;
+	}
 
 	namespace UI {
 
-		class Actor {
-		protected:
-			std::vector<Actor*> children;
-			//BoundingBox2f* aabb;
-			Actor* parent;			
-			bool isDirty = true;
-
-		public:
-			sf::Vector2i position; //relative to parent
-
-			virtual void layout(sf::Vector2i _parent);
-			virtual void act(float _deltaTime);
-			virtual void draw(SpriteBatch*);
-			//virtual void getAABB(BoundingBox2f& _aabb);
-			virtual bool mouseMoveEvent(int _x, int _y);
-			virtual bool mouseButtonPressEvent(sf::Mouse::Button _button, int _x, int _y);
-			virtual bool mouseButtonReleaseEvent(sf::Mouse::Button _button, int _x, int _y);
-			
-			void add(Actor* _actor);
-			void remove();
-		};
+		class Actor;
 
 		class Stage {
-			Actor* root = new Actor();
-			//BoundingBox2f aabb;
-		public:
-			Stage();
 
-			void add(Actor* _actor);
-			void layout();
-			void act(float _deltaTime);
-			void draw(SpriteBatch* _batch);
-			//const BoundingBox2f& getAABB();
+		public:
+			std::vector<Actor*> children;
+
+			Stage() {};
+			void act();
+			void draw(SpriteBatch*);
+
 		};
 
-		class Button : public Actor {
-		public:
-
-			enum ButtonState {
-				inactive, up, pressed, hover
-			};
-
-			//gets called when the state of the button changes
-			std::function<void(ButtonState _state)> stateListener;
-			//convenience listener for when the button gets called when clicked
-			std::function<void()> clickListener;
-
-			sf::Sprite *s_up, *s_pressed, *s_hover, *s_inactive;
-
-		private:
-			ButtonState state = ButtonState::up;
-			bool mouseLeftPressed = false;
+		class Actor {
 
 		public:
-			virtual void layout(sf::Vector2i _parent) override;
-			virtual void draw(SpriteBatch*) override;
-			virtual bool mouseMoveEvent(int _x, int _y) override;
-			virtual bool mouseButtonPressEvent(sf::Mouse::Button _button, int _x, int _y) override;
-			virtual bool mouseButtonReleaseEvent(sf::Mouse::Button _button, int _x, int _y) override;
+			sf::Vector2f position;
+
+			virtual void act() {};
+			virtual void draw(SpriteBatch*) {};
+
 		};
 
 		class Label : public Actor {
 
-		public:
-			sf::Text text;
-
-			Label(std::string _text, sf::Font* _font);
-
-			virtual void layout(sf::Vector2i _parent) override;
-			virtual void draw(SpriteBatch*);
-
 		};
 
-		class TextButton : public Button{
-		public:
-			Label* label;
-		};
+		class StaticLabel : public Actor {
 
-		class ProgressBar : public Actor {
-
-			float value = 0.5f;
+			Text::StaticTextBlock* block;
 
 		public:
-
-			sf::Sprite* background;
-			sf::Sprite* bar;
-			sf::Sprite* border;
-
-			void setValue(float _val);
-			float getValue();
-
-			virtual void layout(sf::Vector2i _parent) override;
-			virtual void act(float _deltaTime) override;
-			virtual void draw(SpriteBatch*) override;
-		};
-
-		class Image : public Actor {
-		public:
-			sf::Sprite* img;
-
-			virtual void layout(sf::Vector2i _parent) override;
-			virtual void draw(SpriteBatch*) override;
+			StaticLabel(std::string, std::wstring, float, Text::Align);
+			bool isLoaded();
+			void setPosition(sf::Vector2f);
+			void draw(SpriteBatch*) override;
 		};
 
 	}

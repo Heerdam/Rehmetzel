@@ -69,12 +69,8 @@ namespace Heerbann {
 	struct InputEntry;
 	struct LoadItem;
 
-	enum State : int;
-	enum Type : int;
-
 	namespace UI {
 		class Stage;
-		class Actor;
 	}
 
 	class Main {
@@ -88,11 +84,13 @@ namespace Heerbann {
 		LevelManager* level;
 		SpriteBatch* batch;
 		Text::FontCache* cache;
+		sf::Font* defaultFont;
 
 		unsigned long frameId = 1;
+	
+		Main();
 
 		static Main* instance;
-		Main();
 
 		std::mt19937_64 random;
 
@@ -102,6 +100,8 @@ namespace Heerbann {
 		GLuint* indexBuffer;
 
 	public:
+
+		~Main();
 
 		void update();
 		void intialize();

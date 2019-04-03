@@ -14,7 +14,12 @@ using namespace Heerbann;
 
 Main::Main() {}
 
-void Heerbann::Main::update() {
+Main::~Main() {
+	delete batch;
+	if(indexBuffer != nullptr) delete indexBuffer;
+}
+
+void Main::update() {
 	++frameId;
 
 	while (!loadJob.empty()) {
@@ -24,7 +29,7 @@ void Heerbann::Main::update() {
 	}
 }
 
-void Heerbann::Main::intialize() {
+void Main::intialize() {
 
 	sf::ContextSettings settings;
 	settings.majorVersion = 3;
@@ -68,6 +73,8 @@ void Heerbann::Main::intialize() {
 	getAssetManager()->load("assets/fonts/default.ttf");
 	getAssetManager()->finish();
 	update();
+
+	defaultFont = reinterpret_cast<sf::Font*>(getAssetManager()->getAsset("assets/fonts/default.ttf")->data);
 
 	intializeFont(getDefaultFont());
 
@@ -168,7 +175,7 @@ Text::FontCache* Main::getFontCache() {
 }
 
 sf::Font* Main::getDefaultFont() {
-	return (sf::Font*)getAssetManager()->getAsset("assets/fonts/default.ttf")->data;
+	return get()->defaultFont;
 }
 
 void Heerbann::Main::intializeFont(sf::Font* _font) {

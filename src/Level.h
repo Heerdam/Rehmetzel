@@ -8,6 +8,7 @@ namespace Heerbann {
 
 	namespace UI {
 		class Label;
+		class StaticLabel;
 	}
 
 	using namespace UI;
@@ -94,6 +95,8 @@ namespace Heerbann {
 
 		Text::TextBlock* testblock;
 
+		StaticLabel* label;
+
 		void preLoad(AssetManager*) override;
 		void load(AssetManager*) override;
 		void postLoad(AssetManager*) override;
@@ -106,7 +109,6 @@ namespace Heerbann {
 		std::vector<Level*> activeLevels;
 
 	public:
-
 		void initialize();
 
 	private:

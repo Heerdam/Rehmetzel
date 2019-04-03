@@ -97,7 +97,7 @@ void Heerbann::AssetManager::addAsset(LoadItem* _item) {
 	assets[_item->id] = _item;
 }
 
-void AssetManager::loadStaticText(std::string _id, std::wstring _text, float _width, Text::Align _align) {
+Text::StaticTextBlock* AssetManager::loadStaticText(std::string _id, std::wstring _text, float _width, Text::Align _align) {
 	std::lock_guard<std::mutex> guard(assetLock);
 	if (assets.count(_id) != 0) std::exception(std::string("Asset already exists [").append(_id).append("]").c_str());
 	auto item = new LoadItem(_id, static_text);
@@ -107,6 +107,10 @@ void AssetManager::loadStaticText(std::string _id, std::wstring _text, float _wi
 	text->block->setWidth(_width);
 	text->block->setAlign(_align);
 	item->data = text;
+	if (item == nullptr || item->isLoaded) std::exception(std::string("Asset does not exist or is already loaded [").append(_id).append("]").c_str());
+	//if (state == continuous) queueLoad(item);
+	else discreteLoadQueue.emplace(item);
+	return text;
 }
 
 LoadItem* AssetManager::getAsset(std::string _id) {

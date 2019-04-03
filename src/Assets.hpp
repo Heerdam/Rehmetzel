@@ -104,7 +104,7 @@ namespace Heerbann {
 		void levelUnloader(Level* _level);
 
 		//creates a static text entry in the fontcache (thread safe)
-		void loadStaticText(std::string, std::wstring, float, Text::Align);
+		Text::StaticTextBlock* loadStaticText(std::string, std::wstring, float, Text::Align);
 		
 	public:
 		//thread safe method to get Asset
