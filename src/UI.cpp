@@ -37,3 +37,7 @@ void UI::StaticLabel::draw(SpriteBatch* _batch) {
 	if (!isLoaded()) return;
 	_batch->draw(block);
 }
+
+const sf::Vector2f & Heerbann::UI::Actor::getPosition() {
+	return position;
+}

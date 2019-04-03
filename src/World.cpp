@@ -229,7 +229,7 @@ WorldOut * WorldBuilder::build(const WorldBuilderDefinition& _def) {
 	Main::setSeed(_def.seed);
 
 	out->bgVAOs.emplace_back(createBGVAO(sf::Vector2f(0, 0), 4));
-	out->indexVAOs.emplace_back(createTrees(50, sf::Vector2f(0, 0), sf::Vector2f(cosf(DEGTORAD * 30.f) * BG_CELLDIAMETER * BG_CELLCOUNT, 1.5f * BG_CELLDIAMETER * BG_CELLCOUNT)));
+	//out->indexVAOs.emplace_back(createTrees(50, sf::Vector2f(0, 0), sf::Vector2f(cosf(DEGTORAD * 30.f) * BG_CELLDIAMETER * BG_CELLCOUNT, 1.5f * BG_CELLDIAMETER * BG_CELLCOUNT)));
 
 	return out;
 }
@@ -237,6 +237,6 @@ WorldOut * WorldBuilder::build(const WorldBuilderDefinition& _def) {
 void WorldOut::finalize(sf::Shader* _bg, sf::Shader* _tree) {
 	for (auto v : bgVAOs)
 		v->build(_bg);
-	for (auto v : indexVAOs)
-		v->build(_tree);
+	//for (auto v : indexVAOs)
+		//v->build(_tree);
 }

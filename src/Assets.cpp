@@ -4,6 +4,7 @@
 #include "Assets.hpp"
 #include "Level.h"
 #include "TextUtil.hpp"
+#include "Utils.hpp"
 
 using namespace Heerbann;
 
@@ -573,7 +574,7 @@ void AssetManager::asyncDiscreteLoad() {
 			case static_text:
 			{
 				Text::StaticTextBlock* block = reinterpret_cast<Text::StaticTextBlock*>(next->data);
-				block->block->layoutAndRebuild();	
+				block->block->layoutAndRebuild(TYP_FONT_STATIC);
 				next->data = block;
 				Main::addJob([](void* _entry)->void {
 					LoadItem* item = reinterpret_cast<LoadItem*>(_entry);

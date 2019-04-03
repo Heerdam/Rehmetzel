@@ -103,5 +103,8 @@
     <None Include="..\bin\assets\shader\tree_shader.vert">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="..\bin\assets\shader\ai.comp">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

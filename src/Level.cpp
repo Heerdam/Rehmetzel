@@ -128,22 +128,20 @@ void LevelManager::queueLevelToUnLoad(Level* _level) {
 
 void PreLoadLevel::preLoad(AssetManager* _asset) {
 	//assetToLoad.emplace_back(new LoadItem("assets/fonts/black.ttf", Type::font));
-	//assetToLoad.emplace_back(new LoadItem("assets/tex/Forest_soil_diffuse.png", Type::texture_png));
-	//assetToLoad.emplace_back(new LoadItem("assets/tex/ForestCliff_basecolor.png", Type::texture_png));
-	//assetToLoad.emplace_back(new LoadItem("assets/tex/ForestDirt_diffuse.png", Type::texture_png));
+	assetToLoad.emplace_back(new LoadItem("assets/tex/Forest_soil_diffuse.png", Type::texture_png));
+	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestCliff_basecolor.png", Type::texture_png));
+	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestDirt_diffuse.png", Type::texture_png));
 
-	//assetToLoad.emplace_back(new LoadItem("assets/tex/ForestGrass_basecolor.png", Type::texture_png));
-	//assetToLoad.emplace_back(new LoadItem("assets/tex/ForestMoss_basecolor.png", Type::texture_png));
-	//assetToLoad.emplace_back(new LoadItem("assets/tex/ForestMud_baseColor.png", Type::texture_png));
+	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestGrass_basecolor.png", Type::texture_png));
+	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestMoss_basecolor.png", Type::texture_png));
+	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestMud_baseColor.png", Type::texture_png));
 
-	//assetToLoad.emplace_back(new LoadItem("assets/tex/ForestRoad_diffuse.png", Type::texture_png));
-	//assetToLoad.emplace_back(new LoadItem("assets/tex/ForestRock_basecolor.png", Type::texture_png));
-	//assetToLoad.emplace_back(new LoadItem("assets/tex/ForestWetMud_baseColor.png", Type::texture_png));
+	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestRoad_diffuse.png", Type::texture_png));
+	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestRock_basecolor.png", Type::texture_png));
+	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestWetMud_baseColor.png", Type::texture_png));
 
-	//assetToLoad.emplace_back(new LoadItem("assets/shader/bg_shader", Type::shader));
-	//assetToLoad.emplace_back(new LoadItem("assets/shader/tree_shader", Type::shader));
-
-	//assetToLoad.emplace_back(new LoadItem("assets/trees/poplar_07_top.png", Type::texture));
+	assetToLoad.emplace_back(new LoadItem("assets/shader/bg_shader", Type::shader));
+	assetToLoad.emplace_back(new LoadItem("assets/shader/tree_shader", Type::shader));
 
 	//assetToLoad.emplace_back(new LoadItem("assets/trees/trees", Type::atlas));
 }
@@ -203,38 +201,28 @@ void MainMenuLevel::update(float _deltaTime) {
 
 void TestWorldLevel::preLoad(AssetManager *) {
 	
-	label = new StaticLabel(std::string("testlabel"), Main::s2ws("{fc=050050050250,sz=18}Lorem ipsum dolor{end} "
-		"it amet consectetur adipiscing elit, sed do eiusmod tempor incididunt ut "
-		"labore et dolore magna aliqua. {fc=250000000250,bt=0.5,sz=24,bc=255255255255}Ut enim ad minim veniam, quis nostrud exercitation "
-		"ullamco laboris nisi ut aliquip ex ea commodo consequat.{end} Duis aute irure dolor in "
-		"reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. "
-		"Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."), 500, Text::Align::right);
-
 }
 
-void TestWorldLevel::load(AssetManager* _asset) {
-	
-	//WorldBuilderDefinition def;
-	//world = Main::getWorld()->builder->build(def);	
-	//bgShader = (sf::Shader*)Main::getAssetManager()->getAsset("assets/shader/bg_shader")->data;
-	//treeShader = (sf::Shader*)Main::getAssetManager()->getAsset("assets/shader/tree_shader")->data;
+void TestWorldLevel::load(AssetManager* _asset) {	
+	WorldBuilderDefinition def;
+	world = Main::getWorld()->builder->build(def);	
+	bgShader = reinterpret_cast<sf::Shader*>(Main::getAssetManager()->getAsset("assets/shader/bg_shader")->data);
+	treeShader = reinterpret_cast<sf::Shader*>(Main::getAssetManager()->getAsset("assets/shader/tree_shader")->data);
 
 }
 
 void TestWorldLevel::postLoad(AssetManager* _asset) {	
-	//world->finalize(bgShader, treeShader);
-	Main::getStage()->children.emplace_back(label);
+	world->finalize(bgShader, treeShader);
 }
 
 void TestWorldLevel::update(float _delta) {
+	
 }
 
 void TestWorldLevel::draw(float _delta, SpriteBatch* _batch) {
-	//for (auto v : world->bgVAOs)
-		//v->draw(bgShader);
+	for (auto v : world->bgVAOs)
+		v->draw(bgShader);
 	//for (auto v : world->indexVAOs)
 		//v->draw(treeShader);
-
-	//_batch->draw(testblock);
 }
 

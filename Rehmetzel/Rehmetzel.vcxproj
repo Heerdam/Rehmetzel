@@ -152,6 +152,7 @@
     <ClCompile Include="..\src\World.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\bin\assets\shader\ai.comp" />
     <None Include="..\bin\assets\shader\bg_shader.frag" />
     <None Include="..\bin\assets\shader\bg_shader.geom" />
     <None Include="..\bin\assets\shader\bg_shader.vert" />

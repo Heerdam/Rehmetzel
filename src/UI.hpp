@@ -31,12 +31,14 @@ namespace Heerbann {
 
 		class Actor {
 
-		public:
+		protected:
 			sf::Vector2f position;
 
+		public:
+		
 			virtual void act() {};
 			virtual void draw(SpriteBatch*) {};
-
+			virtual const sf::Vector2f& getPosition();
 		};
 
 		class Label : public Actor {

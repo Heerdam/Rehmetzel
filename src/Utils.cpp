@@ -460,7 +460,7 @@ void SpriteBatch::recompile(int _tex) {
 		"void main(){"
 		"if(" + std::to_string(static_cast<int>(TYP_SPRITE)) + "== type){"
 		"FragColor = texture(tex[index], uv) + col1;"
-		"} else if(" + std::to_string(static_cast<int>(TYP_FONT)) + "== type){"
+		"} else if(" + std::to_string(static_cast<int>(TYP_FONT)) + "== type || " + std::to_string(static_cast<int>(TYP_FONT_STATIC)) + "== type){"
 		"FragColor = vec4(col1.xyz, texture(tex[index], uv).a);"
 		"} else {"
 		"FragColor = col1;"

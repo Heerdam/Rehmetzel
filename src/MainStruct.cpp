@@ -32,7 +32,7 @@ void Main::update() {
 void Main::intialize() {
 
 	sf::ContextSettings settings;
-	settings.majorVersion = 3;
+	settings.majorVersion = 4;
 	settings.minorVersion = 3;
 
 	context = new sf::RenderWindow();
