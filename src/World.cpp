@@ -234,7 +234,7 @@ WorldOut * WorldBuilder::build(const WorldBuilderDefinition& _def) {
 	return out;
 }
 
-void WorldOut::finalize(sf::Shader* _bg, sf::Shader* _tree) {
+void WorldOut::finalize(ShaderProgram* _bg, ShaderProgram* _tree) {
 	for (auto v : bgVAOs)
 		v->build(_bg);
 	//for (auto v : indexVAOs)

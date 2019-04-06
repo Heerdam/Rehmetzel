@@ -6,6 +6,8 @@ namespace Heerbann {
 
 	enum State : int;
 
+	class ShaderProgram;
+
 	namespace UI {
 		class Label;
 		class StaticLabel;
@@ -85,8 +87,8 @@ namespace Heerbann {
 	struct TestWorldLevel : public Level {
 		TestWorldLevel() : Level("TestWorldLevel") {};
 
-		sf::Shader* bgShader;
-		sf::Shader* treeShader;
+		ShaderProgram* bgShader;
+		ShaderProgram* treeShader;
 
 		WorldOut* world;
 

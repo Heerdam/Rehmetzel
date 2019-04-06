@@ -412,60 +412,50 @@ void AssetManager::asyncDiscreteLoad() {
 			break;
 			case Type::shader:
 			{
+				
+				bool cExists = true;
+				bool vExists = true;
 				bool gExists = true;
+				bool fExists = true;
+
+				std::ifstream comp(next->id + ".comp");
+				cExists = comp.good();
 
 				std::ifstream vert(next->id + ".vert");
-				if (!vert.good()) std::exception((std::string("can't open file [") + next->id + std::string(".vert]")).data());
+				vExists = comp.good();
 
 				std::ifstream geom(next->id + ".geom");
-				if (!geom.good()) {
-					gExists = false;
-					
-				}
+				gExists = comp.good();
 
 				std::ifstream frag(next->id + ".frag");
-				if (!frag.good()) std::exception((std::string("can't open file [") + next->id + std::string(".frag]")).data());
-
+				fExists = comp.good();
 				
-				std::tuple<std::string, std::string, std::string, LoadItem*>* tuple = new std::tuple<std::string, std::string, std::string, LoadItem*>(
-					std::string{ std::istreambuf_iterator<char>(vert), std::istreambuf_iterator<char>() },
+				std::tuple<std::string, std::string, std::string, std::string, LoadItem*>* tuple = new std::tuple<std::string, std::string, std::string, std::string, LoadItem*>(
+					(cExists ? std::string{ std::istreambuf_iterator<char>(comp), std::istreambuf_iterator<char>() } : ""),
+					(vExists ? std::string{ std::istreambuf_iterator<char>(vert), std::istreambuf_iterator<char>() } : ""),
 					(gExists ? std::string{ std::istreambuf_iterator<char>(geom), std::istreambuf_iterator<char>() } : ""),
-					std::string{ std::istreambuf_iterator<char>(frag), std::istreambuf_iterator<char>() },
+					(fExists ? std::string{ std::istreambuf_iterator<char>(frag), std::istreambuf_iterator<char>() } : ""),
 					next
 					);
-				/*
-				std::tuple<std::string, std::string, std::string, LoadItem*>* tuple = new std::tuple<std::string, std::string, std::string, LoadItem*>(
-					next->id + std::string(".vert"),
-					gExists ? next->id + std::string(".geom") : std::string(""),
-					next->id + std::string(".frag"),
-					next
-					);
-					*/
+
+				comp.close();
 				vert.close();
 				geom.close();
 				frag.close();
 
 				Main::addJob([](void* _entry)->void {
-					std::tuple<std::string, std::string, std::string, LoadItem*>* tuple = (std::tuple<std::string, std::string, std::string, LoadItem*>*)_entry;
+					std::tuple<std::string, std::string, std::string, std::string, LoadItem*>* tuple = reinterpret_cast<std::tuple<std::string, std::string, std::string, std::string, LoadItem*>*>(_entry);
 
-					std::string vert = std::get<0>(*tuple);
-					std::string geom = std::get<1>(*tuple);
-					std::string frag = std::get<2>(*tuple);
-					LoadItem* item = std::get<3>(*tuple);
+					std::string comp = std::get<0>(*tuple);
+					std::string vert = std::get<1>(*tuple);
+					std::string geom = std::get<2>(*tuple);
+					std::string frag = std::get<3>(*tuple);
+					LoadItem* item = std::get<4>(*tuple);
 					
 					auto asset = Main::getAssetManager();
-					sf::Shader* shader = new sf::Shader();
-					if (!geom.empty())
-						shader->loadFromMemory(vert, geom, frag);
-					else 
-						shader->loadFromMemory(vert, frag);
+					ShaderProgram* shader = new ShaderProgram();
+					shader->loadFromMemory(comp, vert, geom, frag);
 
-					//GLenum err;
-					//while ((err = glGetError()) != GL_NO_ERROR)
-						//std::cout << err << std::endl;
-					//GLint linked;
-					//glGetProgramiv(shader->getNativeHandle(), GL_LINK_STATUS, &linked);
-					//std::cout << linked << std::endl;
 					delete tuple;
 					item->data = shader;
 					item->isLoaded = true;

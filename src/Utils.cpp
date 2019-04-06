@@ -86,9 +86,9 @@ void BGVAO::set(float* _data, int _vertexCount, int _vertexSize) {
 }
 
 
-void BGVAO::build(sf::Shader* _shader) {
+void BGVAO::build(ShaderProgram* _shader) {
 
-	cameraUniformHandle = glGetUniformLocation(_shader->getNativeHandle(), "transform");
+	cameraUniformHandle = glGetUniformLocation(_shader->getHandle(), "transform");
 
 	//create buffer
 	glGenVertexArrays(1, &vao);
@@ -118,7 +118,7 @@ void BGVAO::build(sf::Shader* _shader) {
 	tex[8] = (sf::Texture*)(sf::Image*)(Main::getAssetManager()->getAsset("assets/tex/ForestWetMud_baseColor.png")->data);
 
 	for (int i = 0; i < 9; ++i)
-		texLoc[i] = glGetUniformLocation(_shader->getNativeHandle(), (std::string("tex[") + std::to_string(i) + std::string("]")).c_str());
+		texLoc[i] = glGetUniformLocation(_shader->getHandle(), (std::string("tex[") + std::to_string(i) + std::string("]")).c_str());
 
 	//GLenum err;
 	//while ((err = glGetError()) != GL_NO_ERROR) {
@@ -126,8 +126,8 @@ void BGVAO::build(sf::Shader* _shader) {
 	//}
 }
 
-void BGVAO::draw(sf::Shader* _shader) {
-	sf::Shader::bind(_shader);
+void BGVAO::draw(ShaderProgram* _shader) {
+	_shader->bind();
 	glUniformMatrix4fv(cameraUniformHandle, 1, false, Main::getViewport()->cam.getTransform().getMatrix());
 
 	for (int i = 0; i < 9; ++i) {
@@ -145,7 +145,7 @@ void BGVAO::draw(sf::Shader* _shader) {
 	}
 
 	glBindVertexArray(0);
-	glUseProgram(0);
+	_shader->unbind();
 }
 
 void IndexedVAO::set(float* _data, GLuint* _indices, int _vertexCount, int _vertexSize) {
@@ -155,10 +155,10 @@ void IndexedVAO::set(float* _data, GLuint* _indices, int _vertexCount, int _vert
 	vertexSize = _vertexSize;
 }
 
-void IndexedVAO::build(sf::Shader* _shader) {
-	cameraUniformHandle = glGetUniformLocation(_shader->getNativeHandle(), "transform");
-	viewportSizeUniformHandle = glGetUniformLocation(_shader->getNativeHandle(), "viewportSize");
-	radiusUniformHandle = glGetUniformLocation(_shader->getNativeHandle(), "radius");
+void IndexedVAO::build(ShaderProgram* _shader) {
+	cameraUniformHandle = glGetUniformLocation(_shader->getHandle(), "transform");
+	viewportSizeUniformHandle = glGetUniformLocation(_shader->getHandle(), "viewportSize");
+	radiusUniformHandle = glGetUniformLocation(_shader->getHandle(), "radius");
 
 	//create buffer
 	glGenVertexArrays(1, &vao);
@@ -192,11 +192,11 @@ void IndexedVAO::build(sf::Shader* _shader) {
 
 	texLoc.resize(atlas->tex.size());
 	for (int i = 0; i < (int)tex.size(); ++i)
-		texLoc[i] = glGetUniformLocation(_shader->getNativeHandle(), (std::string("tex[") + std::to_string(i) + std::string("]")).c_str());
+		texLoc[i] = glGetUniformLocation(_shader->getHandle(), (std::string("tex[") + std::to_string(i) + std::string("]")).c_str());
 }
 
-void IndexedVAO::draw(sf::Shader* _shader) {
-	sf::Shader::bind(_shader);
+void IndexedVAO::draw(ShaderProgram* _shader) {
+	_shader->bind();
 	glUniformMatrix4fv(cameraUniformHandle, 1, false, Main::getViewport()->cam.getTransform().getMatrix());
 	glUniform1f(radiusUniformHandle, viewRadius);
 	glUniform2f(viewportSizeUniformHandle, (float)Main::width(), (float)Main::height());
@@ -222,7 +222,7 @@ void IndexedVAO::draw(sf::Shader* _shader) {
 	}
 
 	glBindVertexArray(0);
-	glUseProgram(0);
+	_shader->unbind();
 }
 
 //convert a Box2D (float 0.0f - 1.0f range) color to a SFML color (uint8 0 - 255 range)
@@ -844,4 +844,160 @@ void SpriteBatch::addTexture(sf::Font* _font) {
 
 void SpriteBatch::addTexture(sf::Sprite* _sprite) {
 	addTexture(_sprite->getTexture());
+}
+
+bool ShaderProgram::compile(const char* _compute, const char* _vertex, const char* _geom, const char* _frag) {
+	//Compile Compute
+	if (_compute != nullptr) {
+		compute = glCreateShader(GL_COMPUTE_SHADER);
+		glShaderSource(compute, 1, &_compute, nullptr);
+		glCompileShader(compute);
+
+		GLint isCompiled = 0;
+		glGetShaderiv(compute, GL_COMPILE_STATUS, &isCompiled);
+
+		if (printDebug) std::cout << "Compute shader compilation: ";
+
+		if (isCompiled == GL_FALSE) {
+			GLint maxLength = 0;
+			glGetShaderiv(compute, GL_INFO_LOG_LENGTH, &maxLength);
+			if (printDebug) {
+				std::cout << "failed!" << std::endl;
+				std::vector<GLchar> errorLog(maxLength);
+				glGetShaderInfoLog(compute, maxLength, &maxLength, &errorLog[0]);
+
+				std::cout << std::string(errorLog.begin(), errorLog.end()) << std::endl;
+			}
+			glDeleteShader(compute);
+			return false;
+		} else if (printDebug) std::cout << "succeeded!" << std::endl;
+	}
+
+	//Compile Vertex
+	if (_vertex != nullptr) {
+		vertex = glCreateShader(GL_COMPUTE_SHADER);
+		glShaderSource(vertex, 1, &_vertex, nullptr);
+		glCompileShader(vertex);
+
+		GLint isCompiled = 0;
+		glGetShaderiv(vertex, GL_COMPILE_STATUS, &isCompiled);
+
+		if (printDebug) std::cout << "Vertex shader compilation: ";
+
+		if (isCompiled == GL_FALSE) {
+			GLint maxLength = 0;
+			glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
+			if (printDebug) {
+				std::cout << "failed!" << std::endl;
+				std::vector<GLchar> errorLog(maxLength);
+				glGetShaderInfoLog(vertex, maxLength, &maxLength, &errorLog[0]);
+
+				std::cout << std::string(errorLog.begin(), errorLog.end()) << std::endl;
+			}
+			glDeleteShader(vertex);
+			return false;
+		} else if (printDebug) std::cout << "succeeded!" << std::endl;
+	}
+
+	//Compile Geom
+	if (_geom != nullptr) {
+		geom = glCreateShader(GL_COMPUTE_SHADER);
+		glShaderSource(geom, 1, &_geom, nullptr);
+		glCompileShader(geom);
+
+		GLint isCompiled = 0;
+		glGetShaderiv(geom, GL_COMPILE_STATUS, &isCompiled);
+
+		if (printDebug) std::cout << "Geometry shader compilation: ";
+
+		if (isCompiled == GL_FALSE) {
+			GLint maxLength = 0;
+			glGetShaderiv(geom, GL_INFO_LOG_LENGTH, &maxLength);
+			if (printDebug) {
+				std::cout << "failed!" << std::endl;
+				std::vector<GLchar> errorLog(maxLength);
+				glGetShaderInfoLog(geom, maxLength, &maxLength, &errorLog[0]);
+
+				std::cout << std::string(errorLog.begin(), errorLog.end()) << std::endl;
+			}
+			glDeleteShader(geom);
+			return false;
+		} else if (printDebug) std::cout << "succeeded!" << std::endl;
+	}
+
+	//Compile Frag
+	if (_frag != nullptr) {
+		frag = glCreateShader(GL_COMPUTE_SHADER);
+		glShaderSource(frag, 1, &_frag, nullptr);
+		glCompileShader(frag);
+
+		GLint isCompiled = 0;
+		glGetShaderiv(frag, GL_COMPILE_STATUS, &isCompiled);
+
+		if (printDebug) std::cout << "Fragment shader compilation: ";
+
+		if (isCompiled == GL_FALSE) {
+			GLint maxLength = 0;
+			glGetShaderiv(frag, GL_INFO_LOG_LENGTH, &maxLength);
+			if (printDebug) {
+				std::cout << "failed!" << std::endl;
+				std::vector<GLchar> errorLog(maxLength);
+				glGetShaderInfoLog(frag, maxLength, &maxLength, &errorLog[0]);
+
+				std::cout << std::string(errorLog.begin(), errorLog.end()) << std::endl;
+			}
+			glDeleteShader(frag);
+			return false;
+		} else if (printDebug) std::cout << "succeeded!" << std::endl;
+	}
+
+	//Link
+	program = glCreateProgram();
+	if (_compute != nullptr) glAttachShader(program, compute);
+	if (_vertex != nullptr) glAttachShader(program, vertex);
+	if (_geom != nullptr) glAttachShader(program, geom);
+	if (_frag != nullptr) glAttachShader(program, frag);
+
+	glLinkProgram(program);
+
+	GLint isLinked = 0;
+	glGetProgramiv(program, GL_LINK_STATUS, (int *)&isLinked);
+	if (printDebug) std::cout << "Shader linking: ";
+	if (isLinked == GL_FALSE) {
+		if (printDebug) {
+			std::cout << "failed!" << std::endl;
+			GLint maxLength = 0;
+			glGetProgramiv(program, GL_INFO_LOG_LENGTH, &maxLength);
+			std::vector<GLchar> errorLog(maxLength);
+			glGetProgramInfoLog(program, maxLength, &maxLength, &errorLog[0]);
+			std::cout << std::string(errorLog.begin(), errorLog.end()) << std::endl;
+		}
+		glDeleteProgram(program);
+		glDeleteShader(compute);
+		glDeleteShader(vertex);
+		glDeleteShader(geom);
+		glDeleteShader(frag);
+		return false;
+	} else if (printDebug) std::cout << "succeeded!" << std::endl;
+	glDetachShader(program, compute);
+	glDetachShader(program, vertex);
+	glDetachShader(program, geom);
+	glDetachShader(program, frag);
+	return true;
+}
+
+GLuint ShaderProgram::getHandle() {
+	return program;
+}
+
+bool ShaderProgram::loadFromMemory(const std::string& _compute, const std::string& _vertex, const std::string& _geom, const std::string& _frag) {
+	return compile(_compute.empty() ? nullptr : _compute.c_str(), _vertex.c_str(), _geom.empty() ? nullptr : _geom.c_str(), _frag.c_str());
+}
+
+void ShaderProgram::bind() {
+	glUseProgram(getHandle());
+}
+
+void ShaderProgram::unbind() {
+	glUseProgram(0);
 }

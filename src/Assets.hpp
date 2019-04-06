@@ -32,7 +32,7 @@ namespace Heerbann {
 	};
 
 	struct LoadItem {
-		const long uniqueId = Main::getId();
+		const long long uniqueId = Main::getId();
 		std::atomic<bool> isLocked = false;
 
 		bool isLoaded = false;

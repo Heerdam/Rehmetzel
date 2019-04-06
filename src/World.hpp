@@ -7,6 +7,7 @@ namespace Heerbann {
 	using namespace Heerbann;
 
 	class WorldBuilder;
+	class ShaderProgram;
 
 	namespace BehaviourTree {
 		struct Root;
@@ -26,7 +27,7 @@ namespace Heerbann {
 		bool isLoaded = false;
 		bool isVAO = false;
 
-		const long id = Main::getId();
+		const long long id = Main::getId();
 		unsigned long lastSeen;
 
 		EntityType type;
@@ -84,7 +85,7 @@ namespace Heerbann {
 		std::vector<BGVAO*> bgVAOs;
 		std::vector<IndexedVAO*> indexVAOs;
 
-		void finalize(sf::Shader*, sf::Shader*);
+		void finalize(ShaderProgram*, ShaderProgram*);
 	};
 
 	class WorldBuilder : public b2QueryCallback {

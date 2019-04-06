@@ -18,6 +18,8 @@ namespace Heerbann {
 		struct StaticTextBlock;
 	}
 
+	class ShaderProgram;
+
 	class BoundingBox2f {
 
 	public:
@@ -75,8 +77,8 @@ namespace Heerbann {
 
 	public:
 		virtual void set(float*, int) = 0;
-		virtual void build(sf::Shader*) = 0;
-		virtual void draw(sf::Shader*) = 0;
+		virtual void build(ShaderProgram*) = 0;
+		virtual void draw(ShaderProgram*) = 0;
 
 	};
 
@@ -94,8 +96,8 @@ namespace Heerbann {
 
 	public:
 		void set(float*, int, int);
-		void build(sf::Shader*);
-		void draw(sf::Shader*);
+		void build(ShaderProgram*);
+		void draw(ShaderProgram*);
 	};
 
 	class IndexedVAO {
@@ -115,8 +117,8 @@ namespace Heerbann {
 		float viewRadius = 500.f;
 
 		void set(float*, GLuint*, int, int);
-		void build(sf::Shader*);
-		void draw(sf::Shader*);
+		void build(ShaderProgram*);
+		void draw(ShaderProgram*);
 	};
 
 	class DebugDraw : public b2Draw {
@@ -214,7 +216,7 @@ namespace Heerbann {
 		//builds the buffer asynchronous
 		void build();
 
-		//draws the batch
+		//draws the batch 
 		void drawToScreen(const sf::Transform&);
 
 		inline void setColor(sf::Color _color) {
@@ -243,6 +245,17 @@ namespace Heerbann {
 		//for fonts textures needs to be pre initialized or manually added later
 		void addTexture(sf::Font*);
 		void addTexture(sf::Sprite*);
+	};
+
+	class ShaderProgram {
+		GLuint program, compute, vertex, geom, frag;
+		bool compile(const char*, const char*, const char*, const char*);
+	public:
+		bool printDebug = false;
+		GLuint getHandle();
+		bool loadFromMemory(const std::string&, const std::string&, const std::string&, const std::string&);
+		void bind();
+		void unbind();
 	};
 
 }

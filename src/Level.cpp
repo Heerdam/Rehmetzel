@@ -6,8 +6,7 @@
 #include "Utils.hpp"
 #include "World.hpp"
 #include "TextUtil.hpp"
-
-#include <iostream>
+#include "AI.hpp"
 
 using namespace Heerbann;
 using namespace UI;
@@ -142,6 +141,8 @@ void PreLoadLevel::preLoad(AssetManager* _asset) {
 
 	assetToLoad.emplace_back(new LoadItem("assets/shader/bg_shader", Type::shader));
 	assetToLoad.emplace_back(new LoadItem("assets/shader/tree_shader", Type::shader));
+	assetToLoad.emplace_back(new LoadItem("assets/shader/AiTest", Type::shader));
+	assetToLoad.emplace_back(new LoadItem("assets/shader/AiTestComp", Type::shader));
 
 	//assetToLoad.emplace_back(new LoadItem("assets/trees/trees", Type::atlas));
 }
@@ -149,8 +150,6 @@ void PreLoadLevel::preLoad(AssetManager* _asset) {
 void PreLoadLevel::postLoad(AssetManager* _assets) {
 	Main::getLevel()->queueLevelToUnLoad(this);
 	Main::getLevel()->queueLevelToLoad("LoadingScreenLevel");
-
-
 }
 
 //---------------------- LoadingScreenLevel ----------------------\\
@@ -204,15 +203,16 @@ void TestWorldLevel::preLoad(AssetManager *) {
 }
 
 void TestWorldLevel::load(AssetManager* _asset) {	
-	WorldBuilderDefinition def;
-	world = Main::getWorld()->builder->build(def);	
-	bgShader = reinterpret_cast<sf::Shader*>(Main::getAssetManager()->getAsset("assets/shader/bg_shader")->data);
-	treeShader = reinterpret_cast<sf::Shader*>(Main::getAssetManager()->getAsset("assets/shader/tree_shader")->data);
+	//WorldBuilderDefinition def;
+	//world = Main::getWorld()->builder->build(def);	
+	//bgShader = reinterpret_cast<ShaderProgram*>(Main::getAssetManager()->getAsset("assets/shader/bg_shader")->data);
+	//treeShader = reinterpret_cast<ShaderProgram*>(Main::getAssetManager()->getAsset("assets/shader/tree_shader")->data);
 
 }
 
 void TestWorldLevel::postLoad(AssetManager* _asset) {	
-	world->finalize(bgShader, treeShader);
+	//world->finalize(bgShader, treeShader);
+	Main::getAI()->create();
 }
 
 void TestWorldLevel::update(float _delta) {
@@ -220,9 +220,10 @@ void TestWorldLevel::update(float _delta) {
 }
 
 void TestWorldLevel::draw(float _delta, SpriteBatch* _batch) {
-	for (auto v : world->bgVAOs)
-		v->draw(bgShader);
+	//for (auto v : world->bgVAOs)
+		//v->draw(bgShader);
 	//for (auto v : world->indexVAOs)
 		//v->draw(treeShader);
+	Main::getAI()->draw();
 }
 

@@ -83,6 +83,9 @@
     <ClCompile Include="..\src\TextUtil.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\AI.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\bin\assets\shader\bg_shader.frag">
@@ -104,6 +107,18 @@
       <Filter>Resource Files</Filter>
     </None>
     <None Include="..\bin\assets\shader\ai.comp">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\AiTest.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\AiTest.geom">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\AiTest.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\AiTestComp.comp">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

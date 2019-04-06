@@ -9,6 +9,7 @@
 #include "Level.h"
 #include "Utils.hpp"
 #include "TextUtil.hpp"
+#include "AI.hpp"
 
 using namespace Heerbann;
 
@@ -33,7 +34,7 @@ void Main::intialize() {
 
 	sf::ContextSettings settings;
 	settings.majorVersion = 4;
-	settings.minorVersion = 3;
+	settings.minorVersion = 6;
 
 	context = new sf::RenderWindow();
 	context->create(sf::VideoMode(640, 480, 32), "Rehmetzel a.0.1", sf::Style::Default, settings);
@@ -160,6 +161,12 @@ Viewport* Main::getViewport() {
 	return instance->mainCam;
 }
 
+//---------------------- AI ----------------------\\
+
+AI::AIHandler* Main::getAI() {
+	return get()->aiHandler;
+}
+
 //---------------------- Assets ----------------------\\
 
 AssetManager* Main::getAssetManager() {
@@ -169,6 +176,7 @@ AssetManager* Main::getAssetManager() {
 GLuint* Heerbann::Main::getIndexBuffer() {
 	return get()->indexBuffer;
 }
+
 
 Text::FontCache* Main::getFontCache() {
 	return get()->cache;

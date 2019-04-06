@@ -140,6 +140,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\bin\assets\shader\testshader.frag" />
+    <ClCompile Include="..\src\AI.cpp" />
     <ClCompile Include="..\src\Assets.cpp" />
     <ClCompile Include="..\src\CameraUtils.cpp" />
     <ClCompile Include="..\src\InputMultiplexer.cpp" />
@@ -153,6 +154,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\bin\assets\shader\ai.comp" />
+    <None Include="..\bin\assets\shader\AiTestComp.comp" />
+    <None Include="..\bin\assets\shader\AiTest.frag" />
+    <None Include="..\bin\assets\shader\AiTest.geom" />
+    <None Include="..\bin\assets\shader\AiTest.vert" />
     <None Include="..\bin\assets\shader\bg_shader.frag" />
     <None Include="..\bin\assets\shader\bg_shader.geom" />
     <None Include="..\bin\assets\shader\bg_shader.vert" />

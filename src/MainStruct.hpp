@@ -62,6 +62,10 @@ namespace Heerbann {
 	class LevelManager;
 	class SpriteBatch;
 
+	namespace AI{
+		class AIHandler;
+	}
+	
 	namespace Text {
 		class FontCache;
 	}
@@ -85,6 +89,7 @@ namespace Heerbann {
 		SpriteBatch* batch;
 		Text::FontCache* cache;
 		sf::Font* defaultFont;
+		AI::AIHandler* aiHandler;
 
 		unsigned long frameId = 1;
 	
@@ -114,7 +119,7 @@ namespace Heerbann {
 			return instance;
 		};
 
-		long static getId() {
+		long long static getId() {
 			static long id = 1000;
 			return ++id;
 		}
@@ -135,6 +140,10 @@ namespace Heerbann {
 		}
 
 		static GLuint* getIndexBuffer();
+
+		//---------------------- AI ----------------------\\
+
+		static AI::AIHandler* getAI();
 
 		//---------------------- Font ----------------------\\
 
