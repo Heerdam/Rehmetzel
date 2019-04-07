@@ -53,7 +53,7 @@ namespace Heerbann {
 #define BIGFONTSIZE 50
 
 //how many sprites the spritebatch holds
-#define TEXTURECOUNT 10
+#define TEXTURECOUNT 15
 
 	class InputMultiplexer;
 	class World;
@@ -110,6 +110,19 @@ namespace Heerbann {
 
 		void update();
 		void intialize();
+
+		static inline void printOpenGlErrors(std::string _id) {
+			bool hasError = false;
+			GLenum err;
+			while ((err = glGetError()) != GL_NO_ERROR) {
+				if (!hasError) {
+					hasError = true;
+					std::cout << "---- Print OpenGl Errors: " << _id << " ----" << std::endl;
+				}
+				std::cout << err << std::endl;
+			}
+			if (hasError) std::cout << "---- Finished ----" << std::endl;
+		};
 
 		inline static unsigned long getFrameId() {
 			return instance->frameId;

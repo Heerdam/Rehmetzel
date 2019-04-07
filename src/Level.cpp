@@ -224,6 +224,6 @@ void TestWorldLevel::draw(float _delta, SpriteBatch* _batch) {
 		//v->draw(bgShader);
 	//for (auto v : world->indexVAOs)
 		//v->draw(treeShader);
-	Main::getAI()->draw();
+	Main::getAI()->draw(Main::getViewport()->cam.getTransform());
 }
 

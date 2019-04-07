@@ -172,7 +172,7 @@ namespace Heerbann {
 
 		const std::string fragment;
 
-		sf::Shader* shader;
+		ShaderProgram* shader;
 
 		int renderCalls = 0;
 		int totalRenderCalls = 0;
@@ -248,12 +248,16 @@ namespace Heerbann {
 	};
 
 	class ShaderProgram {
+		enum Status {
+			success, failed, missing
+		};
 		GLuint program, compute, vertex, geom, frag;
-		bool compile(const char*, const char*, const char*, const char*);
+		void print(std::string, Status, Status, Status, Status, Status, std::string);
+		bool compile(const std::string&, const char*, const char*, const char*, const char*);
 	public:
-		bool printDebug = false;
+		bool printDebug = true;
 		GLuint getHandle();
-		bool loadFromMemory(const std::string&, const std::string&, const std::string&, const std::string&);
+		bool loadFromMemory(const std::string&, const std::string&, const std::string&, const std::string&, const std::string&);
 		void bind();
 		void unbind();
 	};

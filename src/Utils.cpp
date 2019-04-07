@@ -421,7 +421,7 @@ void DebugDraw::DrawMouseJoint(b2Vec2& p1, b2Vec2& p2, const b2Color &boxColor, 
 
 void SpriteBatch::recompile(int _tex) {
 	const std::string vertex =
-		"#version 330 core \n"
+		"#version 460 core \n"
 		"layout (location = 0) in vec2 a_Pos;"
 		"layout (location = 1) in float a_index;"
 		"layout (location = 2) in float a_typ;"
@@ -449,7 +449,7 @@ void SpriteBatch::recompile(int _tex) {
 		"}";
 
 	std::string fragment =
-		"#version 330 core \n"
+		"#version 460 core \n"
 		"out vec4 FragColor;"
 		"flat in int index;"
 		"flat in int type;"
@@ -467,25 +467,15 @@ void SpriteBatch::recompile(int _tex) {
 		"}"
 		"}";
 
-	if (!shader->loadFromMemory(vertex, fragment))
-		std::exception("failed to compile shader in SpriteBatch");
-
-	GLenum err;
-	while ((err = glGetError()) != GL_NO_ERROR)
-		std::cout << err << std::endl;
-	GLint linked;
-	glGetProgramiv(shader->getNativeHandle(), GL_LINK_STATUS, &linked);
-	std::cout << linked << std::endl;
-
-	camLocation = glGetUniformLocation(shader->getNativeHandle(), "transform");
-	widgetPositionLocation = glGetUniformLocation(shader->getNativeHandle(), "widgetPos");
+	
+	shader->loadFromMemory("Spritebatch Shader", "", vertex, "", fragment);
+	camLocation = glGetUniformLocation(shader->getHandle(), "transform");
+	widgetPositionLocation = glGetUniformLocation(shader->getHandle(), "widgetPos");
 
 	texLoc.resize(TEXTURECOUNT);
 	for (int i = 0; i < TEXTURECOUNT; ++i)
-		texLoc[i] = glGetUniformLocation(shader->getNativeHandle(), (std::string("tex[") + std::to_string(i) + std::string("]")).c_str());
+		texLoc[i] = glGetUniformLocation(shader->getHandle(), (std::string("tex[") + std::to_string(i) + std::string("]")).c_str());
 
-	while ((err = glGetError()) != GL_NO_ERROR)
-		std::cout << err << std::endl;
 }
 
 void SpriteBatch::compressDrawJobs(std::vector<DrawJob*>& _jobs) { //TODO nicht debugged!!
@@ -527,10 +517,10 @@ void SpriteBatch::compressDrawJobs(std::vector<DrawJob*>& _jobs) { //TODO nicht 
 SpriteBatch::SpriteBatch(int _maxTex, int _maxSprites) {
 	vertexCount = _maxSprites * 4;
 	maxSpritesInBatch = _maxSprites;
-
+	
 	data = new float[vertexCount * VERTEXSIZE]{ 0 };
 
-	shader = new sf::Shader();
+	shader = new ShaderProgram();
 	recompile(_maxTex);
 
 	workthread[0] = new std::thread(&SpriteBatch::buildData, this, 0);
@@ -735,18 +725,13 @@ void SpriteBatch::drawToScreen(const sf::Transform& _cam) {
 	locked = false;
 	if (renderQueue.empty()) return;
 	//sf::Shader::bind(shader);
-	glUseProgram(shader->getNativeHandle());
+	shader->bind();
 	glUniformMatrix4fv(camLocation, 1, false, _cam.getMatrix());
 
 	for (unsigned int i = 0; i < texCache.size(); ++i) {
 		glActiveTexture(GL_TEXTURE0 + i);
 		glBindTexture(GL_TEXTURE_2D, texCache[i]->getNativeHandle());
 		glUniform1i(texLoc[i], i);
-	}
-
-	if (isBlending) {
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	}
 
 	if (isDirty) { //TODO spritecount gugus
@@ -783,15 +768,13 @@ void SpriteBatch::drawToScreen(const sf::Transform& _cam) {
 		delete job;
 	}
 
-	if (isBlending) glDisable(GL_BLEND);
-
 	for (unsigned int i = 0; i < texCache.size(); ++i) {
 		glActiveTexture(GL_TEXTURE0 + i);
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
 	glBindVertexArray(0);
-	glUseProgram(0);
+	shader->unbind();
 }
 
 void SpriteBatch::draw(Item* _item) {
@@ -846,111 +829,108 @@ void SpriteBatch::addTexture(sf::Sprite* _sprite) {
 	addTexture(_sprite->getTexture());
 }
 
-bool ShaderProgram::compile(const char* _compute, const char* _vertex, const char* _geom, const char* _frag) {
+void ShaderProgram::print(std::string _id, ShaderProgram::Status _compComp, ShaderProgram::Status _compVert, 
+	ShaderProgram::Status _compGeom, ShaderProgram::Status _compFrag, ShaderProgram::Status _link, std::string _errorLog) {
+	if (!printDebug) return;
+	std::cout << "   Shader: " << _id << std::endl;
+	std::cout << "Compiling: " 
+		<< (_compComp == Status::failed ? " X |" : _compComp == Status::success ? " S |" : " - |")
+		<< (_compVert == Status::failed ? " X |" : _compVert == Status::success ? " S |" : " - |")
+		<< (_compGeom == Status::failed ? " X |" : _compGeom == Status::success ? " S |" : " - |")
+		<< (_compFrag == Status::failed ? " X |" : _compFrag == Status::success ? " S |" : " - |")
+		<< std::endl;
+	std::cout << "  Linking: " << (_link == Status::failed ? "Failed!" : _link == Status::success ? "Success!" : " - ") << std::endl;
+
+	if (_errorLog.empty())
+		std::cout << std::endl;
+	else std::cout << std::endl << _errorLog << std::endl;
+	Main::printOpenGlErrors(_id);
+	std::cout << std::endl;
+}
+
+bool ShaderProgram::compile(const std::string& _id, const char* _compute, const char* _vertex, const char* _geom, const char* _frag) {
+	Status compStatus = Status::missing;
+	Status vertStatus = Status::missing;
+	Status geomStatus = Status::missing;
+	Status fragStatus = Status::missing;
+	Status linkStatus = Status::missing;
+
 	//Compile Compute
 	if (_compute != nullptr) {
 		compute = glCreateShader(GL_COMPUTE_SHADER);
 		glShaderSource(compute, 1, &_compute, nullptr);
 		glCompileShader(compute);
-
 		GLint isCompiled = 0;
 		glGetShaderiv(compute, GL_COMPILE_STATUS, &isCompiled);
-
-		if (printDebug) std::cout << "Compute shader compilation: ";
-
 		if (isCompiled == GL_FALSE) {
 			GLint maxLength = 0;
 			glGetShaderiv(compute, GL_INFO_LOG_LENGTH, &maxLength);
-			if (printDebug) {
-				std::cout << "failed!" << std::endl;
-				std::vector<GLchar> errorLog(maxLength);
-				glGetShaderInfoLog(compute, maxLength, &maxLength, &errorLog[0]);
-
-				std::cout << std::string(errorLog.begin(), errorLog.end()) << std::endl;
-			}
+			std::vector<GLchar> errorLog(maxLength);
+			glGetShaderInfoLog(compute, maxLength, &maxLength, &errorLog[0]);
 			glDeleteShader(compute);
+			compStatus = Status::failed;
+			print(_id, compStatus, vertStatus, geomStatus, fragStatus, linkStatus, std::string(errorLog.begin(), errorLog.end()));
 			return false;
-		} else if (printDebug) std::cout << "succeeded!" << std::endl;
-	}
+		} else compStatus = Status::success;
+	} 
 
 	//Compile Vertex
 	if (_vertex != nullptr) {
-		vertex = glCreateShader(GL_COMPUTE_SHADER);
+		vertex = glCreateShader(GL_VERTEX_SHADER);
 		glShaderSource(vertex, 1, &_vertex, nullptr);
 		glCompileShader(vertex);
-
 		GLint isCompiled = 0;
 		glGetShaderiv(vertex, GL_COMPILE_STATUS, &isCompiled);
-
-		if (printDebug) std::cout << "Vertex shader compilation: ";
-
 		if (isCompiled == GL_FALSE) {
 			GLint maxLength = 0;
 			glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
-			if (printDebug) {
-				std::cout << "failed!" << std::endl;
-				std::vector<GLchar> errorLog(maxLength);
-				glGetShaderInfoLog(vertex, maxLength, &maxLength, &errorLog[0]);
-
-				std::cout << std::string(errorLog.begin(), errorLog.end()) << std::endl;
-			}
+			std::vector<GLchar> errorLog(maxLength);
+			glGetShaderInfoLog(vertex, maxLength, &maxLength, &errorLog[0]);
 			glDeleteShader(vertex);
+			vertStatus = Status::failed;
+			print(_id, compStatus, vertStatus, geomStatus, fragStatus, linkStatus, std::string(errorLog.begin(), errorLog.end()));
 			return false;
-		} else if (printDebug) std::cout << "succeeded!" << std::endl;
+		} else vertStatus = Status::success;
 	}
 
 	//Compile Geom
 	if (_geom != nullptr) {
-		geom = glCreateShader(GL_COMPUTE_SHADER);
+		geom = glCreateShader(GL_GEOMETRY_SHADER);
 		glShaderSource(geom, 1, &_geom, nullptr);
 		glCompileShader(geom);
-
 		GLint isCompiled = 0;
 		glGetShaderiv(geom, GL_COMPILE_STATUS, &isCompiled);
-
-		if (printDebug) std::cout << "Geometry shader compilation: ";
-
 		if (isCompiled == GL_FALSE) {
 			GLint maxLength = 0;
 			glGetShaderiv(geom, GL_INFO_LOG_LENGTH, &maxLength);
-			if (printDebug) {
-				std::cout << "failed!" << std::endl;
-				std::vector<GLchar> errorLog(maxLength);
-				glGetShaderInfoLog(geom, maxLength, &maxLength, &errorLog[0]);
-
-				std::cout << std::string(errorLog.begin(), errorLog.end()) << std::endl;
-			}
+			std::vector<GLchar> errorLog(maxLength);
+			glGetShaderInfoLog(geom, maxLength, &maxLength, &errorLog[0]);
 			glDeleteShader(geom);
+			geomStatus = Status::failed;
+			print(_id, compStatus, vertStatus, geomStatus, fragStatus, linkStatus, std::string(errorLog.begin(), errorLog.end()));
 			return false;
-		} else if (printDebug) std::cout << "succeeded!" << std::endl;
+		} else geomStatus = Status::success;
 	}
 
 	//Compile Frag
 	if (_frag != nullptr) {
-		frag = glCreateShader(GL_COMPUTE_SHADER);
+		frag = glCreateShader(GL_FRAGMENT_SHADER);
 		glShaderSource(frag, 1, &_frag, nullptr);
 		glCompileShader(frag);
-
 		GLint isCompiled = 0;
 		glGetShaderiv(frag, GL_COMPILE_STATUS, &isCompiled);
-
-		if (printDebug) std::cout << "Fragment shader compilation: ";
-
 		if (isCompiled == GL_FALSE) {
 			GLint maxLength = 0;
 			glGetShaderiv(frag, GL_INFO_LOG_LENGTH, &maxLength);
-			if (printDebug) {
-				std::cout << "failed!" << std::endl;
-				std::vector<GLchar> errorLog(maxLength);
-				glGetShaderInfoLog(frag, maxLength, &maxLength, &errorLog[0]);
-
-				std::cout << std::string(errorLog.begin(), errorLog.end()) << std::endl;
-			}
+			std::vector<GLchar> errorLog(maxLength);
+			glGetShaderInfoLog(frag, maxLength, &maxLength, &errorLog[0]);
 			glDeleteShader(frag);
+			fragStatus = Status::failed;
+			print(_id, compStatus, vertStatus, geomStatus, fragStatus, linkStatus, std::string(errorLog.begin(), errorLog.end()));
 			return false;
-		} else if (printDebug) std::cout << "succeeded!" << std::endl;
+		} else fragStatus = Status::success;
 	}
-
+	
 	//Link
 	program = glCreateProgram();
 	if (_compute != nullptr) glAttachShader(program, compute);
@@ -962,27 +942,28 @@ bool ShaderProgram::compile(const char* _compute, const char* _vertex, const cha
 
 	GLint isLinked = 0;
 	glGetProgramiv(program, GL_LINK_STATUS, (int *)&isLinked);
-	if (printDebug) std::cout << "Shader linking: ";
 	if (isLinked == GL_FALSE) {
-		if (printDebug) {
-			std::cout << "failed!" << std::endl;
-			GLint maxLength = 0;
-			glGetProgramiv(program, GL_INFO_LOG_LENGTH, &maxLength);
-			std::vector<GLchar> errorLog(maxLength);
-			glGetProgramInfoLog(program, maxLength, &maxLength, &errorLog[0]);
-			std::cout << std::string(errorLog.begin(), errorLog.end()) << std::endl;
-		}
+		GLint maxLength = 0;
+		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &maxLength);
+		std::vector<GLchar> errorLog(maxLength);
+		glGetProgramInfoLog(program, maxLength, &maxLength, &errorLog[0]);
 		glDeleteProgram(program);
 		glDeleteShader(compute);
 		glDeleteShader(vertex);
 		glDeleteShader(geom);
 		glDeleteShader(frag);
+		linkStatus = Status::failed;
+		print(_id, compStatus, vertStatus, geomStatus, fragStatus, linkStatus, std::string(errorLog.begin(), errorLog.end()));
 		return false;
-	} else if (printDebug) std::cout << "succeeded!" << std::endl;
-	glDetachShader(program, compute);
-	glDetachShader(program, vertex);
-	glDetachShader(program, geom);
-	glDetachShader(program, frag);
+	} else linkStatus = Status::success;
+	
+	if (_compute != nullptr)glDetachShader(program, compute);
+	if (_vertex != nullptr)glDetachShader(program, vertex);
+	if (_geom != nullptr)glDetachShader(program, geom);
+	if (_frag != nullptr)glDetachShader(program, frag);
+
+	print(_id, compStatus, vertStatus, geomStatus, fragStatus, linkStatus, "");
+	unbind();
 	return true;
 }
 
@@ -990,8 +971,8 @@ GLuint ShaderProgram::getHandle() {
 	return program;
 }
 
-bool ShaderProgram::loadFromMemory(const std::string& _compute, const std::string& _vertex, const std::string& _geom, const std::string& _frag) {
-	return compile(_compute.empty() ? nullptr : _compute.c_str(), _vertex.c_str(), _geom.empty() ? nullptr : _geom.c_str(), _frag.c_str());
+bool ShaderProgram::loadFromMemory(const std::string& _id, const std::string& _compute, const std::string& _vertex, const std::string& _geom, const std::string& _frag) {
+	return compile(_id, _compute.empty() ? nullptr : _compute.c_str(), _vertex.empty() ? nullptr : _vertex.c_str(), _geom.empty() ? nullptr : _geom.c_str(), _frag.empty() ? nullptr : _frag.c_str());
 }
 
 void ShaderProgram::bind() {

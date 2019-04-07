@@ -37,7 +37,7 @@ void Main::intialize() {
 	settings.minorVersion = 6;
 
 	context = new sf::RenderWindow();
-	context->create(sf::VideoMode(640, 480, 32), "Rehmetzel a.0.1", sf::Style::Default, settings);
+	context->create(sf::VideoMode(640, 480, 32), "Rehmetzel a.0.2", sf::Style::Default, settings);
 	//context->setVerticalSyncEnabled(true);
 	context->setFramerateLimit(60);	
 
@@ -65,10 +65,13 @@ void Main::intialize() {
 	glewExperimental = GL_TRUE;
 	auto status = glewInit();
 	if (!status == GLEW_OK) {
-		std::exception("glew not ok");
+		std::cout << "glew not ok" << std::endl;
 	}
 
 	//------------- Everything needing openGl goes below this line -------------\\
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	getAssetManager()->addAsset("assets/fonts/default.ttf", Type::font);
 	getAssetManager()->load("assets/fonts/default.ttf");
@@ -81,11 +84,15 @@ void Main::intialize() {
 
 	cache = new Text::FontCache();
 	cache->addFont(s2ws("default"), getDefaultFont());
-
+	
 	batch = new SpriteBatch(TEXTURECOUNT, MAXSPRITES);
+	
 	batch->addTexture(getDefaultFont());
 	
 	level->initialize();
+
+	aiHandler = new AI::AIHandler();
+	
 }
 
 std::wstring Main::s2ws(const char* _in) {

@@ -377,26 +377,23 @@ void AssetManager::asyncDiscreteLoad() {
 				order.data = data;
 				order.item = next;
 				order.size = length;
-				order.pngLoader = [](char* _data, int _size, LoadItem* _item, std::atomic<bool>& _ready)->void {
-					//std::cout << "started loading png " << _item->id << std::endl;
+				order.pngLoader = [](char* _data, int _size, LoadItem* _item, std::atomic<bool>& _ready)->void {				
 					sf::Image* tex = new sf::Image();
 					tex->loadFromMemory(_data, _size);
 					_item->data = tex;
-					
-					
-					Main::addJob([](void* _entry)->void {
-						//std::cout << "started finishing png" << std::endl;
+									
+					Main::addJob([](void* _entry)->void {						
 						LoadItem* item = (LoadItem*)_entry;
-						sf::Image* im = (sf::Image*)item->data;
+						std::cout << "Loading: [png] " << item->id << std::endl;
+						
+						sf::Image* im = reinterpret_cast<sf::Image*>(item->data);
 						sf::Texture* tex = new sf::Texture();
 						tex->loadFromImage(*im);
 						delete im;
 						item->data = tex;
 						item->isLoaded = true;
 						item->isLocked = false;
-						//std::cout << "ended finishing png" << std::endl;
 					}, _item);
-					//std::cout << "ended loading png " << _item->id << std::endl;
 					_ready = true;
 				};
 				
@@ -422,13 +419,13 @@ void AssetManager::asyncDiscreteLoad() {
 				cExists = comp.good();
 
 				std::ifstream vert(next->id + ".vert");
-				vExists = comp.good();
+				vExists = vert.good();
 
 				std::ifstream geom(next->id + ".geom");
-				gExists = comp.good();
+				gExists = geom.good();
 
 				std::ifstream frag(next->id + ".frag");
-				fExists = comp.good();
+				fExists = frag.good();
 				
 				std::tuple<std::string, std::string, std::string, std::string, LoadItem*>* tuple = new std::tuple<std::string, std::string, std::string, std::string, LoadItem*>(
 					(cExists ? std::string{ std::istreambuf_iterator<char>(comp), std::istreambuf_iterator<char>() } : ""),
@@ -454,7 +451,7 @@ void AssetManager::asyncDiscreteLoad() {
 					
 					auto asset = Main::getAssetManager();
 					ShaderProgram* shader = new ShaderProgram();
-					shader->loadFromMemory(comp, vert, geom, frag);
+					shader->loadFromMemory(item->id, comp, vert, geom, frag);
 
 					delete tuple;
 					item->data = shader;
