@@ -141,8 +141,8 @@ void PreLoadLevel::preLoad(AssetManager* _asset) {
 
 	assetToLoad.emplace_back(new LoadItem("assets/shader/bg_shader", Type::shader));
 	assetToLoad.emplace_back(new LoadItem("assets/shader/tree_shader", Type::shader));
-	assetToLoad.emplace_back(new LoadItem("assets/shader/AiTest", Type::shader));
-	assetToLoad.emplace_back(new LoadItem("assets/shader/AiTestComp", Type::shader));
+	//assetToLoad.emplace_back(new LoadItem("assets/shader/AiTest", Type::shader));
+	//assetToLoad.emplace_back(new LoadItem("assets/shader/AiTestComp", Type::shader));
 
 	//assetToLoad.emplace_back(new LoadItem("assets/trees/trees", Type::atlas));
 }
@@ -212,7 +212,7 @@ void TestWorldLevel::load(AssetManager* _asset) {
 
 void TestWorldLevel::postLoad(AssetManager* _asset) {	
 	//world->finalize(bgShader, treeShader);
-	Main::getAI()->create();
+	//Main::getAI()->create();
 }
 
 void TestWorldLevel::update(float _delta) {
@@ -224,6 +224,6 @@ void TestWorldLevel::draw(float _delta, SpriteBatch* _batch) {
 		//v->draw(bgShader);
 	//for (auto v : world->indexVAOs)
 		//v->draw(treeShader);
-	Main::getAI()->draw(Main::getViewport()->cam.getTransform());
+	//Main::getAI()->draw(Main::getViewport()->cam.getTransform());
 }
 

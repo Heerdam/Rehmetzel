@@ -26,6 +26,10 @@
 #include <regex>
 #include <windows.h>
 
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 #include <Box2D/Box2D.h>
 
 namespace Heerbann {

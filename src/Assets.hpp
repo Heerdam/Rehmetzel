@@ -1,13 +1,5 @@
 #pragma once
 
-#include<vector>
-#include<unordered_map>
-#include<queue>
-#include <thread>
-#include <atomic>
-#include <mutex>
-#include <condition_variable>
-
 #include "MainStruct.hpp"
 
 namespace Heerbann {
@@ -24,7 +16,7 @@ namespace Heerbann {
 	struct Level;
 
 	enum Type {
-		texture_png, texture_dds, font, level, atlas, shader, static_text
+		texture_png, texture_dds, font, level, atlas, shader, static_text, model
 	};
 
 	enum State {
@@ -107,6 +99,10 @@ namespace Heerbann {
 		Text::StaticTextBlock* loadStaticText(std::string, std::wstring, float, Text::Align);
 		
 	public:
+
+		AssetManager();
+		~AssetManager();
+
 		//thread safe method to get Asset
 		LoadItem* operator[](std::string _id) {
 			std::lock_guard<std::mutex> guard(assetLock);

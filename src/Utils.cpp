@@ -982,3 +982,129 @@ void ShaderProgram::bind() {
 void ShaderProgram::unbind() {
 	glUseProgram(0);
 }
+
+void Matrix4::matrix4_mul(float * mata, float * matb){
+	float tmp[16];
+	tmp[M00] = mata[M00] * matb[M00] + mata[M01] * matb[M10] + mata[M02] * matb[M20] + mata[M03] * matb[M30];
+	tmp[M01] = mata[M00] * matb[M01] + mata[M01] * matb[M11] + mata[M02] * matb[M21] + mata[M03] * matb[M31];
+	tmp[M02] = mata[M00] * matb[M02] + mata[M01] * matb[M12] + mata[M02] * matb[M22] + mata[M03] * matb[M32];
+	tmp[M03] = mata[M00] * matb[M03] + mata[M01] * matb[M13] + mata[M02] * matb[M23] + mata[M03] * matb[M33];
+	tmp[M10] = mata[M10] * matb[M00] + mata[M11] * matb[M10] + mata[M12] * matb[M20] + mata[M13] * matb[M30];
+	tmp[M11] = mata[M10] * matb[M01] + mata[M11] * matb[M11] + mata[M12] * matb[M21] + mata[M13] * matb[M31];
+	tmp[M12] = mata[M10] * matb[M02] + mata[M11] * matb[M12] + mata[M12] * matb[M22] + mata[M13] * matb[M32];
+	tmp[M13] = mata[M10] * matb[M03] + mata[M11] * matb[M13] + mata[M12] * matb[M23] + mata[M13] * matb[M33];
+	tmp[M20] = mata[M20] * matb[M00] + mata[M21] * matb[M10] + mata[M22] * matb[M20] + mata[M23] * matb[M30];
+	tmp[M21] = mata[M20] * matb[M01] + mata[M21] * matb[M11] + mata[M22] * matb[M21] + mata[M23] * matb[M31];
+	tmp[M22] = mata[M20] * matb[M02] + mata[M21] * matb[M12] + mata[M22] * matb[M22] + mata[M23] * matb[M32];
+	tmp[M23] = mata[M20] * matb[M03] + mata[M21] * matb[M13] + mata[M22] * matb[M23] + mata[M23] * matb[M33];
+	tmp[M30] = mata[M30] * matb[M00] + mata[M31] * matb[M10] + mata[M32] * matb[M20] + mata[M33] * matb[M30];
+	tmp[M31] = mata[M30] * matb[M01] + mata[M31] * matb[M11] + mata[M32] * matb[M21] + mata[M33] * matb[M31];
+	tmp[M32] = mata[M30] * matb[M02] + mata[M31] * matb[M12] + mata[M32] * matb[M22] + mata[M33] * matb[M32];
+	tmp[M33] = mata[M30] * matb[M03] + mata[M31] * matb[M13] + mata[M32] * matb[M23] + mata[M33] * matb[M33];
+	memcpy(mata, tmp, sizeof(float) * 16);
+}
+
+Matrix4::Matrix4() {
+	val[M00] = 1.f;
+	val[M11] = 1.f;
+	val[M22] = 1.f;
+	val[M33] = 1.f;
+}
+
+Matrix4::Matrix4(Matrix4* _mat) {
+	operator=(_mat);
+}
+
+Matrix4::Matrix4(Quaternion* _quat) {
+	operator=(_quat);
+}
+
+Matrix4::Matrix4(const sf::Vector3f& _pos, Quaternion* _quat, const sf::Vector3f& _scale) {
+	set(_pos.x, _pos.y, _pos.z, _quat->x, _quat->y, _quat->z, _quat->w, _scale.x, _scale.y, _scale.z);
+}
+
+Matrix4* Matrix4::operator=(Matrix4* _mat) {
+	std::memcpy(val, _mat->val, sizeof(float) * 16);
+	return this;
+}
+
+Matrix4* Matrix4::operator=(Quaternion* _quat) {
+	const float xs = _quat->x * 2.f, ys = _quat->y * 2.f, zs = _quat->z * 2.f;
+	const float wx = _quat->w * xs, wy = _quat->w * ys, wz = _quat->w * zs;
+	const float xx = _quat->x * xs, xy = _quat->x * ys, xz = _quat->x * zs;
+	const float yy = _quat->y * ys, yz = _quat->y * zs, zz = _quat->z * zs;
+
+	val[M00] = (1.0f - (yy + zz));
+	val[M01] = (xy - wz);
+	val[M02] = (xz + wy);
+	val[M03] = 0.f;
+
+	val[M10] = (xy + wz);
+	val[M11] = (1.0f - (xx + zz));
+	val[M12] = (yz - wx);
+	val[M13] = 0.f;
+
+	val[M20] = (xz - wy);
+	val[M21] = (yz + wx);
+	val[M22] = (1.0f - (xx + yy));
+	val[M23] = 0.f;
+
+	val[M30] = 0.f;
+	val[M31] = 0.f;
+	val[M32] = 0.f;
+	val[M33] = 1.0f;
+	return this;
+}
+
+Matrix4* Heerbann::Matrix4::operator*(Matrix4* _mat) {
+	matrix4_mul(val, _mat->val);
+}
+
+Matrix4* Matrix4::set(const sf::Vector3f& _pos, Quaternion* _quat, const sf::Vector3f& _scale) {
+	return set(_pos.x, _pos.y, _pos.z, _quat->x, _quat->y, _quat->z, _quat->w, _scale.x, _scale.y, _scale.z);
+}
+
+Matrix4* Matrix4::set(float _translationX, float _translationY, float _translationZ, float _quaternionX, float _quaternionY,
+	float _quaternionZ, float _quaternionW, float _scaleX, float _scaleY, float _scaleZ) {
+	const float xs = _quaternionX * 2.f, ys = _quaternionY * 2.f, zs = _quaternionZ * 2.f;
+	const float wx = _quaternionW * xs, wy = _quaternionW * ys, wz = _quaternionW * zs;
+	const float xx = _quaternionX * xs, xy = _quaternionX * ys, xz = _quaternionX * zs;
+	const float yy = _quaternionY * ys, yz = _quaternionY * zs, zz = _quaternionZ * zs;
+
+	val[M00] = _scaleX * (1.0f - (yy + zz));
+	val[M01] = _scaleY * (xy - wz);
+	val[M02] = _scaleZ * (xz + wy);
+	val[M03] = _translationX;
+
+	val[M10] = _scaleX * (xy + wz);
+	val[M11] = _scaleY * (1.0f - (xx + zz));
+	val[M12] = _scaleZ * (yz - wx);
+	val[M13] = _translationY;
+
+	val[M20] = _scaleX * (xz - wy);
+	val[M21] = _scaleY * (yz + wx);
+	val[M22] = _scaleZ * (1.0f - (xx + yy));
+	val[M23] = _translationZ;
+
+	val[M30] = 0.f;
+	val[M31] = 0.f;
+	val[M32] = 0.f;
+	val[M33] = 1.0f;
+	return this;
+}
+
+Quaternion::Quaternion() {
+	idt();
+}
+
+Quaternion::Quaternion(const Quaternion& _quat) {
+	x = _quat.x;
+	y = _quat.y;
+	z = _quat.z;
+	w = _quat.w;
+}
+
+void Quaternion::idt() {
+	x = y = z = 0.f;
+	w = 1.f;
+}

@@ -24,7 +24,7 @@ LoadItem* AssetManager::popUnload() {
 	return item;
 }
 
-Level * Heerbann::AssetManager::popLevelLoad() {
+Level* AssetManager::popLevelLoad() {
 	std::lock_guard<std::mutex> guard(loadQueueLock);
 	if (continuousLevelLoadQueue.empty()) return nullptr;
 	Level* item = continuousLevelLoadQueue.front();
@@ -32,7 +32,7 @@ Level * Heerbann::AssetManager::popLevelLoad() {
 	return item;
 }
 
-Level * Heerbann::AssetManager::popLevelUnload() {
+Level* AssetManager::popLevelUnload() {
 	std::lock_guard<std::mutex> guard(unloadQueueLock);
 	if (continuousLevelUnloadQueue.empty()) return nullptr;
 	Level* item = continuousLevelUnloadQueue.front();
@@ -40,25 +40,25 @@ Level * Heerbann::AssetManager::popLevelUnload() {
 	return item;
 }
 
-bool Heerbann::AssetManager::isContinuousLoadQueueEmpty() {
+bool AssetManager::isContinuousLoadQueueEmpty() {
 	std::lock_guard<std::mutex> guard(loadQueueLock);
 	bool empty = continuousLoadQueue.empty();
 	return empty;
 }
 
-bool Heerbann::AssetManager::iscontinuousUnloadQueueEmpty() {
+bool AssetManager::iscontinuousUnloadQueueEmpty() {
 	std::lock_guard<std::mutex> guard(unloadQueueLock);
 	bool empty = continuousUnloadQueue.empty();
 	return empty;
 }
 
-bool Heerbann::AssetManager::iscontinuousLevelLoadQueueEmpty() {
+bool AssetManager::iscontinuousLevelLoadQueueEmpty() {
 	std::lock_guard<std::mutex> guard(loadLevelQueueLock);
 	bool empty = continuousLevelLoadQueue.empty();
 	return empty;
 }
 
-bool Heerbann::AssetManager::iscontinuousLevelUnloadQueueEmpty() {
+bool AssetManager::iscontinuousLevelUnloadQueueEmpty() {
 	std::lock_guard<std::mutex> guard(unloadLevelQueueLock);
 	bool empty = continuousLevelUnloadQueue.empty();
 	return empty;
@@ -76,13 +76,13 @@ void AssetManager::queueUnLoad(LoadItem* _item) {
 	continuousUnloadQueue.emplace(_item);
 }
 
-void Heerbann::AssetManager::queueLoad(Level* _level) {
+void AssetManager::queueLoad(Level* _level) {
 	std::lock_guard<std::mutex> guard(loadLevelQueueLock);
 	_level->isLocked = true;
 	continuousLevelLoadQueue.emplace(_level);
 }
 
-void Heerbann::AssetManager::queueUnLoad(Level* _level) {
+void AssetManager::queueUnLoad(Level* _level) {
 	std::lock_guard<std::mutex> guard(unloadLevelQueueLock);
 	_level->isLocked = true;
 	continuousLevelUnloadQueue.emplace(_level);
@@ -92,7 +92,7 @@ void AssetManager::addAsset(std::string _id, Type _type) {
 	addAsset(new LoadItem(_id, _type));	
 }
 
-void Heerbann::AssetManager::addAsset(LoadItem* _item) {
+void AssetManager::addAsset(LoadItem* _item) {
 	std::lock_guard<std::mutex> guard(assetLock);
 	if (assets.count(_item->id) != 0) std::exception(std::string("Asset already exists [").append(_item->id).append("]").c_str());	
 	assets[_item->id] = _item;
@@ -114,6 +114,14 @@ Text::StaticTextBlock* AssetManager::loadStaticText(std::string _id, std::wstrin
 	return text;
 }
 
+AssetManager::AssetManager() {
+	
+}
+
+AssetManager::~AssetManager() {
+
+}
+
 LoadItem* AssetManager::getAsset(std::string _id) {
 	std::lock_guard<std::mutex> guard(assetLock);
 	if (assets.count(_id) == 0) std::exception(std::string("Asset doesnt exists [").append(_id).append("]").c_str());
@@ -121,19 +129,19 @@ LoadItem* AssetManager::getAsset(std::string _id) {
 	return item;
 }
 
-bool Heerbann::AssetManager::exists(std::string _id) {
+bool AssetManager::exists(std::string _id) {
 	std::lock_guard<std::mutex> guard(assetLock);
 	return assets.count(_id) != 0;
 }
 
-Level * Heerbann::AssetManager::getLevel(std::string _id) {
+Level* AssetManager::getLevel(std::string _id) {
 	std::lock_guard<std::mutex> guard(levelLock);
 	if (levels.count(_id) == 0) std::exception(std::string("Level doesnt exists [").append(_id).append("]").c_str());
 	Level* level = levels[_id];
 	return level;
 }
 
-Level * Heerbann::AssetManager::getLoadedLevel(std::string _id) {
+Level* AssetManager::getLoadedLevel(std::string _id) {
 	std::lock_guard<std::mutex> guard(levelLock);
 	if (levels.count(_id) == 0) return nullptr;
 	auto level = levels[_id];
@@ -250,11 +258,11 @@ void Heerbann::AssetManager::asyncContinuousLoad() {
 	*/
 }
 
-void Heerbann::AssetManager::levelLoader(Level* _level) {
+void AssetManager::levelLoader(Level* _level) {
 	_level->load(this);
 }
 
-void Heerbann::AssetManager::levelUnloader(Level * _level) {
+void AssetManager::levelUnloader(Level * _level) {
 	_level->unload(this);
 }
 
@@ -570,6 +578,76 @@ void AssetManager::asyncDiscreteLoad() {
 					item->isLocked = false;
 				}, next);
 				
+			}
+			break;
+			case model:
+			{		
+				//find model
+
+				//find animations
+
+				//find textures
+
+				std::vector<std::string> fbxFiles;
+				std::vector<std::string> textures;
+
+				Assimp::Importer importer;
+				const aiScene *scene = importer.ReadFile("", aiProcess_Triangulate | aiProcess_FlipUVs);
+				
+				aiBone bone;
+
+				//vec3 pos
+				//vec3 normals
+				//vev2 uv
+				//vec2 weights (index to first, count)/ index to bones
+				const int vertexSize = (3 + 3 + 2 + 2);
+				float* vertexBuffer;
+
+				//meshes
+				for (int i = 0; i < scene->mNumMeshes; ++i) {
+					aiMesh* mesh = scene->mMeshes[i];
+
+					for (int k = 0; k < mesh->mNumVertices; ++k) {
+						auto& pos = mesh->mVertices[k];
+						auto& norm = mesh->mNormals[k];
+						auto& uv = mesh->mTextureCoords[k];
+						
+						int v = 0;
+						//pos
+						vertexBuffer[vertexSize * k] = pos.x;
+						vertexBuffer[vertexSize * k + ++v] = pos.y;
+						vertexBuffer[vertexSize * k + ++v] = pos.z;
+						//norm
+						vertexBuffer[vertexSize * k + ++v] = norm.x;
+						vertexBuffer[vertexSize * k + ++v] = norm.y;
+						vertexBuffer[vertexSize * k + ++v] = norm.z;
+						//uv
+						vertexBuffer[vertexSize * k + ++v] = uv.x;
+						vertexBuffer[vertexSize * k + ++v] = uv.y;
+					}
+				}
+
+				//indices
+
+
+				//animations
+
+				//materials
+
+				//textures
+
+				//int bonecount
+				//int offset to bones
+				//int animation count
+				//vec[] weights
+				//mat4 bones[]
+
+				//int bonecount
+				//int offset to bones
+				//float[]
+				const int ssboSize = 0;
+				float* ssboBuffer = new float[ssboSize];
+
 			}
 			break;
 		}

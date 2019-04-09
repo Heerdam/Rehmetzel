@@ -11,6 +11,28 @@ namespace Heerbann {
 
 	namespace AI {
 		
+
+
+
+
+
+		class AIHandler {
+
+		};
+
+
+
+
+
+
+
+
+
+
+
+
+
+		/*
 		struct Debug {
 			float radius;
 			float position[2];
@@ -45,7 +67,7 @@ namespace Heerbann {
 			void create();
 			void draw(const sf::Transform&);
 		};
-
+		*/
 		
 	}
 }
