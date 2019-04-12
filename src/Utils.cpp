@@ -207,13 +207,13 @@ void IndexedVAO::draw(ShaderProgram* _shader) {
 		glUniform1i(texLoc[i], i);
 	}
 
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glEnable(GL_BLEND);
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	glBindVertexArray(vao);
 	glDrawElements(GL_TRIANGLES, vertexCount / 4 * 6, GL_UNSIGNED_INT, nullptr);
 
-	glDisable(GL_BLEND);
+	//glDisable(GL_BLEND);
 
 
 	for (int i = 0; i < (int)tex.size(); ++i) {
@@ -1023,6 +1023,10 @@ Matrix4::Matrix4(const sf::Vector3f& _pos, Quaternion* _quat, const sf::Vector3f
 	set(_pos.x, _pos.y, _pos.z, _quat->x, _quat->y, _quat->z, _quat->w, _scale.x, _scale.y, _scale.z);
 }
 
+Matrix4::Matrix4(const aiVector3D& _pos, const aiQuaternion& _quat, const aiVector3D& _scale) {
+	set(_pos.x, _pos.y, _pos.z, _quat.x, _quat.y, _quat.z, _quat.w, _scale.x, _scale.y, _scale.z);
+}
+
 Matrix4* Matrix4::operator=(Matrix4* _mat) {
 	std::memcpy(val, _mat->val, sizeof(float) * 16);
 	return this;
@@ -1058,6 +1062,7 @@ Matrix4* Matrix4::operator=(Quaternion* _quat) {
 
 Matrix4* Heerbann::Matrix4::operator*(Matrix4* _mat) {
 	matrix4_mul(val, _mat->val);
+	return this;
 }
 
 Matrix4* Matrix4::set(const sf::Vector3f& _pos, Quaternion* _quat, const sf::Vector3f& _scale) {
@@ -1093,6 +1098,269 @@ Matrix4* Matrix4::set(float _translationX, float _translationY, float _translati
 	return this;
 }
 
+Matrix4* Matrix4::set(float* _val) {
+	std::memcpy(val, _val, 16 * sizeof(float));
+	return this;
+}
+
+void Matrix4::setToTranslation(const sf::Vector3f& _vec) {
+	setToTranslation(_vec.x, _vec.y, _vec.z);
+}
+
+void Matrix4::setToTranslation(float _x, float _y, float _z) {
+	idt();
+	val[M03] = _x;
+	val[M13] = _y;
+	val[M23] = _z;
+}
+
+float Matrix4::operator[](int _index) {
+	assert(_index >= 0 && _index < 16);
+	return val[_index];
+}
+
+void Matrix4::tra() {
+	tmp[M00] = val[M00];
+	tmp[M01] = val[M10];
+	tmp[M02] = val[M20];
+	tmp[M03] = val[M30];
+	tmp[M10] = val[M01];
+	tmp[M11] = val[M11];
+	tmp[M12] = val[M21];
+	tmp[M13] = val[M31];
+	tmp[M20] = val[M02];
+	tmp[M21] = val[M12];
+	tmp[M22] = val[M22];
+	tmp[M23] = val[M32];
+	tmp[M30] = val[M03];
+	tmp[M31] = val[M13];
+	tmp[M32] = val[M23];
+	tmp[M33] = val[M33];
+	set(tmp);
+}
+
+void Matrix4::idt() {
+	val[M00] = 1.f;
+	val[M01] = 0.f;
+	val[M02] = 0.f;
+	val[M03] = 0.f;
+	val[M10] = 0.f;
+	val[M11] = 1.f;
+	val[M12] = 0.f;
+	val[M13] = 0.f;
+	val[M20] = 0.f;
+	val[M21] = 0.f;
+	val[M22] = 1.f;
+	val[M23] = 0.f;
+	val[M30] = 0.f;
+	val[M31] = 0.f;
+	val[M32] = 0.f;
+	val[M33] = 1.f;
+}
+
+float Matrix4::det() {
+	return val[M30] * val[M21] * val[M12] * val[M03] - val[M20] * val[M31] * val[M12] * val[M03] - val[M30] * val[M11]
+		* val[M22] * val[M03] + val[M10] * val[M31] * val[M22] * val[M03] + val[M20] * val[M11] * val[M32] * val[M03] - val[M10]
+		* val[M21] * val[M32] * val[M03] - val[M30] * val[M21] * val[M02] * val[M13] + val[M20] * val[M31] * val[M02] * val[M13]
+		+ val[M30] * val[M01] * val[M22] * val[M13] - val[M00] * val[M31] * val[M22] * val[M13] - val[M20] * val[M01] * val[M32]
+		* val[M13] + val[M00] * val[M21] * val[M32] * val[M13] + val[M30] * val[M11] * val[M02] * val[M23] - val[M10] * val[M31]
+		* val[M02] * val[M23] - val[M30] * val[M01] * val[M12] * val[M23] + val[M00] * val[M31] * val[M12] * val[M23] + val[M10]
+		* val[M01] * val[M32] * val[M23] - val[M00] * val[M11] * val[M32] * val[M23] - val[M20] * val[M11] * val[M02] * val[M33]
+		+ val[M10] * val[M21] * val[M02] * val[M33] + val[M20] * val[M01] * val[M12] * val[M33] - val[M00] * val[M21] * val[M12]
+		* val[M33] - val[M10] * val[M01] * val[M22] * val[M33] + val[M00] * val[M11] * val[M22] * val[M33];
+}
+
+bool Matrix4::inv() {
+	float tmp[16];
+	float l_det = det();
+	if (l_det == 0) return false;
+	tmp[M00] = val[M12] * val[M23] * val[M31] - val[M13] * val[M22] * val[M31] + val[M13] * val[M21] * val[M32] - val[M11]
+		* val[M23] * val[M32] - val[M12] * val[M21] * val[M33] + val[M11] * val[M22] * val[M33];
+	tmp[M01] = val[M03] * val[M22] * val[M31] - val[M02] * val[M23] * val[M31] - val[M03] * val[M21] * val[M32] + val[M01]
+		* val[M23] * val[M32] + val[M02] * val[M21] * val[M33] - val[M01] * val[M22] * val[M33];
+	tmp[M02] = val[M02] * val[M13] * val[M31] - val[M03] * val[M12] * val[M31] + val[M03] * val[M11] * val[M32] - val[M01]
+		* val[M13] * val[M32] - val[M02] * val[M11] * val[M33] + val[M01] * val[M12] * val[M33];
+	tmp[M03] = val[M03] * val[M12] * val[M21] - val[M02] * val[M13] * val[M21] - val[M03] * val[M11] * val[M22] + val[M01]
+		* val[M13] * val[M22] + val[M02] * val[M11] * val[M23] - val[M01] * val[M12] * val[M23];
+	tmp[M10] = val[M13] * val[M22] * val[M30] - val[M12] * val[M23] * val[M30] - val[M13] * val[M20] * val[M32] + val[M10]
+		* val[M23] * val[M32] + val[M12] * val[M20] * val[M33] - val[M10] * val[M22] * val[M33];
+	tmp[M11] = val[M02] * val[M23] * val[M30] - val[M03] * val[M22] * val[M30] + val[M03] * val[M20] * val[M32] - val[M00]
+		* val[M23] * val[M32] - val[M02] * val[M20] * val[M33] + val[M00] * val[M22] * val[M33];
+	tmp[M12] = val[M03] * val[M12] * val[M30] - val[M02] * val[M13] * val[M30] - val[M03] * val[M10] * val[M32] + val[M00]
+		* val[M13] * val[M32] + val[M02] * val[M10] * val[M33] - val[M00] * val[M12] * val[M33];
+	tmp[M13] = val[M02] * val[M13] * val[M20] - val[M03] * val[M12] * val[M20] + val[M03] * val[M10] * val[M22] - val[M00]
+		* val[M13] * val[M22] - val[M02] * val[M10] * val[M23] + val[M00] * val[M12] * val[M23];
+	tmp[M20] = val[M11] * val[M23] * val[M30] - val[M13] * val[M21] * val[M30] + val[M13] * val[M20] * val[M31] - val[M10]
+		* val[M23] * val[M31] - val[M11] * val[M20] * val[M33] + val[M10] * val[M21] * val[M33];
+	tmp[M21] = val[M03] * val[M21] * val[M30] - val[M01] * val[M23] * val[M30] - val[M03] * val[M20] * val[M31] + val[M00]
+		* val[M23] * val[M31] + val[M01] * val[M20] * val[M33] - val[M00] * val[M21] * val[M33];
+	tmp[M22] = val[M01] * val[M13] * val[M30] - val[M03] * val[M11] * val[M30] + val[M03] * val[M10] * val[M31] - val[M00]
+		* val[M13] * val[M31] - val[M01] * val[M10] * val[M33] + val[M00] * val[M11] * val[M33];
+	tmp[M23] = val[M03] * val[M11] * val[M20] - val[M01] * val[M13] * val[M20] - val[M03] * val[M10] * val[M21] + val[M00]
+		* val[M13] * val[M21] + val[M01] * val[M10] * val[M23] - val[M00] * val[M11] * val[M23];
+	tmp[M30] = val[M12] * val[M21] * val[M30] - val[M11] * val[M22] * val[M30] - val[M12] * val[M20] * val[M31] + val[M10]
+		* val[M22] * val[M31] + val[M11] * val[M20] * val[M32] - val[M10] * val[M21] * val[M32];
+	tmp[M31] = val[M01] * val[M22] * val[M30] - val[M02] * val[M21] * val[M30] + val[M02] * val[M20] * val[M31] - val[M00]
+		* val[M22] * val[M31] - val[M01] * val[M20] * val[M32] + val[M00] * val[M21] * val[M32];
+	tmp[M32] = val[M02] * val[M11] * val[M30] - val[M01] * val[M12] * val[M30] - val[M02] * val[M10] * val[M31] + val[M00]
+		* val[M12] * val[M31] + val[M01] * val[M10] * val[M32] - val[M00] * val[M11] * val[M32];
+	tmp[M33] = val[M01] * val[M12] * val[M20] - val[M02] * val[M11] * val[M20] + val[M02] * val[M10] * val[M21] - val[M00]
+		* val[M12] * val[M21] - val[M01] * val[M10] * val[M22] + val[M00] * val[M11] * val[M22];
+	float inv_det = 1.0f / l_det;
+	val[M00] = tmp[M00] * inv_det;
+	val[M01] = tmp[M01] * inv_det;
+	val[M02] = tmp[M02] * inv_det;
+	val[M03] = tmp[M03] * inv_det;
+	val[M10] = tmp[M10] * inv_det;
+	val[M11] = tmp[M11] * inv_det;
+	val[M12] = tmp[M12] * inv_det;
+	val[M13] = tmp[M13] * inv_det;
+	val[M20] = tmp[M20] * inv_det;
+	val[M21] = tmp[M21] * inv_det;
+	val[M22] = tmp[M22] * inv_det;
+	val[M23] = tmp[M23] * inv_det;
+	val[M30] = tmp[M30] * inv_det;
+	val[M31] = tmp[M31] * inv_det;
+	val[M32] = tmp[M32] * inv_det;
+	val[M33] = tmp[M33] * inv_det;
+	return true;
+}
+
+void Matrix4::setToProjection(float _near, float _far, float _fovy, float _aspectRatio) {
+	idt();
+	float l_fd = (float)(1.f / std::tanf((_fovy * (b2_pi / 180.f)) / 2.f));
+	float l_a1 = (_far + _near) / (_near - _far);
+	float l_a2 = (2.f * _far * _near) / (_near - _far);
+	val[M00] = l_fd / _aspectRatio;
+	val[M10] = 0.f;
+	val[M20] = 0.f;
+	val[M30] = 0.f;
+	val[M01] = 0.f;
+	val[M11] = l_fd;
+	val[M21] = 0.f;
+	val[M31] = 0.f;
+	val[M02] = 0.f;
+	val[M12] = 0.f;
+	val[M22] = l_a1;
+	val[M32] = -1.f;
+	val[M03] = 0.f;
+	val[M13] = 0.f;
+	val[M23] = l_a2;
+	val[M33] = 0.f;
+}
+
+void Matrix4::setToProjection(float _left, float _right, float _bottom, float _top, float _near, float _far) {
+	float x = 2.f * _near / (_right - _left);
+	float y = 2.f * _near / (_top - _bottom);
+	float a = (_right + _left) / (_right - _left);
+	float b = (_top + _bottom) / (_top - _bottom);
+	float l_a1 = (_far + _near) / (_near - _far);
+	float l_a2 = (2.f * _far * _near) / (_near - _far);
+	val[M00] = x;
+	val[M10] = 0.f;
+	val[M20] = 0.f;
+	val[M30] = 0.f;
+	val[M01] = 0.f;
+	val[M11] = y;
+	val[M21] = 0.f;
+	val[M31] = 0.f;
+	val[M02] = a;
+	val[M12] = b;
+	val[M22] = l_a1;
+	val[M32] = -1.f;
+	val[M03] = 0.f;
+	val[M13] = 0.f;
+	val[M23] = l_a2;
+	val[M33] = 0.f;
+}
+
+void Matrix4::setToOrtho2D(float _x, float _y, float _width, float _height) {
+	setToOrtho(_x, _x + _width, _y, _y + _height, 0.f, 1.f);
+}
+
+void Matrix4::setToOrtho2D(float _x, float _y, float _width, float _height, float _near, float _far) {
+	setToOrtho(_x, _x + _width, _y, _y + _height, _near, _far);
+}
+
+void Matrix4::setToOrtho(float _left, float _right, float _bottom, float _top, float _near, float _far) {
+	idt();
+	float x_orth = 2.f / (_right - _left);
+	float y_orth = 2.f / (_top - _bottom);
+	float z_orth = -2.f / (_far - _near);
+
+	float tx = -(_right + _left) / (_right - _left);
+	float ty = -(_top + _bottom) / (_top - _bottom);
+	float tz = -(_far + _near) / (_far - _near);
+
+	val[M00] = x_orth;
+	val[M10] = 0.f;
+	val[M20] = 0.f;
+	val[M30] = 0.f;
+	val[M01] = 0.f;
+	val[M11] = y_orth;
+	val[M21] = 0.f;
+	val[M31] = 0.f;
+	val[M02] = 0.f;
+	val[M12] = 0.f;
+	val[M22] = z_orth;
+	val[M32] = 0.f;
+	val[M03] = tx;
+	val[M13] = ty;
+	val[M23] = tz;
+	val[M33] = 1.f;
+}
+
+void Matrix4::setToLookAt(const sf::Vector3f& _direction, const sf::Vector3f& _up) {
+	sf::Vector3f l_vex;
+	sf::Vector3f l_vey;
+	sf::Vector3f l_vez;
+
+	l_vez = Main::nor(l_vez = _direction);
+	l_vex = Main::nor(l_vex = _direction);
+	l_vex = Main::crs(l_vex, _up);
+	l_vex = Main::nor(l_vex);
+	l_vey = Main::crs(l_vex, l_vez);
+	l_vey = Main::nor(l_vey);
+
+	idt();
+	val[M00] = l_vex.x;
+	val[M01] = l_vex.y;
+	val[M02] = l_vex.z;
+	val[M10] = l_vey.x;
+	val[M11] = l_vey.y;
+	val[M12] = l_vey.z;
+	val[M20] = -l_vez.x;
+	val[M21] = -l_vez.y;
+	val[M22] = -l_vez.z;
+}
+
+void Matrix4::setToLookAt(const sf::Vector3f& _position, const sf::Vector3f& _target, const sf::Vector3f& _up) {
+	sf::Vector3f tmpVec;
+	tmpVec = _target - _position;
+	setToLookAt(tmpVec, _up);
+	Matrix4 tmp;
+	tmp.setToTranslation(-_position.x, -_position.y, -_position.z);
+	matrix4_mul(this->val, tmp.val);
+}
+
+void Matrix4::matrix4_proj(float* _mat, float* _vec) {
+	float inv_w = 1.0f / (_vec[0] * _mat[M30] + _vec[1] * _mat[M31] + _vec[2] * _mat[M32] + _mat[M33]);
+	float x = (_vec[0] * _mat[M00] + _vec[1] * _mat[M01] + _vec[2] * _mat[M02] + _mat[M03]) * inv_w;
+	float y = (_vec[0] * _mat[M10] + _vec[1] * _mat[M11] + _vec[2] * _mat[M12] + _mat[M13]) * inv_w;
+	float z = (_vec[0] * _mat[M20] + _vec[1] * _mat[M21] + _vec[2] * _mat[M22] + _mat[M23]) * inv_w;
+	_vec[0] = x;
+	_vec[1] = y;
+	_vec[2] = z;
+}
+
+void Matrix4::proj(float* _mat, float* _vecs, int _offset, int _numVecs, int _stride) {
+	float* vecPtr = _vecs + _offset;
+	for (int i = 0; i < _numVecs; ++i) {
+		matrix4_proj(_mat, vecPtr);
+		vecPtr += _stride;
+	}
+}
+
 Quaternion::Quaternion() {
 	idt();
 }
@@ -1107,4 +1375,273 @@ Quaternion::Quaternion(const Quaternion& _quat) {
 void Quaternion::idt() {
 	x = y = z = 0.f;
 	w = 1.f;
+}
+
+Plane::Plane() : Plane(sf::Vector3(0.f, 0.f, 0.f), 0.f) {}
+
+Plane::Plane(const sf::Vector3f& _normal, float _d) : normal(Main::nor(_normal)), d(_d){}
+
+Plane::Plane(const Plane& _plane) : Plane(_plane.normal, _plane.d) {}
+
+Plane::Plane(const sf::Vector3f& _normal, const sf::Vector3f& _point) : Plane(_normal, 
+	-(_normal.x + _point.x + _normal.y + _point.y + _normal.z + _point.z)){}
+
+Plane::Plane(const sf::Vector3f& _point1, const sf::Vector3f& _point2, const sf::Vector3f& _point3) {
+	set(_point1, _point2, _point3);
+}
+
+void Plane::set(const Plane& _plane) {
+	set(_plane.normal, _plane.d);
+}
+
+void Plane::set(const sf::Vector3f& _normal, float _d) {
+	normal = sf::Vector3f(Main::nor(_normal));
+	d = _d;
+}
+
+void Plane::set(const sf::Vector3f& _point1, const sf::Vector3f& _point2, const sf::Vector3f& _point3) {
+	normal = _point1 - _point2;
+	normal = Main::nor(Main::crs(normal, sf::Vector3f(_point2.x - _point3.x, _point2.y - _point3.y, _point2.z - _point3.z)));
+	d = -(normal.x + _point1.x + normal.y + _point1.y + normal.z + _point1.z);
+}
+
+void Plane::set(float _nx, float _ny, float _nz, float _d) {
+	normal = sf::Vector3f(_nx, _ny, _nz);
+	d = _d;
+}
+
+float Plane::distance(const sf::Vector3f& _point) {
+	return -(normal.x + _point.x + normal.y + _point.y + normal.z + _point.z) + d;
+}
+
+Plane::PlaneSide Plane::testPoint(const sf::Vector3f& _point) {
+	float dist = distance(_point);
+	if (Main::almost_equal(dist, 0.f))
+		return Plane::PlaneSide::OnPlane;
+	else if (dist < 0)
+		return Plane::PlaneSide::Back;
+	else
+		return Plane::PlaneSide::Front;
+}
+
+Plane::PlaneSide Plane::testPoint(float _x, float _y, float _z) {
+	return testPoint(sf::Vector3f(_x, _y, _z));
+}
+
+bool Plane::isFrontFacing(const sf::Vector3f& _point) {
+	float dot = normal.x + _point.x + normal.y + _point.y + normal.z + _point.z;
+	return dot < 0.f || Main::almost_equal(dot, 0.f);
+}
+
+BoundingBox::BoundingBox() {
+	clr();
+}
+
+BoundingBox::BoundingBox(BoundingBox* _box) {
+	set(_box);
+}
+
+BoundingBox::BoundingBox(const sf::Vector3f& _min, const sf::Vector3f& _max) {
+	set(_min, _max);
+}
+
+void BoundingBox::set(BoundingBox* _box) {
+	set(_box->min, _box->max);
+}
+
+void BoundingBox::set(const sf::Vector3f& _min, const sf::Vector3f& _max) {
+	min = sf::Vector3f(std::min(_min.x, _max.x), std::min(_min.y, _max.y), std::min(_min.z, _max.z));
+	max = sf::Vector3f(std::max(_min.x, _max.x), std::max(_min.y, _max.y), std::max(_min.z, _max.z));
+	cnt = (min + max) * 0.5f;
+	dim = max - min;
+}
+
+void BoundingBox::set(const std::vector<sf::Vector3f>& _points) {
+	inf();
+	for (auto& v : _points)
+		ext(v);
+}
+
+void BoundingBox::inf() {
+	min = sf::Vector3f(std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity());
+	max = sf::Vector3f(-std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity());
+	cnt = sf::Vector3f(0.f, 0.f, 0.f);
+	dim = sf::Vector3f(0.f, 0.f, 0.f);
+}
+
+void BoundingBox::ext(const sf::Vector3f& _point) {
+	set(sf::Vector3f(std::min(min.x, _point.x), std::min(min.y, _point.y), std::min(min.z, _point.z)), 
+		sf::Vector3f(std::max(max.x, _point.x), std::max(max.y, _point.y), std::max(max.z, _point.z)));
+}
+
+void BoundingBox::clr() {
+	set(sf::Vector3f(0.f, 0.f, 0.f), sf::Vector3f(0.f, 0.f, 0.f));
+}
+
+bool BoundingBox::isValid() {
+	return min.x < max.x && Main::almost_equal(min.x, max.x) &&
+		(min.y < max.y || Main::almost_equal(min.y, max.y)) &&
+		(min.z < max.z || Main::almost_equal(min.z, max.z));
+}
+
+void BoundingBox::ext(BoundingBox* _box) {
+	set(sf::Vector3f(std::min(min.x, _box->min.x), std::min(min.y, _box->min.y), std::min(min.z, _box->min.z)),
+		sf::Vector3f(std::max(max.x, _box->max.x), std::max(max.y, _box->max.y), std::max(max.z, _box->max.z)));
+}
+
+void BoundingBox::ext(const sf::Vector3f& _centre, float _radius) {
+	set(sf::Vector3f(std::min(min.x, _centre.x - _radius), std::min(min.y, _centre.y - _radius), std::min(min.z, _centre.z - _radius)),
+		sf::Vector3f(std::max(max.x, _centre.x + _radius), std::max(max.y, _centre.y + _radius), std::max(max.z, _centre.z + _radius)));
+}
+
+void BoundingBox::ext(BoundingBox* _box, Matrix4* _transform) {
+	ext(sf::Vector3f(_box->min.x, _box->min.y, _box->min.z) * _transform);
+	ext(sf::Vector3f(_box->min.x, _box->min.y, _box->max.z) * _transform);
+	ext(sf::Vector3f(_box->min.x, _box->max.y, _box->min.z) * _transform);
+	ext(sf::Vector3f(_box->min.x, _box->max.y, _box->max.z) * _transform);
+	ext(sf::Vector3f(_box->max.x, _box->min.y, _box->min.z) * _transform);
+	ext(sf::Vector3f(_box->max.x, _box->min.y, _box->max.z) * _transform);
+	ext(sf::Vector3f(_box->max.x, _box->max.y, _box->min.z) * _transform);
+	ext(sf::Vector3f(_box->max.x, _box->max.y, _box->max.z) * _transform);
+}
+
+bool BoundingBox::contains(BoundingBox* _box) {
+	return !isValid()
+		|| ((min.x < _box->min.x || Main::almost_equal(min.x, _box->min.x)) &&
+			(min.y < _box->min.y || Main::almost_equal(min.y, _box->min.y)) &&
+			(min.z < _box->min.z || Main::almost_equal(min.z, _box->min.z)) &&
+			(max.x > _box->max.x || Main::almost_equal(max.x, _box->max.x)) &&
+			(max.y > _box->max.y || Main::almost_equal(max.y, _box->max.y)) &&
+			(max.z > _box->max.z || Main::almost_equal(max.z, _box->max.z)));
+}
+
+bool BoundingBox::contains(const sf::Vector3f& _point) {
+	return (min.x < _point.x || Main::almost_equal(min.x, _point.x)) &&
+		(max.x > _point.x || Main::almost_equal(max.x, _point.x)) &&
+		(min.y < _point.y || Main::almost_equal(min.y, _point.y)) &&
+		(max.y > _point.y || Main::almost_equal(max.y, _point.y)) &&
+		(min.z < _point.z || Main::almost_equal(min.z, _point.z)) &&
+		(max.z > _point.z || Main::almost_equal(max.z, _point.z));
+}
+
+bool BoundingBox::intersects(BoundingBox* _box) {
+	if (!isValid()) return false;
+
+	// test using SAT (separating axis theorem)
+
+	float lx = std::abs(cnt.x - _box->cnt.x);
+	float sumx = (dim.x / 2.0f) + (_box->dim.x / 2.0f);
+
+	float ly = std::abs(cnt.y - _box->cnt.y);
+	float sumy = (dim.y / 2.0f) + (_box->dim.y / 2.0f);
+
+	float lz = std::abs(cnt.z - _box->cnt.z);
+	float sumz = (dim.z / 2.0f) + (_box->dim.z / 2.0f);
+
+	return (lx <= sumx && ly <= sumy && lz <= sumz);
+}
+
+BoundingBox* BoundingBox::operator*= (Matrix4* _transform) {
+	float x0 = min.x, y0 = min.y, z0 = min.z, x1 = max.x, y1 = max.y, z1 = max.z;
+	inf();
+	ext(sf::Vector3f(x0, y0, z0) * _transform);
+	ext(sf::Vector3f(x0, y0, z1) * _transform);
+	ext(sf::Vector3f(x0, y1, z0) * _transform);
+	ext(sf::Vector3f(x0, y1, z1) * _transform);
+	ext(sf::Vector3f(x1, y0, z0) * _transform);
+	ext(sf::Vector3f(x1, y0, z1) * _transform);
+	ext(sf::Vector3f(x1, y1, z0) * _transform);
+	ext(sf::Vector3f(x1, y1, z1) * _transform);
+	return this;
+}
+
+Frustum::Frustum() {
+	clipSpacePlanePoints[0] = sf::Vector3f(-1.f, -1.f, -1.f);
+	clipSpacePlanePoints[1] = sf::Vector3f(1.f, -1.f, -1.f);
+	clipSpacePlanePoints[2] = sf::Vector3f(1.f, 1.f, -1.f);
+	clipSpacePlanePoints[3] = sf::Vector3f(-1.f, 1.f, -1.f);
+	clipSpacePlanePoints[4] = sf::Vector3f(-1.f, -1.f, 1.f);
+	clipSpacePlanePoints[5] = sf::Vector3f(1.f, -1.f, 1.f);
+	clipSpacePlanePoints[6] = sf::Vector3f(1.f, 1.f, 1.f);
+	clipSpacePlanePoints[7] = sf::Vector3f(-1.f, 1.f, 1.f);
+
+	int j = 0;
+	for (auto& v : clipSpacePlanePoints) {
+		clipSpacePlanePointsArray[j++] = v.x;
+		clipSpacePlanePointsArray[j++] = v.y;
+		clipSpacePlanePointsArray[j++] = v.z;
+	}
+}
+
+void Frustum::update(Matrix4* _inverseProjectionView) {
+	std::memcpy(_inverseProjectionView->val, planePointsArray, 24 * sizeof(float));
+	Matrix4::proj(_inverseProjectionView->val, planePointsArray, 0, 8, 3);
+	for (int i = 0, j = 0; i < 8; i++) {
+		auto& v = planePoints[i];
+		v.x = planePointsArray[j++];
+		v.y = planePointsArray[j++];
+		v.z = planePointsArray[j++];
+	}
+
+	planes[0].set(planePoints[1], planePoints[0], planePoints[2]);
+	planes[1].set(planePoints[4], planePoints[5], planePoints[7]);
+	planes[2].set(planePoints[0], planePoints[4], planePoints[3]);
+	planes[3].set(planePoints[5], planePoints[1], planePoints[6]);
+	planes[4].set(planePoints[2], planePoints[3], planePoints[6]);
+	planes[5].set(planePoints[4], planePoints[0], planePoints[1]);
+}
+
+bool Frustum::pointInFrustum(const sf::Vector3f& _point) {
+	return pointInFrustum(_point.x, _point.y, _point.z);
+}
+
+bool Frustum::pointInFrustum(float _x, float _y, float _z) {
+	for (int i = 0; i < 6; ++i) {
+		Plane::PlaneSide result = planes[i].testPoint(_x, _y, _z);
+		if (result == Plane::PlaneSide::Back) return false;
+	}
+	return true;
+}
+
+bool Frustum::sphereInFrustum(const sf::Vector3f& _center, float _radius) {
+	return sphereInFrustum(_center.x, _center.y, _center.z, _radius);
+}
+
+bool Frustum::sphereInFrustum(float _x, float _y, float _z, float _radius) {
+	for (int i = 0; i < 6; ++i)
+		if ((planes[i].normal.x * _x + planes[i].normal.y * _y + planes[i].normal.z * _z) < (-_radius - planes[i].d)) return false;
+	return true;
+}
+
+bool Frustum::sphereInFrustumWithoutNearFar(const sf::Vector3f& _center, float _radius) {
+	return sphereInFrustumWithoutNearFar(_center.x, _center.y, _center.z, _radius);
+}
+
+bool Frustum::sphereInFrustumWithoutNearFar(float _x, float _y, float _z, float _radius) {
+	for (int i = 2; i < 6; ++i)
+		if ((planes[i].normal.x * _x + planes[i].normal.y * _y + planes[i].normal.z * _z) < (-_radius - planes[i].d)) return false;
+	return true;
+}
+
+bool Frustum::boundsInFrustum(BoundingBox* _box) {
+	return boundsInFrustum(_box->cnt, _box->dim);
+}
+
+bool Frustum::boundsInFrustum(const sf::Vector3f& _center, const sf::Vector3f& _dim) {
+	return boundsInFrustum(_center.x, _center.y, _center.z, _dim.x, _dim.y, _dim.z);
+}
+
+bool Frustum::boundsInFrustum(float _x, float _y, float _z, float _halfWidth, float _halfHeight, float _halfDepth) {
+	for (int i = 0, len2 = 6; i < len2; ++i) {
+		if (planes[i].testPoint(_x + _halfWidth, _y + _halfHeight, _z + _halfDepth) != Plane::PlaneSide::Back) continue;
+		if (planes[i].testPoint(_x + _halfWidth, _y + _halfHeight, _z - _halfDepth) != Plane::PlaneSide::Back) continue;
+		if (planes[i].testPoint(_x + _halfWidth, _y - _halfHeight, _z + _halfDepth) != Plane::PlaneSide::Back) continue;
+		if (planes[i].testPoint(_x + _halfWidth, _y - _halfHeight, _z - _halfDepth) != Plane::PlaneSide::Back) continue;
+		if (planes[i].testPoint(_x - _halfWidth, _y + _halfHeight, _z + _halfDepth) != Plane::PlaneSide::Back) continue;
+		if (planes[i].testPoint(_x - _halfWidth, _y + _halfHeight, _z - _halfDepth) != Plane::PlaneSide::Back) continue;
+		if (planes[i].testPoint(_x - _halfWidth, _y - _halfHeight, _z + _halfDepth) != Plane::PlaneSide::Back) continue;
+		if (planes[i].testPoint(_x - _halfWidth, _y - _halfHeight, _z - _halfDepth) != Plane::PlaneSide::Back) continue;
+		return false;
+	}
+	return true;
 }

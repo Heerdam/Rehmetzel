@@ -65,6 +65,7 @@ namespace Heerbann {
 	class AssetManager;
 	class LevelManager;
 	class SpriteBatch;
+	class Matrix4;
 
 	namespace AI{
 		class AIHandler;
@@ -141,6 +142,9 @@ namespace Heerbann {
 			return ++id;
 		}
 
+		static sf::Vector3f nor(const sf::Vector3f&);
+		static sf::Vector3f crs(const sf::Vector3f&, const sf::Vector3f&);
+
 		static std::wstring s2ws(const char*);
 		static std::wstring s2ws(const std::string&);
 
@@ -148,13 +152,13 @@ namespace Heerbann {
 
 		static float toFloatBits(int _r, int _g, int _b, int _a);
 
-		static float toFloatBits(sf::Color _color) {
+		static inline float toFloatBits(sf::Color _color) {
 			return toFloatBits(_color.r, _color.g, _color.b, _color.a);
 		};
 
-		bool almost_equal(float _f1, float _f2) {
-			return false; //TODO
-		}
+		bool static inline almost_equal(float _x, float _y) {
+			return std::abs(_x - _y) >= std::numeric_limits<float>::epsilon() * (std::abs(_x) + (std::abs(_y) + 1.0f));
+		};
 
 		static GLuint* getIndexBuffer();
 
@@ -222,6 +226,8 @@ namespace Heerbann {
 		static LevelManager* getLevel();
 		
 	};	
+
+	sf::Vector3f operator* (const sf::Vector3f&, Matrix4*);
 
 }
 

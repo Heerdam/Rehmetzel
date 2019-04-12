@@ -7,6 +7,7 @@
 #include "World.hpp"
 #include "TextUtil.hpp"
 #include "AI.hpp"
+#include "G3D.hpp"
 
 using namespace Heerbann;
 using namespace UI;
@@ -141,10 +142,13 @@ void PreLoadLevel::preLoad(AssetManager* _asset) {
 
 	assetToLoad.emplace_back(new LoadItem("assets/shader/bg_shader", Type::shader));
 	assetToLoad.emplace_back(new LoadItem("assets/shader/tree_shader", Type::shader));
+	assetToLoad.emplace_back(new LoadItem("assets/shader/model_shader", Type::shader));
 	//assetToLoad.emplace_back(new LoadItem("assets/shader/AiTest", Type::shader));
 	//assetToLoad.emplace_back(new LoadItem("assets/shader/AiTestComp", Type::shader));
 
 	//assetToLoad.emplace_back(new LoadItem("assets/trees/trees", Type::atlas));
+
+	assetToLoad.emplace_back(new LoadItem("assets/3d/deer/Model/Deer_old.dae", Type::model));
 }
 
 void PreLoadLevel::postLoad(AssetManager* _assets) {
@@ -207,12 +211,34 @@ void TestWorldLevel::load(AssetManager* _asset) {
 	//world = Main::getWorld()->builder->build(def);	
 	//bgShader = reinterpret_cast<ShaderProgram*>(Main::getAssetManager()->getAsset("assets/shader/bg_shader")->data);
 	//treeShader = reinterpret_cast<ShaderProgram*>(Main::getAssetManager()->getAsset("assets/shader/tree_shader")->data);
-
+	modelShader = reinterpret_cast<ShaderProgram*>(Main::getAssetManager()->getAsset("assets/shader/model_shader")->data);
+	camPos = glGetUniformLocation(modelShader->getHandle(), "camera");
 }
 
 void TestWorldLevel::postLoad(AssetManager* _asset) {	
 	//world->finalize(bgShader, treeShader);
 	//Main::getAI()->create();
+
+	model = static_cast<G3D::Model*>(Main::getAssetManager()->getAsset("assets/3d/deer/Model/Deer_old.dae")->data);
+
+	//projection.setToProjection(Math.abs(near), Math.abs(far), fieldOfView, aspect);
+	//view.setToLookAt(position, tmp.set(position).add(direction), up);
+	//combined.set(projection);
+	//Matrix4.mul(combined.val, view.val);
+
+	Matrix4 projection;
+	float ar = static_cast<float>(Main::width()) / static_cast<float>(Main::height());
+	projection.setToProjection(0.1f, 1000.f, 67.f, ar);
+
+	sf::Vector3f pos(200.f, -75.f, 100.f);
+	sf::Vector3f dir(-1.f, 0.f, 0.f);
+	sf::Vector3f up(0.f, 0.f, 1.f);
+	Matrix4 view;
+	view.setToLookAt(pos, pos + dir, up);
+
+	cam = new Matrix4(projection);
+	cam = *cam * &view;
+
 }
 
 void TestWorldLevel::update(float _delta) {
@@ -225,5 +251,12 @@ void TestWorldLevel::draw(float _delta, SpriteBatch* _batch) {
 	//for (auto v : world->indexVAOs)
 		//v->draw(treeShader);
 	//Main::getAI()->draw(Main::getViewport()->cam.getTransform());
+
+	modelShader->bind();
+	glUniformMatrix4fv(camPos, 1, false, cam->val);
+	glBindVertexArray(model->vao);
+	glDrawElements(GL_TRIANGLES, model->indexBufferSize, GL_UNSIGNED_INT, nullptr);
+	//glDrawArrays(GL_TRIANGLES, 0, 5000);
+	modelShader->unbind();
 }
 

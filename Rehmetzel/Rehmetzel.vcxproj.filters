@@ -127,5 +127,11 @@
     <None Include="..\bin\assets\shader\AiTestComp.comp">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="..\bin\assets\shader\model_shader.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\model_shader.frag">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

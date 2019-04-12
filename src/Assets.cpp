@@ -5,6 +5,7 @@
 #include "Level.h"
 #include "TextUtil.hpp"
 #include "Utils.hpp"
+#include "G3D.hpp"
 
 using namespace Heerbann;
 
@@ -582,72 +583,218 @@ void AssetManager::asyncDiscreteLoad() {
 			break;
 			case model:
 			{		
-				//find model
-
-				//find animations
-
-				//find textures
-
-				std::vector<std::string> fbxFiles;
-				std::vector<std::string> textures;
 
 				Assimp::Importer importer;
-				const aiScene *scene = importer.ReadFile("", aiProcess_Triangulate | aiProcess_FlipUVs);
-				
-				aiBone bone;
-
+				const aiScene *scene = importer.ReadFile(next->id, 0);
+			
 				//vec3 pos
 				//vec3 normals
 				//vev2 uv
-				//vec2 weights (index to first, count)/ index to bones
-				const int vertexSize = (3 + 3 + 2 + 2);
-				float* vertexBuffer;
+				//float index
+				std::vector<float> vertexBuffer;
+				std::vector<unsigned int> indexBuffer;
+				 //offset, size
 
+				G3D::Model* modelOut = new G3D::Model();
+				next->data = modelOut;
+
+				//numIndex
+				//offset_to_weights[index]
+				//offset_to_animation[animation_index]
+				//offset_to_bones[animation_index]
+
+				//weights [index]: {bone_index, weight}
+				//animation [animation_index][bone_index][time]: {mat4}
+
+				//int boneCount = 0;
+				//std::vector<aiString> boneCache;
+				//std::unordered_map<std::string, unsigned int> boneIndices;
+
+				//weights [index]: {bone_index, weight}
+				//std::vector<std::vector<std::tuple<unsigned int, float>*>*> weights;
+
+				int meshIndexOffset = 0;
+				int meshVertexOffset = 0;
 				//meshes
-				for (int i = 0; i < scene->mNumMeshes; ++i) {
+				for (unsigned int i = 0; i < scene->mNumMeshes; ++i) {
+					//if (i == 1) break;
 					aiMesh* mesh = scene->mMeshes[i];
+					
+					//vertex
+					for (unsigned int k = 0; k < mesh->mNumVertices; ++k) {
+						auto pos = mesh->mVertices[k];
+						auto norm = mesh->mNormals[k];
+						//auto uv = mesh->mTextureCoords[k];
 
-					for (int k = 0; k < mesh->mNumVertices; ++k) {
-						auto& pos = mesh->mVertices[k];
-						auto& norm = mesh->mNormals[k];
-						auto& uv = mesh->mTextureCoords[k];
-						
-						int v = 0;
 						//pos
-						vertexBuffer[vertexSize * k] = pos.x;
-						vertexBuffer[vertexSize * k + ++v] = pos.y;
-						vertexBuffer[vertexSize * k + ++v] = pos.z;
+						vertexBuffer.emplace_back(pos.x);
+						vertexBuffer.emplace_back(pos.y);
+						vertexBuffer.emplace_back(pos.z);
 						//norm
-						vertexBuffer[vertexSize * k + ++v] = norm.x;
-						vertexBuffer[vertexSize * k + ++v] = norm.y;
-						vertexBuffer[vertexSize * k + ++v] = norm.z;
+						vertexBuffer.emplace_back(0.f);
+						vertexBuffer.emplace_back(0.f);
+						vertexBuffer.emplace_back(0.f);
 						//uv
-						vertexBuffer[vertexSize * k + ++v] = uv.x;
-						vertexBuffer[vertexSize * k + ++v] = uv.y;
+						vertexBuffer.emplace_back(0.f);
+						vertexBuffer.emplace_back(0.f);
+						//index
+						vertexBuffer.emplace_back(0.f);
+
+						meshVertexOffset += mesh->mNumVertices;
 					}
+
+					//index
+					int iCount = 0;
+					for (unsigned int k = 0; k < mesh->mNumFaces; ++k) {
+						auto& face = mesh->mFaces[k];
+						for (unsigned int j = 0; j < face.mNumIndices; ++j) {
+							indexBuffer.emplace_back(meshIndexOffset + face.mIndices[j]);
+							++iCount;
+						}
+					}
+
+					modelOut->meshMeta[std::string(mesh->mName.C_Str())] = std::make_tuple(meshVertexOffset, mesh->mNumVertices, meshIndexOffset, iCount);
+					meshIndexOffset += iCount;
+
+
+
+					/*
+					weights.resize(indexBuffer.size());
+					boneCache.resize(mesh->mNumBones);
+
+					boneCount += mesh->mNumBones;
+
+					//weights
+					for (unsigned int k = 0; k < mesh->mNumBones; ++k) {
+						auto bone = mesh->mBones[k];
+						boneCache[k] = std::string(bone->mName.C_Str());
+						boneIndices[std::string(bone->mName.C_Str())] = k;
+						for (unsigned int j = 0; j < bone->mNumWeights; ++j) {
+							unsigned int index = static_cast<unsigned int>(bone->mWeights[j].mVertexId);
+							if (weights[index] == nullptr)
+								weights[index] = new std::vector<std::tuple<unsigned int, float>*>();
+							weights[index]->emplace_back(new std::tuple<unsigned int, float>(index, bone->mWeights[j].mWeight));
+						}	
+
+					}
+					*/
+
 				}
 
-				//indices
+				modelOut->vertexBufferSize = vertexBuffer.size();
+				modelOut->vertexBuffer = new float[vertexBuffer.size()];
+				std::memcpy(modelOut->vertexBuffer, vertexBuffer.data(), vertexBuffer.size() * sizeof(float));
 
+				modelOut->indexBufferSize = indexBuffer.size();
+				modelOut->indexBuffer = new unsigned int[indexBuffer.size()];
+				std::memcpy(modelOut->indexBuffer, indexBuffer.data(), indexBuffer.size() * sizeof(unsigned int));
+
+				Main::addJob([](void* _entry)->void {
+					LoadItem* item = reinterpret_cast<LoadItem*>(_entry);
+					G3D::Model* model = reinterpret_cast<G3D::Model*>(item->data);
+
+					GLuint vbo;
+					GLuint index;
+					//create buffer
+					glGenVertexArrays(1, &model->vao);
+					glGenBuffers(1, &vbo);
+					glGenBuffers(1, &index);
+
+					glBindVertexArray(model->vao);
+
+					//vbo
+					glBindBuffer(GL_ARRAY_BUFFER, vbo);
+					glBufferData(GL_ARRAY_BUFFER, sizeof(float) * model->vertexBufferSize, model->vertexBuffer, GL_STATIC_DRAW);
+
+					//index
+					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index);
+					glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * model->indexBufferSize, model->indexBuffer, GL_STATIC_DRAW);
+
+					glEnableVertexAttribArray(0);
+					glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)0);
+
+					glEnableVertexAttribArray(1);
+					glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(3 * sizeof(float)));
+
+					glEnableVertexAttribArray(2);
+					glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(6 * sizeof(float)));
+
+					glEnableVertexAttribArray(3);
+					glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(8 * sizeof(float)));
+
+					glBindBuffer(GL_ARRAY_BUFFER, 0);
+					glBindVertexArray(0);
+
+					if (model->vertexBuffer != nullptr) delete model->vertexBuffer;
+					if (model->indexBuffer != nullptr) delete model->indexBuffer;
+					if (model->ssboBuffer != nullptr) delete model->ssboBuffer;
+
+				}, next);
+			
+				/*
+				//animation [animation_index][bone_index]: {time, mat4}
+				std::vector<std::vector<std::vector<std::tuple<double, Matrix4>*>*>*> animation;
+				std::unordered_map<std::string, aiAnimation*> animations;
 
 				//animations
+				for (unsigned int i = 0; i < scene->mNumAnimations; ++i) {
+					aiAnimation* an = scene->mAnimations[i];
+					animations[std::string(an->mName.C_Str())] = an;
+	
+					for (unsigned int k = 0; k < an->mNumChannels; ++k) {
+						auto* channel = an->mChannels[k];
 
-				//materials
+						unsigned int i1 = 0;
+						unsigned int i2 = 0;
+						unsigned int i3 = 0;
 
-				//textures
+						for (double j = 0; j < an->mDuration; ++an) {
+							bool changed = false;
 
-				//int bonecount
-				//int offset to bones
-				//int animation count
-				//vec[] weights
-				//mat4 bones[]
+							if (i1 + 1 < channel->mNumPositionKeys) {
+								if (channel->mPositionKeys[i1 + 1].mTime == j) {
+									++i1;
+									changed = true;
+								}
+							}
 
-				//int bonecount
-				//int offset to bones
-				//float[]
-				const int ssboSize = 0;
-				float* ssboBuffer = new float[ssboSize];
+							if (i1 + 1 < channel->mNumRotationKeys) {
+								if (channel->mRotationKeys[i2 + 1].mTime == j) {
+									++i2;
+									changed = true;
+								}
+							}
 
+							if (i3 + 1 < channel->mNumScalingKeys) {
+								if (channel->mScalingKeys[i3 + 1].mTime == j) {
+									++i3;
+									changed = true;
+								}
+							}
+							
+							if (!changed) continue;
+
+							Matrix4 mat(channel->mPositionKeys[i1].mValue, channel->mRotationKeys[i2].mValue, channel->mScalingKeys[i3].mValue);
+
+							if (animation[i] == nullptr) {
+								animation[i] = new std::vector<std::vector<std::tuple<double, Matrix4>*>*>();
+								animation[i]->resize(boneCount);
+							}
+							
+							auto an1 = *animation[i];
+
+							unsigned int boneIndex = boneIndices[std::string(channel->mNodeName.C_Str())];
+
+							if (an1[boneIndex] == nullptr) {
+								an1[boneIndex] = new std::vector<std::tuple<double, Matrix4>*>();
+							}
+
+							an1[boneIndex]->emplace_back(new std::tuple<double, Matrix4>(j, mat));
+						}
+											
+					}
+				}*/
+			
 			}
 			break;
 		}

@@ -102,4 +102,8 @@ namespace Heerbann {
 		bool ReportFixture(b2Fixture*) override;
 	};
 
+	class Camera {
+
+	};
+
 }

@@ -95,6 +95,18 @@ void Main::intialize() {
 	
 }
 
+sf::Vector3f Main::nor(const sf::Vector3f& _vec) {
+	const float len2 = _vec.x * _vec.x + _vec.y * _vec.y + _vec.z * _vec.z;
+	if (len2 == 0.f || len2 == 1.f) return sf::Vector3f(_vec);
+	_vec * (1.f / std::sqrtf(len2));
+	return sf::Vector3f(_vec);
+}
+
+sf::Vector3f Main::crs(const sf::Vector3f& _vec1, const sf::Vector3f& _vec2) {
+	sf::Vector3f out(_vec1.y * _vec2.z - _vec1.z * _vec2.y, _vec1.z * _vec2.x - _vec1.x * _vec2.z, _vec1.x * _vec2.y - _vec1.y * _vec2.x);
+	return out;
+}
+
 std::wstring Main::s2ws(const char* _in) {
 	return s2ws(std::string(_in));
 }
@@ -148,7 +160,7 @@ void Main::setSize(unsigned int _width, unsigned int _height) {
 
 //---------------------- Inputs ----------------------\\
 
-SpriteBatch * Heerbann::Main::getBatch() {
+SpriteBatch* Main::getBatch() {
 	return get()->batch;
 }
 
@@ -226,4 +238,12 @@ UI::Stage* Main::getStage() {
 
 LevelManager* Main::getLevel() {
 	return get()->level;
+}
+
+sf::Vector3f operator* (const sf::Vector3f& _vec, Matrix4* _mat) {
+	float* l_mat = _mat->val;
+	sf::Vector3f out(_vec.x * l_mat[Matrix4::M00] + _vec.y * l_mat[Matrix4::M10] + _vec.z * l_mat[Matrix4::M20] + l_mat[Matrix4::M30], 
+		_vec.x * l_mat[Matrix4::M01] + _vec.y * l_mat[Matrix4::M11] + _vec.z * l_mat[Matrix4::M21] + l_mat[Matrix4::M31], 
+		_vec.x * l_mat[Matrix4::M02] + _vec.y * l_mat[Matrix4::M12] + _vec.z * l_mat[Matrix4::M22] + l_mat[Matrix4::M32]);
+	return out;
 }

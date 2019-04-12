@@ -78,15 +78,15 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\Heerbann\Dropbox\Coding\Projects\Rehmetzel\lib\assimp\include;..\lib\glew-2.1.0\include;..\lib\Box2D-2.3.1\Box2D;..\lib\eigen3;..\lib\SFML-2.5.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>SFML_STATIC;GLEW_STATIC;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\lib\assimp\include;..\lib\glew-2.1.0\include;..\lib\Box2D-2.3.1\Box2D;..\lib\eigen3;..\lib\SFML-2.5.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>SFML_STATIC;GLEW_STATIC;ASSIMP_STATIC;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>glew32s.lib;glu32.lib;opengl32.lib;sfml-main-d.lib;sfml-graphics-s-d.lib;sfml-window-s-d.lib;sfml-system-s-d.lib;freetype.lib;assimp-vc140-mt.lib;gdi32.lib;Box2d.lib;wininet.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\Users\Heerbann\Dropbox\Coding\Projects\Rehmetzel\lib\assimp\lib;..\lib\freetype-2.3.5.-1\lib;..\lib\glew-2.1.0\lib\Release\Win32;..\lib\Box2D-2.3.1\Box2D\lib;..\lib\SFML-2.5.1\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glew32s.lib;glu32.lib;opengl32.lib;sfml-main-d.lib;sfml-graphics-s-d.lib;sfml-window-s-d.lib;sfml-system-s-d.lib;winmm.lib;freetype.lib;gdi32.lib;Box2d.lib;assimp-vc140-mt.lib;IrrXML.lib;zlibstaticd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\lib\assimp\lib;..\lib\freetype-2.3.5.-1\lib;..\lib\glew-2.1.0\lib\Release\Win32;..\lib\Box2D-2.3.1\Box2D\lib;..\lib\SFML-2.5.1\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -163,6 +163,8 @@
     <None Include="..\bin\assets\shader\bg_shader.frag" />
     <None Include="..\bin\assets\shader\bg_shader.geom" />
     <None Include="..\bin\assets\shader\bg_shader.vert" />
+    <None Include="..\bin\assets\shader\model_shader.frag" />
+    <None Include="..\bin\assets\shader\model_shader.vert" />
     <None Include="..\bin\assets\shader\tree_shader.frag" />
     <None Include="..\bin\assets\shader\tree_shader.vert" />
     <None Include="..\README.md" />

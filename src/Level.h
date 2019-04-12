@@ -7,10 +7,15 @@ namespace Heerbann {
 	enum State : int;
 
 	class ShaderProgram;
+	class Matrix4;
 
 	namespace UI {
 		class Label;
 		class StaticLabel;
+	}
+
+	namespace G3D {
+		struct Model;
 	}
 
 	using namespace UI;
@@ -89,11 +94,17 @@ namespace Heerbann {
 
 		ShaderProgram* bgShader;
 		ShaderProgram* treeShader;
+		ShaderProgram* modelShader;
+
+		G3D::Model* model;
+		GLuint camPos;
 
 		WorldOut* world;
 
 		float* data;
 		int vertexCount;
+
+		Matrix4* cam;
 
 		Text::TextBlock* testblock;
 
