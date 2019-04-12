@@ -102,7 +102,66 @@ namespace Heerbann {
 		bool ReportFixture(b2Fixture*) override;
 	};
 
+	struct Frustum;
+	struct Ray;
+	class Quaternion;
+
 	class Camera {
+
+		Ray* ray;
+		Matrix4* tmpMat;
+
+	public:
+		sf::Vector3f position;
+		sf::Vector3f direction;
+		sf::Vector3f up;
+
+		Matrix4* projection;
+		Matrix4* view;
+		Matrix4* combined;
+		Matrix4* invProjectionView;
+
+		float nearPlane = 1.0f;
+		float farPlane = 100.f;
+		float viewportWidth = 0.f;
+		float viewportHeight = 0.f;
+
+		Frustum* frustum;
+
+		virtual void update() = 0;
+		virtual void update(bool) = 0;
+
+		void lookAt(float, float, float);
+		void lookAt(const sf::Vector3f&);
+		void normalizeUp();
+		
+		void rotate(float, float, float, float);
+		void rotate(const sf::Vector3f&, float);
+		void rotate(Matrix4*);
+		void rotate(Quaternion*);
+		
+		void rotateAround(const sf::Vector3f&, const sf::Vector3f&, float);
+
+		void transform(Matrix4*);
+
+		void translate(float, float, float);
+		void translate(const sf::Vector3f&);
+
+		sf::Vector3f unproject(const sf::Vector3f&, float, float, float, float);
+		sf::Vector3f unproject(const sf::Vector3f&);
+
+		sf::Vector3f project(const sf::Vector3f&, float, float, float, float);
+		sf::Vector3f project(const sf::Vector3f&);
+
+		const Ray* getPickRay(float, float, float, float, float);
+		const Ray* getPickRay(float, float);
+	};
+
+	class OrthographicCamera : public Camera {
+
+	};
+
+	class PerspectiveCamera : public Camera {
 
 	};
 

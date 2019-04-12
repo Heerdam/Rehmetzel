@@ -2,6 +2,7 @@
 #include "CameraUtils.hpp"
 #include "World.hpp"
 #include "InputMultiplexer.hpp"
+#include "Utils.hpp"
 
 using namespace Heerbann;
 
@@ -254,3 +255,75 @@ Viewport::Viewport(std::string _id, int _prio) {
 	 return true;
  }
 
+ void Camera::lookAt(float _x, float _y, float _z) {
+	 sf::Vector3f tmpVec = Main::nor(sf::Vector3f(_x, _y, _z) - position);
+	 if (!(Main::almost_equal(tmpVec.x, 0.f) && Main::almost_equal(tmpVec.y, 0.f) && Main::almost_equal(tmpVec.z, 0.f))) {
+		 float dot = tmpVec.x * up.x + tmpVec.y * up.y + tmpVec.z * up.z; // up and direction must ALWAYS be orthonormal vectors
+		 if (Main::almost_equal(std::abs(dot - 1.f), 0.f))			 
+			 up = direction * -1.f; // Collinear
+		 else if (Main::almost_equal(std::abs(dot + 1.f), 0.f))			
+			 up = direction;  // Collinear opposite
+		 direction = tmpVec;
+		 normalizeUp();
+	 }
+ }
+
+ void Camera::lookAt(const sf::Vector3f& _pos) {
+	 lookAt(_pos.x, _pos.y, _pos.z);
+ }
+
+ void Camera::normalizeUp() {
+	 sf::Vector3f tmpVec = Main::nor(Main::crs(direction, up));
+	 up = Main::nor(Main::crs(direction, tmpVec));
+ }
+
+ void Camera::rotate(float _angle, float _axisX, float _axisY, float _axisZ) {
+	 tmpMat->set
+	 direction.rotate(angle, axisX, axisY, axisZ);
+	 up.rotate(angle, axisX, axisY, axisZ);
+ }
+
+ void Camera::rotate(const sf::Vector3f &, float) {
+ }
+
+ void Camera::rotate(Matrix4 *) {
+ }
+
+ void Camera::rotate(Quaternion *) {
+ }
+
+ void Camera::rotateAround(const sf::Vector3f &, const sf::Vector3f &, float) {
+ }
+
+ void Camera::transform(Matrix4 *) {
+ }
+
+ void Camera::translate(float, float, float) {
+ }
+
+ void Camera::translate(const sf::Vector3f &) {
+ }
+
+ sf::Vector3f Camera::unproject(const sf::Vector3f &, float, float, float, float) {
+	 return sf::Vector3f();
+ }
+
+ sf::Vector3f Camera::unproject(const sf::Vector3f &) {
+	 return sf::Vector3f();
+ }
+
+ sf::Vector3f Camera::project(const sf::Vector3f &, float, float, float, float) {
+	 return sf::Vector3f();
+ }
+
+ sf::Vector3f Camera::project(const sf::Vector3f &) {
+	 return sf::Vector3f();
+ }
+
+ const Ray* Camera::getPickRay(float, float, float, float, float) {
+	 return nullptr;
+ }
+
+ const Ray* Camera::getPickRay(float, float) {
+	 return nullptr;
+ }

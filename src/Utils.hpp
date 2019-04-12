@@ -22,6 +22,23 @@ namespace Heerbann {
 	class Quaternion;
 	class Matrix4;
 
+	struct Ray {
+		sf::Vector3f origin;
+		sf::Vector3f direction;
+
+		Ray();
+		Ray(const Ray&);
+		Ray(const sf::Vector3f&, const sf::Vector3f&);
+
+		sf::Vector3f getEndPoint(float);
+
+		Ray* operator*(Matrix4*);
+
+		void set(Ray*);
+		void set(const sf::Vector3f&, const sf::Vector3f&);
+		void set(float, float, float, float, float, float);
+	};
+
 	struct Plane {
 		enum PlaneSide {
 			OnPlane, Back, Front
@@ -79,7 +96,7 @@ namespace Heerbann {
 		bool intersects(BoundingBox*);
 	};
 
-	class Frustum {
+	struct Frustum {
 
 		sf::Vector3f clipSpacePlanePoints[8];
 		float clipSpacePlanePointsArray[24];
@@ -227,16 +244,102 @@ namespace Heerbann {
 		void setToLookAt(const sf::Vector3f&, const sf::Vector3f&);
 		void setToLookAt(const sf::Vector3f&, const sf::Vector3f&, const sf::Vector3f&);
 	
+		void setToRotation(const sf::Vector3f&, float);
+		void setToRotationRad(const sf::Vector3f&, float);
+		void setToRotation(float, float, float, float);
+		void setToRotationRad(float, float, float, float);
+		void setToRotation(const sf::Vector3f&, const sf::Vector3f&);
+		void setToRotation(float, float, float, float, float, float);
+
 		static void proj(float*, float*, int, int, int);
 		static void matrix4_proj(float*, float*);
 };
 
-	class Quaternion {
-	public:
-		Quaternion();
-		Quaternion(const Quaternion&);
+	struct Quaternion {
+
 		float x, y, z, w;
+
+		Quaternion();
+		Quaternion(Quaternion*);
+		Quaternion(float, float, float, float);
+		Quaternion(const sf::Vector3f&, float);
+
+		void set(float, float, float, float);
+		void set(Quaternion*);
+		void set(const sf::Vector3f&, float);
+
+		float len();
+		float len2();
+
+		void setEulerAngles(float, float, float);
+		void setEulerAnglesRad(float, float, float);
+
+		int getGimbalPole();
+
+		float getRollRad();
+		float getRoll();
+
+		float getPitchRad();
+		float getPitch();
+
+		float getYawRad();
+		float getYaw();
+		
 		void idt();
+		void nor();
+		void conjugate();
+
+		bool isIDentity();
+
+		Quaternion* operator*(Quaternion*);
+		Quaternion* operator+(Quaternion*);
+		
+		void mulLeft(Quaternion*);
+		void mulLeft(float, float, float, float);
+
+		Matrix4* toMatrix();
+
+		void setFromAxis(const sf::Vector3f&, float);
+		void setFromAxisRad(const sf::Vector3f&, float);
+		void setFromAxis(float, float, float, float);
+		void setFromAxisRad(float, float, float, float);
+
+		void setFromMatrix(bool, Matrix4*);
+		void setFromMatrix(Matrix4*);
+
+		void setFromAxes(float, float, float, float, float, float, float, float, float);
+		void setFromAxes(bool, float, float, float, float, float, float, float, float, float);
+
+		void setFromCross(const sf::Vector3f&, const sf::Vector3f&);
+		void setFromCross(float, float, float, float, float, float);
+
+		void slerp(Quaternion*, float);
+		void slerp(const std::vector<Quaternion*>&);
+		void slerp(const std::vector<std::tuple<Quaternion*, float>>&);
+
+		void exp(float);
+		void mul(float);
+		void mul(Quaternion*);
+
+		Quaternion* operator*(float);
+
+		float dot(Quaternion*);
+		float dot(float, float, float, float);
+
+		float getAxisAngle(sf::Vector3f&);
+		float getAxisAngleRad(sf::Vector3f&);
+
+		float getAngleRad();
+		float getAngle();
+
+		void getSwingTwist(const sf::Vector3f&, Quaternion*, Quaternion*);
+		void getSwingTwist(float, float, float, Quaternion*, Quaternion*);
+
+		float getAngleAroundRad(const sf::Vector3f&);
+		float getAngleAroundRad(float, float, float);
+
+		float getAngleAround(const sf::Vector3f&);
+		float getAngleAround(float, float, float);
 	};
 
 	class BoundingBox2f {

@@ -1361,22 +1361,6 @@ void Matrix4::proj(float* _mat, float* _vecs, int _offset, int _numVecs, int _st
 	}
 }
 
-Quaternion::Quaternion() {
-	idt();
-}
-
-Quaternion::Quaternion(const Quaternion& _quat) {
-	x = _quat.x;
-	y = _quat.y;
-	z = _quat.z;
-	w = _quat.w;
-}
-
-void Quaternion::idt() {
-	x = y = z = 0.f;
-	w = 1.f;
-}
-
 Plane::Plane() : Plane(sf::Vector3(0.f, 0.f, 0.f), 0.f) {}
 
 Plane::Plane(const sf::Vector3f& _normal, float _d) : normal(Main::nor(_normal)), d(_d){}
@@ -1644,4 +1628,499 @@ bool Frustum::boundsInFrustum(float _x, float _y, float _z, float _halfWidth, fl
 		return false;
 	}
 	return true;
+}
+
+Ray::Ray() {
+	origin = sf::Vector3f(0.f, 0.f, 0.f);
+	direction = sf::Vector3f(0.f, 0.f, 0.f);
+}
+
+Ray::Ray(const Ray& _ray) {
+	origin = sf::Vector3f(_ray.origin);
+	direction = sf::Vector3f(_ray.direction);
+}
+
+Ray::Ray(const sf::Vector3f& _origin, const sf::Vector3f& _direction) {
+	origin = sf::Vector3f(_origin);
+	direction = sf::Vector3f(_direction);
+}
+
+sf::Vector3f Ray::getEndPoint(float _distance) {
+	sf::Vector3f out(direction);
+	out *= _distance;
+	out += origin;
+	return out;
+}
+
+void Ray::set(Ray* _ray) {
+	set(_ray->origin, _ray->direction);
+}
+
+Ray* Ray::operator*(Matrix4* _mat) {
+	sf::Vector3f tmp(origin);
+	origin += direction;
+	tmp = tmp * _mat;
+	origin = origin * _mat;
+	direction = sf::Vector3f(tmp - origin);
+	return this;
+}
+
+void Ray::set(const sf::Vector3f& _origin, const sf::Vector3f& _direction) {
+	set(_origin.x, _origin.y, _origin.z, _direction.x, _direction.y, _direction.z);
+}
+
+void Ray::set(float _x, float _y, float _z, float _dx, float _dy, float _dz) {
+	origin = sf::Vector3f(_x, _y, _z);
+	direction = sf::Vector3f(_dx, _dy, _dz);
+}
+
+Quaternion::Quaternion() {
+	idt();
+}
+
+Quaternion::Quaternion(Quaternion* _quat) {
+	set(_quat);
+}
+
+Quaternion::Quaternion(float _x, float _y, float _z, float _w) {
+	set(_x, _y, _z, _w);
+}
+
+Quaternion::Quaternion(const sf::Vector3f& _axis, float _angle) {
+	set(_axis, _angle);
+}
+
+void Quaternion::set(float _x, float _y, float _z, float _w) {
+	x = _x;
+	y = _y;
+	z = _z;
+	w = _w;
+}
+
+void Quaternion::set(Quaternion* _quat) {
+	set(_quat->x, _quat->y, _quat->z, _quat->w);
+}
+
+void Quaternion::set(const sf::Vector3f& _axis, float _angle) {
+	setFromAxis(_axis.x, _axis.y, _axis.z, _angle);
+}
+
+float Quaternion::len() {
+	return std::sqrtf(len2());
+}
+
+float Quaternion::len2() {
+	return x * x + y * y + z * z + w * w;
+}
+
+void Quaternion::setEulerAngles(float _yaw, float _pitch, float _roll) {
+	setEulerAnglesRad(_yaw * DEGTORAD, _pitch * DEGTORAD, _roll * DEGTORAD);
+}
+
+void Quaternion::setEulerAnglesRad(float _yaw, float _pitch, float _roll) {
+	const float hr = _roll * 0.5f;
+	const float shr = std::sinf(hr);
+	const float chr = std::cosf(hr);
+	const float hp = _pitch * 0.5f;
+	const float shp = std::sinf(hp);
+	const float chp = std::cosf(hp);
+	const float hy = _yaw * 0.5f;
+	const float shy = std::sinf(hy);
+	const float chy = std::cosf(hy);
+	const float chy_shp = chy * shp;
+	const float shy_chp = shy * chp;
+	const float chy_chp = chy * chp;
+	const float shy_shp = shy * shp;
+
+	x = (chy_shp * chr) + (shy_chp * shr); // cos(yaw/2) * sin(pitch/2) * cos(roll/2) + sin(yaw/2) * cos(pitch/2) * sin(roll/2)
+	y = (shy_chp * chr) - (chy_shp * shr); // sin(yaw/2) * cos(pitch/2) * cos(roll/2) - cos(yaw/2) * sin(pitch/2) * sin(roll/2)
+	z = (chy_chp * shr) - (shy_shp * chr); // cos(yaw/2) * cos(pitch/2) * sin(roll/2) - sin(yaw/2) * sin(pitch/2) * cos(roll/2)
+	w = (chy_chp * chr) + (shy_shp * shr); // cos(yaw/2) * cos(pitch/2) * cos(roll/2) + sin(yaw/2) * sin(pitch/2) * sin(roll/2)
+}
+
+int Quaternion::getGimbalPole() {
+	const float t = y * x + z * w;
+	return t > 0.499f ? 1 : (t < -0.499f ? -1 : 0);
+}
+
+float Quaternion::getRollRad() {
+	const int pole = getGimbalPole();
+	return pole == 0 ? std::atan2f(2.f * (w * z + y * x), 1.f - 2.f * (x * x + z * z)) : static_cast<float>(pole) * 2.f * std::atan2f(y, w);
+}
+
+float Quaternion::getRoll() {
+	return getRollRad() * RADTODEG;
+}
+
+float Quaternion::getPitchRad() {
+	const int pole = getGimbalPole();
+	return pole == 0 ? std::asinf(std::clamp(2.f * (w * x - z * y), -1.f, 1.f)) : static_cast<float>(pole) * b2_pi * 0.5f;
+}
+
+float Quaternion::getPitch() {
+	return getPitchRad() * RADTODEG;
+}
+
+float Quaternion::getYawRad() {
+	return getGimbalPole() == 0 ? std::atan2f(2.f * (y * w + x * z), 1.f - 2.f * (y * y + x * x)) : 0.f;
+}
+
+float Quaternion::getYaw() {
+	return getYawRad() * RADTODEG;
+}
+
+void Quaternion::idt() {
+	x = y = z = 0.f;
+	w = 1.f;
+}
+
+void Quaternion::nor() {
+	float len = len2();
+	if (len != 0.f && !Main::almost_equal(len, 1.f)) {
+		len = std::sqrtf(len);
+		w /= len;
+		x /= len;
+		y /= len;
+		z /= len;
+	}
+}
+
+void Quaternion::conjugate() {
+	x = -x;
+	y = -y;
+	z = -z;
+}
+
+bool Quaternion::isIDentity() {
+	return Main::almost_equal(x, 0.f) && Main::almost_equal(y, 0.f) && Main::almost_equal(z, 0.f) && Main::almost_equal(w, 1.f);
+}
+
+Quaternion* Quaternion::operator*(Quaternion* _quat) {
+	mul(_quat);
+}
+
+Quaternion* Quaternion::operator+(Quaternion*  _quat) {
+	x += _quat->x;
+	y += _quat->y;
+	z += _quat->z;
+	w += _quat->w;
+}
+
+void Quaternion::mul(Quaternion* _quat) {
+	const float newX = w * _quat->x + x * _quat->w + y * _quat->z - z * _quat->y;
+	const float newY = w * _quat->y + y * _quat->w + z * _quat->x - x * _quat->z;
+	const float newZ = w * _quat->z + z * _quat->w + x * _quat->y - y * _quat->x;
+	const float newW = w * _quat->w - x * _quat->x - y * _quat->y - z * _quat->z;
+	x = newX;
+	y = newY;
+	z = newZ;
+	w = newW;
+}
+
+Quaternion* Quaternion::operator*(float _scalar) {
+	mul(_scalar);
+}
+
+float Quaternion::dot(Quaternion* _quat) {
+	return dot(_quat->x, _quat->y, _quat->z, _quat->w);
+}
+
+float Quaternion::dot(float _x, float _y, float _z, float _w) {
+	return x * _x + y * _y + z * _z + w * _w;
+}
+
+float Quaternion::getAxisAngle(sf::Vector3f& _axis) {
+	return getAxisAngleRad(_axis) * RADTODEG;
+}
+
+float Quaternion::getAxisAngleRad(sf::Vector3f& _axis) {
+	if (w > 1.f) nor(); // if w>1 acos and sqrt will produce errors, this cant happen if quaternion is normalised
+	float angle = 2.0f * std::acosf(w);
+	double s = std::sqrtf(1.f - w * w); // assuming quaternion normalised then w is less than 1, so term always positive.
+	if (Main::almost_equal(s, 0.f)) { // test to avoid divide by zero, s is always positive due to sqrt
+		// if s close to zero then direction of axis not important
+		_axis.x = x; // if it is important that axis is normalised then replace with x=1; y=z=0;
+		_axis.y = y;
+		_axis.z = z;
+	} else {
+		_axis.x = (float)(x / s); // normalise axis
+		_axis.y = (float)(y / s);
+		_axis.z = (float)(z / s);
+	}
+
+	return angle;
+}
+
+float Quaternion::getAngleRad() {
+	return 2.0f * std::acosf((w > 1) ? (w / len()) : w);
+}
+
+float Quaternion::getAngle() {
+	return getAngleRad() * RADTODEG;
+}
+
+void Quaternion::getSwingTwist(const sf::Vector3f& _axis, Quaternion* _swing, Quaternion* _twist) {
+	getSwingTwist(_axis.x, _axis.y, _axis.z, _swing, _twist);
+}
+
+void Quaternion::getSwingTwist(float _axisX, float _axisY, float _axisZ, Quaternion* _swing, Quaternion* _twist) {
+	const float d = x * _axisX + y * _axisY + z * _axisZ;
+	_twist->set(_axisX * d, _axisY * d, _axisZ * d, w);
+	_twist->nor();
+	if (d < 0) _twist->mul(-1.f);
+	_swing->set(_twist);
+	_swing->conjugate();
+	_swing->mulLeft(this);
+}
+
+float Quaternion::getAngleAroundRad(const sf::Vector3f& _axis) {
+	return getAngleAroundRad(_axis.y, _axis.y, _axis.z);
+}
+
+float Quaternion::getAngleAroundRad(float _axisX, float _axisY, float _axisZ) {
+	const float d = x * _axisX + y * _axisY + z * _axisZ;
+	const float l2 = std::powf(_axisX * d, 2) + std::powf(_axisY * d, 2) + std::powf(_axisZ * d, 2) + w * w;
+	return Main::almost_equal(l2, 0.f) ? 0.f : 2.0f * std::acosf(std::clamp((d < 0.f ? -w : w) / std::sqrtf(l2), -1.f, 1.f));
+}
+
+float Quaternion::getAngleAround(const sf::Vector3f& _axis) {
+	return getAngleAroundRad(_axis) * RADTODEG;
+}
+
+float Quaternion::getAngleAround(float _axisX, float _axisY, float _axisZ) {
+	return getAngleAroundRad(_axisX, _axisY, _axisZ);
+}
+
+void Quaternion::mulLeft(Quaternion* _quat) {
+	mulLeft(_quat->x, _quat->y, _quat->z, _quat->w);
+}
+
+void Quaternion::mulLeft(float _x, float _y, float _z, float _w) {
+	const float newX = _w * x + _x * w + _y * z - _z * y;
+	const float newY = _w * y + _y * w + _z * x - _x * z;
+	const float newZ = _w * z + _z * w + _x * y - _y * x;
+	const float newW = _w * w - _x * x - _y * y - _z * z;
+	x = newX;
+	y = newY;
+	z = newZ;
+	w = newW;
+}
+
+Matrix4* Quaternion::toMatrix() {
+	Matrix4* out = new Matrix4();
+	const float xx = x * x;
+	const float xy = x * y;
+	const float xz = x * z;
+	const float xw = x * w;
+	const float yy = y * y;
+	const float yz = y * z;
+	const float yw = y * w;
+	const float zz = z * z;
+	const float zw = z * w;
+	// Set matrix from quaternion
+	out->val[Matrix4::M00] = 1.f - 2.f * (yy + zz);
+	out->val[Matrix4::M01] = 2.f * (xy - zw);
+	out->val[Matrix4::M02] = 2.f * (xz + yw);
+	out->val[Matrix4::M03] = 0.f;
+	out->val[Matrix4::M10] = 2.f * (xy + zw);
+	out->val[Matrix4::M11] = 1.f - 2.f * (xx + zz);
+	out->val[Matrix4::M12] = 2.f * (yz - xw);
+	out->val[Matrix4::M13] = 0.f;
+	out->val[Matrix4::M20] = 2.f * (xz - yw);
+	out->val[Matrix4::M21] = 2.f * (yz + xw);
+	out->val[Matrix4::M22] = 1.f - 2.f * (xx + yy);
+	out->val[Matrix4::M23] = 0.f;
+	out->val[Matrix4::M30] = 0.f;
+	out->val[Matrix4::M31] = 0.f;
+	out->val[Matrix4::M32] = 0.f;
+	out->val[Matrix4::M33] = 1.f;
+	return out;
+}
+
+void Quaternion::setFromAxis(const sf::Vector3f& _axis, float _degrees) {
+	setFromAxis(_axis.x, _axis.y, _axis.z, _degrees);
+}
+
+void Quaternion::setFromAxisRad(const sf::Vector3f& _axis, float _radians) {
+	setFromAxis(_axis.x, _axis.y, _axis.z, _radians);
+}
+
+void Quaternion::setFromAxis(float _x, float _y, float _z, float _degrees) {
+	setFromAxisRad(_x, _y, _z, _degrees * DEGTORAD);
+}
+
+void Quaternion::setFromAxisRad(float _x, float _y, float _z, float _radians) {
+	float d = std::sqrtf(_x * _x + _y * _y + _z * _z);
+	if (Main::almost_equal(d, 0.f)) return idt();
+	d = 1.f / d;
+	float l_ang = _radians < 0 ? 2 * b2_pi - (-std::fmod(_radians, 2 * b2_pi)) : std::fmod(_radians, 2 * b2_pi);
+	float l_sin = std::sinf(l_ang / 2.f);
+	float l_cos = std::cosf(l_ang / 2.f);
+	set(d * x * l_sin, d * y * l_sin, d * z * l_sin, l_cos);
+	nor();
+}
+
+void Quaternion::setFromMatrix(bool _normalizeAxes, Matrix4* _mat) {
+	setFromAxes(_normalizeAxes, _mat->val[Matrix4::M00], _mat->val[Matrix4::M01], _mat->val[Matrix4::M02],
+		_mat->val[Matrix4::M10], _mat->val[Matrix4::M11], _mat->val[Matrix4::M12], _mat->val[Matrix4::M20],
+		_mat->val[Matrix4::M21], _mat->val[Matrix4::M22]);
+}
+
+void Quaternion::setFromMatrix(Matrix4* _mat) {
+	setFromMatrix(false, _mat);
+}
+
+void Quaternion::setFromAxes(float _xx, float _xy, float _xz, float _yx, float _yy, float _yz, float _zx, float _zy, float _zz) {
+	setFromAxes(false, _xx, _xy, _xz, _yx, _yy, _yz, _zx, _zy, _zz);
+}
+
+void Quaternion::setFromAxes(bool _normalizeAxes, float _xx, float _xy, float _xz, float _yx, float _yy, float _yz, float _zx, float _zy, float _zz) {
+	if (_normalizeAxes) {
+		const float lx = 1.f / std::sqrtf(_xx * _xx + _xy * _xy + _xz * _xz);
+		const float ly = 1.f / std::sqrtf(_yx * _yx + _yy * _yy + _yz * _yz);
+		const float lz = 1.f / std::sqrtf(_zx * _zx + _zy * _zy + _zz * _zz);
+		_xx *= lx;
+		_xy *= lx;
+		_xz *= lx;
+		_yx *= ly;
+		_yy *= ly;
+		_yz *= ly;
+		_zx *= lz;
+		_zy *= lz;
+		_zz *= lz;
+	}
+	// the trace is the sum of the diagonal elements; see
+	// http://mathworld.wolfram.com/MatrixTrace.html
+	const float t = _xx + _yy + _zz;
+
+	// we protect the division by s by ensuring that s>=1
+	if (t > 0.f || Main::almost_equal(t, 0.f)) { // |w| >= .5
+		float s = std::sqrtf(t + 1); // |s|>=1 ...
+		w = 0.5f * s;
+		s = 0.5f / s; // so this division isn't bad
+		x = (_zy - _yz) * s;
+		y = (_xz - _zx) * s;
+		z = (_yx - _xy) * s;
+	} else if ((_xx > _yy) && (_xx > _zz)) {
+		float s = std::sqrtf(1.0f + _xx - _yy - _zz); // |s|>=1
+		x = s * 0.5f; // |x| >= .5
+		s = 0.5f / s;
+		y = (_yx + _xy) * s;
+		z = (_xz + _zx) * s;
+		w = (_zy - _yz) * s;
+	} else if (_yy > _zz) {
+		float s = std::sqrtf(1.0f + _yy - _xx - _zz); // |s|>=1
+		y = s * 0.5f; // |y| >= .5
+		s = 0.5f / s;
+		x = (_yx + _xy) * s;
+		z = (_zy + _yz) * s;
+		w = (_xz - _zx) * s;
+	} else {
+		float s = std::sqrtf(1.0f + _zz - _xx - _yy); // |s|>=1
+		z = s * 0.5f; // |z| >= .5
+		s = 0.5f / s;
+		x = (_xz + _zx) * s;
+		y = (_zy + _yz) * s;
+		w = (_yx - _xy) * s;
+	}
+}
+
+void Quaternion::setFromCross(const sf::Vector3f& _v1, const sf::Vector3f& _v2) {
+	setFromCross(_v1.x, _v2.x, _v1.y, _v2.y, _v1.z, _v2.z);
+}
+
+void Quaternion::setFromCross(float _x1, float _x2, float _y1, float _y2, float _z1, float _z2) {
+	const float dot = std::clamp(_x1 * _x2 + _y1 * _y2 + _z1 * _z2, -1.f, 1.f);
+	const float angle = std::acosf(dot);
+	setFromAxisRad(_y1 * _z2 - _z1 * _y2, _z1 * _x2 - _x1 * _z2, _x1 * _y2 - _y1 * _x2, angle);
+}
+
+void Quaternion::slerp(Quaternion* _end, float _alpha) {
+	const float d = x * _end->x + y * _end->y + z * _end->z + w * _end->w;
+	float absDot = d < 0.f ? -d : d;
+
+	// Set the first and second scale for the interpolation
+	float scale0 = 1.f - _alpha;
+	float scale1 = _alpha;
+
+	// Check if the angle between the 2 quaternions was big enough to
+	// warrant such calculations
+	if ((1.f - absDot) > 0.1f) {// Get the angle between the 2 quaternions,
+		// and then store the sin() of that angle
+		const float angle = std::acosf(absDot);
+		const float invSinTheta = 1.f / std::sinf(angle);
+
+		// Calculate the scale for q1 and q2, according to the angle and
+		// it's sine value
+		scale0 = std::sinf((1.f - _alpha) * angle) * invSinTheta;
+		scale1 = std::sinf(_alpha * angle) * invSinTheta;
+	}
+
+	if (d < 0.f) scale1 = -scale1;
+
+	// Calculate the x, y, z and w values for the quaternion by using a
+	// special form of linear interpolation for quaternions.
+	x = (scale0 * x) + (scale1 * _end->x);
+	y = (scale0 * y) + (scale1 * _end->y);
+	z = (scale0 * z) + (scale1 * _end->z);
+	w = (scale0 * w) + (scale1 * _end->w);
+}
+
+void  Quaternion::slerp(const std::vector<Quaternion*>& _q) {
+	// Calculate exponents and multiply everything from left to right
+	const float w = 1.0f / _q.size();
+	set(_q[0]);
+	exp(w);
+	Quaternion tmp1;
+	for (int i = 1; i < _q.size(); ++i) {
+		tmp1.set(_q[i]);
+		tmp1.exp(w);
+		mul(&tmp1);
+	}
+	nor();
+}
+
+void Quaternion::slerp(const std::vector<std::tuple<Quaternion*, float>>& _q) {
+	// Calculate exponents and multiply everything from left to right
+	set(std::get<0>(_q[0]));
+	exp(std::get<1>(_q[0]));
+	Quaternion tmp1;
+	for (int i = 1; i < _q.size(); ++i) {
+		tmp1.set(std::get<0>(_q[0]));
+		tmp1.exp(std::get<1>(_q[0]));
+		mul(&tmp1);
+	}
+	nor();
+}
+
+void Quaternion::exp(float _alpha) {
+	// Calculate |q|^alpha
+	float norm = len();
+	float normExp = std::powf(norm, _alpha);
+
+	// Calculate theta
+	float theta = std::acosf(w / norm);
+
+	// Calculate coefficient of basis elements
+	float coeff = 0;
+	if (std::abs(theta) < 0.001) // If theta is small enough, use the limit of sin(alpha*theta) / sin(theta) instead of actual
+		coeff = normExp * _alpha / norm;
+	else
+		coeff = (float)(normExp * std::sinf(_alpha * theta) / (norm * std::sinf(theta)));
+
+	// Write results
+	w = (float)(normExp * std::cosf(_alpha * theta));
+	x *= coeff;
+	y *= coeff;
+	z *= coeff;
+
+	// Fix any possible discrepancies
+	nor();
+}
+
+void Quaternion::mul(float _scalar) {
+	x *= _scalar;
+	y *= _scalar;
+	z *= _scalar;
+	w *= _scalar;
 }
