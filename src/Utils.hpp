@@ -145,12 +145,14 @@ namespace Heerbann {
 		static const int M32 = 11;
 		static const int M33 = 15;
 
-	private:
-
-		static void matrix4_mul(float* mata, float* matb);		
+	private:			
 		float tmp[16]{ 0 };
 
 	public:
+
+		static void matrix4_mul(float*, float*);
+		static bool matrix4_inv(float*);
+
 		float val[16]{ 0 };
 
 		Matrix4();
@@ -166,6 +168,10 @@ namespace Heerbann {
 		Matrix4* set(const sf::Vector3f&, Quaternion*, const sf::Vector3f&);
 		Matrix4* set(float, float, float, float, float, float, float, float, float, float);	
 		Matrix4* set(float*);
+		Matrix4* set(Quaternion*);
+		Matrix4* set(float, float, float, float, float, float, float);
+		Matrix4* set(Matrix4*);
+
 		void setToTranslation(const sf::Vector3f&);
 		void setToTranslation(float, float, float);
 
@@ -290,6 +296,8 @@ namespace Heerbann {
 		void conjugate();
 
 		bool isIDentity();
+
+		void transform(sf::Vector3f&);
 
 		Quaternion* operator*(Quaternion*);
 		Quaternion* operator+(Quaternion*);

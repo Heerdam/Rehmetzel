@@ -112,6 +112,9 @@ namespace Heerbann {
 		Matrix4* tmpMat;
 
 	public:
+
+		Camera(float, float);
+
 		sf::Vector3f position;
 		sf::Vector3f direction;
 		sf::Vector3f up;
@@ -147,22 +150,43 @@ namespace Heerbann {
 		void translate(float, float, float);
 		void translate(const sf::Vector3f&);
 
-		sf::Vector3f unproject(const sf::Vector3f&, float, float, float, float);
-		sf::Vector3f unproject(const sf::Vector3f&);
+		sf::Vector3f unproject(sf::Vector3f&, float, float, float, float);
+		sf::Vector3f unproject(sf::Vector3f&);
 
-		sf::Vector3f project(const sf::Vector3f&, float, float, float, float);
-		sf::Vector3f project(const sf::Vector3f&);
+		sf::Vector3f project(sf::Vector3f&, float, float, float, float);
+		sf::Vector3f project(sf::Vector3f&);
 
-		const Ray* getPickRay(float, float, float, float, float);
+		const Ray* getPickRay(float, float, float, float, float, float);
 		const Ray* getPickRay(float, float);
 	};
 
 	class OrthographicCamera : public Camera {
+	public:
 
+		float zoom = 1.f;
+
+		OrthographicCamera();
+		OrthographicCamera(float, float);
+
+		void update() override;
+		void update(bool) override;
+
+		void setToOrtho(bool);
+		void setToOrtho(bool, float, float);
+		void rotate(float);
+		void translate(float, float);
+		void translate(sf::Vector2f);
 	};
 
 	class PerspectiveCamera : public Camera {
+	public:
+		float fieldOfView = 67;
 
+		PerspectiveCamera();
+		PerspectiveCamera(float, float, float);
+
+		void update () override;
+		void update (bool) override;
 	};
 
 }

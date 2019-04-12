@@ -1004,6 +1004,63 @@ void Matrix4::matrix4_mul(float * mata, float * matb){
 	memcpy(mata, tmp, sizeof(float) * 16);
 }
 
+bool Heerbann::Matrix4::matrix4_inv(float* val) {
+	float tmp[16];
+	float l_det = matrix4_det(val);
+	if (l_det == 0) return false;
+	tmp[M00] = val[M12] * val[M23] * val[M31] - val[M13] * val[M22] * val[M31] + val[M13] * val[M21] * val[M32] - val[M11]
+		* val[M23] * val[M32] - val[M12] * val[M21] * val[M33] + val[M11] * val[M22] * val[M33];
+	tmp[M01] = val[M03] * val[M22] * val[M31] - val[M02] * val[M23] * val[M31] - val[M03] * val[M21] * val[M32] + val[M01]
+		* val[M23] * val[M32] + val[M02] * val[M21] * val[M33] - val[M01] * val[M22] * val[M33];
+	tmp[M02] = val[M02] * val[M13] * val[M31] - val[M03] * val[M12] * val[M31] + val[M03] * val[M11] * val[M32] - val[M01]
+		* val[M13] * val[M32] - val[M02] * val[M11] * val[M33] + val[M01] * val[M12] * val[M33];
+	tmp[M03] = val[M03] * val[M12] * val[M21] - val[M02] * val[M13] * val[M21] - val[M03] * val[M11] * val[M22] + val[M01]
+		* val[M13] * val[M22] + val[M02] * val[M11] * val[M23] - val[M01] * val[M12] * val[M23];
+	tmp[M10] = val[M13] * val[M22] * val[M30] - val[M12] * val[M23] * val[M30] - val[M13] * val[M20] * val[M32] + val[M10]
+		* val[M23] * val[M32] + val[M12] * val[M20] * val[M33] - val[M10] * val[M22] * val[M33];
+	tmp[M11] = val[M02] * val[M23] * val[M30] - val[M03] * val[M22] * val[M30] + val[M03] * val[M20] * val[M32] - val[M00]
+		* val[M23] * val[M32] - val[M02] * val[M20] * val[M33] + val[M00] * val[M22] * val[M33];
+	tmp[M12] = val[M03] * val[M12] * val[M30] - val[M02] * val[M13] * val[M30] - val[M03] * val[M10] * val[M32] + val[M00]
+		* val[M13] * val[M32] + val[M02] * val[M10] * val[M33] - val[M00] * val[M12] * val[M33];
+	tmp[M13] = val[M02] * val[M13] * val[M20] - val[M03] * val[M12] * val[M20] + val[M03] * val[M10] * val[M22] - val[M00]
+		* val[M13] * val[M22] - val[M02] * val[M10] * val[M23] + val[M00] * val[M12] * val[M23];
+	tmp[M20] = val[M11] * val[M23] * val[M30] - val[M13] * val[M21] * val[M30] + val[M13] * val[M20] * val[M31] - val[M10]
+		* val[M23] * val[M31] - val[M11] * val[M20] * val[M33] + val[M10] * val[M21] * val[M33];
+	tmp[M21] = val[M03] * val[M21] * val[M30] - val[M01] * val[M23] * val[M30] - val[M03] * val[M20] * val[M31] + val[M00]
+		* val[M23] * val[M31] + val[M01] * val[M20] * val[M33] - val[M00] * val[M21] * val[M33];
+	tmp[M22] = val[M01] * val[M13] * val[M30] - val[M03] * val[M11] * val[M30] + val[M03] * val[M10] * val[M31] - val[M00]
+		* val[M13] * val[M31] - val[M01] * val[M10] * val[M33] + val[M00] * val[M11] * val[M33];
+	tmp[M23] = val[M03] * val[M11] * val[M20] - val[M01] * val[M13] * val[M20] - val[M03] * val[M10] * val[M21] + val[M00]
+		* val[M13] * val[M21] + val[M01] * val[M10] * val[M23] - val[M00] * val[M11] * val[M23];
+	tmp[M30] = val[M12] * val[M21] * val[M30] - val[M11] * val[M22] * val[M30] - val[M12] * val[M20] * val[M31] + val[M10]
+		* val[M22] * val[M31] + val[M11] * val[M20] * val[M32] - val[M10] * val[M21] * val[M32];
+	tmp[M31] = val[M01] * val[M22] * val[M30] - val[M02] * val[M21] * val[M30] + val[M02] * val[M20] * val[M31] - val[M00]
+		* val[M22] * val[M31] - val[M01] * val[M20] * val[M32] + val[M00] * val[M21] * val[M32];
+	tmp[M32] = val[M02] * val[M11] * val[M30] - val[M01] * val[M12] * val[M30] - val[M02] * val[M10] * val[M31] + val[M00]
+		* val[M12] * val[M31] + val[M01] * val[M10] * val[M32] - val[M00] * val[M11] * val[M32];
+	tmp[M33] = val[M01] * val[M12] * val[M20] - val[M02] * val[M11] * val[M20] + val[M02] * val[M10] * val[M21] - val[M00]
+		* val[M12] * val[M21] - val[M01] * val[M10] * val[M22] + val[M00] * val[M11] * val[M22];
+
+	float inv_det = 1.0f / l_det;
+	val[M00] = tmp[M00] * inv_det;
+	val[M01] = tmp[M01] * inv_det;
+	val[M02] = tmp[M02] * inv_det;
+	val[M03] = tmp[M03] * inv_det;
+	val[M10] = tmp[M10] * inv_det;
+	val[M11] = tmp[M11] * inv_det;
+	val[M12] = tmp[M12] * inv_det;
+	val[M13] = tmp[M13] * inv_det;
+	val[M20] = tmp[M20] * inv_det;
+	val[M21] = tmp[M21] * inv_det;
+	val[M22] = tmp[M22] * inv_det;
+	val[M23] = tmp[M23] * inv_det;
+	val[M30] = tmp[M30] * inv_det;
+	val[M31] = tmp[M31] * inv_det;
+	val[M32] = tmp[M32] * inv_det;
+	val[M33] = tmp[M33] * inv_det;
+	return true;
+}
+
 Matrix4::Matrix4() {
 	val[M00] = 1.f;
 	val[M11] = 1.f;
@@ -1100,6 +1157,44 @@ Matrix4* Matrix4::set(float _translationX, float _translationY, float _translati
 
 Matrix4* Matrix4::set(float* _val) {
 	std::memcpy(val, _val, 16 * sizeof(float));
+	return this;
+}
+
+Matrix4* Matrix4::set(Quaternion* _quat) {
+	return set(0.f, 0.f, 0.f, _quat->x, _quat->y, _quat->z, _quat->w);
+}
+
+Matrix4 * Heerbann::Matrix4::set(float _translationX, float _translationY, float _translationZ, float _quaternionX, float _quaternionY,
+	float _quaternionZ, float _quaternionW) {
+	const float xs = _quaternionX * 2.f, ys = _quaternionY * 2.f, zs = _quaternionZ * 2.f;
+	const float wx = _quaternionW * xs, wy = _quaternionW * ys, wz = _quaternionW * zs;
+	const float xx = _quaternionX * xs, xy = _quaternionX * ys, xz = _quaternionX * zs;
+	const float yy = _quaternionY * ys, yz = _quaternionY * zs, zz = _quaternionZ * zs;
+
+	val[M00] = (1.0f - (yy + zz));
+	val[M01] = (xy - wz);
+	val[M02] = (xz + wy);
+	val[M03] = _translationX;
+
+	val[M10] = (xy + wz);
+	val[M11] = (1.0f - (xx + zz));
+	val[M12] = (yz - wx);
+	val[M13] = _translationY;
+
+	val[M20] = (xz - wy);
+	val[M21] = (yz + wx);
+	val[M22] = (1.0f - (xx + yy));
+	val[M23] = _translationZ;
+
+	val[M30] = 0.f;
+	val[M31] = 0.f;
+	val[M32] = 0.f;
+	val[M33] = 1.0f;
+	return this;
+}
+
+Matrix4* Heerbann::Matrix4::set(Matrix4* _mat) {
+	std::memcpy(val, _mat-> val, 16 * sizeof(float));
 	return this;
 }
 
@@ -1351,6 +1446,37 @@ void Matrix4::matrix4_proj(float* _mat, float* _vec) {
 	_vec[0] = x;
 	_vec[1] = y;
 	_vec[2] = z;
+}
+
+void Matrix4::setToRotation(const sf::Vector3f& _axis, float _degrees) {
+	if (Main::almost_equal(_degrees, 0.f)) {
+		idt();
+		return;
+	}
+	Quaternion quat(_axis, _degrees);
+	set(&quat);
+}
+
+void Matrix4::setToRotationRad(const sf::Vector3f& _axis, float _radians) {
+	setToRotation(_axis, _radians * RADTODEG);
+}
+
+void Matrix4::setToRotation(float _x, float _y, float _z, float _degrees) {
+	setToRotation(sf::Vector3f(_x, _y, _z), _degrees);
+}
+
+void Matrix4::setToRotationRad(float _x, float _y, float _z, float _radians) {
+	setToRotationRad(sf::Vector3f(_x, _y, _z), _radians);
+}
+
+void Matrix4::setToRotation(const sf::Vector3f& _v1, const sf::Vector3f& _v2) {
+	Quaternion quat;
+	quat.setFromCross(_v1, _v2);
+	set(&quat);
+}
+
+void Matrix4::setToRotation(float _x1, float _y1, float _z1, float _x2, float _y2, float _z2) {
+	setToRotation(sf::Vector3f(_x1, _y1, _z1), sf::Vector3f(_x2, _y2, _z2));
 }
 
 void Matrix4::proj(float* _mat, float* _vecs, int _offset, int _numVecs, int _stride) {
@@ -1793,6 +1919,17 @@ void Quaternion::conjugate() {
 
 bool Quaternion::isIDentity() {
 	return Main::almost_equal(x, 0.f) && Main::almost_equal(y, 0.f) && Main::almost_equal(z, 0.f) && Main::almost_equal(w, 1.f);
+}
+
+void Quaternion::transform(sf::Vector3f& _vec) {
+	Quaternion tmp2(this);
+	tmp2.conjugate();
+	tmp2.mulLeft(&Quaternion(_vec.x, _vec.y, _vec.z, 0.f));
+	tmp2.mulLeft(this);
+
+	_vec.x = tmp2.x;
+	_vec.y = tmp2.y;
+	_vec.z = tmp2.z;
 }
 
 Quaternion* Quaternion::operator*(Quaternion* _quat) {

@@ -255,6 +255,8 @@ Viewport::Viewport(std::string _id, int _prio) {
 	 return true;
  }
 
+ Camera::Camera(float _viewportWidth, float _viewportHeight) :viewportWidth(_viewportWidth), viewportHeight(_viewportHeight) {}
+
  void Camera::lookAt(float _x, float _y, float _z) {
 	 sf::Vector3f tmpVec = Main::nor(sf::Vector3f(_x, _y, _z) - position);
 	 if (!(Main::almost_equal(tmpVec.x, 0.f) && Main::almost_equal(tmpVec.y, 0.f) && Main::almost_equal(tmpVec.z, 0.f))) {
@@ -278,52 +280,173 @@ Viewport::Viewport(std::string _id, int _prio) {
  }
 
  void Camera::rotate(float _angle, float _axisX, float _axisY, float _axisZ) {
-	 tmpMat->set
-	 direction.rotate(angle, axisX, axisY, axisZ);
-	 up.rotate(angle, axisX, axisY, axisZ);
+	 tmpMat->setToRotation(_angle, _axisX, _axisY, _axisZ);
+	 direction = direction * tmpMat;
+	 up = up * tmpMat;
  }
 
- void Camera::rotate(const sf::Vector3f &, float) {
+ void Camera::rotate(const sf::Vector3f& _axis, float _angle) {
+	 rotate(_axis.x, _axis.y, _axis.z, _angle);
  }
 
- void Camera::rotate(Matrix4 *) {
+ void Camera::rotate(Matrix4* _transform) {
+	 float* l_mat = _transform->val;
+	 direction = sf::Vector3f(direction.x * l_mat[Matrix4::M00] + direction.y * l_mat[Matrix4::M01] + direction.z * l_mat[Matrix4::M02],
+		 direction.x * l_mat[Matrix4::M10] + direction.y * l_mat[Matrix4::M11] + direction.z * l_mat[Matrix4::M12],
+		 direction.x * l_mat[Matrix4::M20] + direction.y * l_mat[Matrix4::M21] + direction.z * l_mat[Matrix4::M22]);
+	 up = sf::Vector3f(up.x * l_mat[Matrix4::M00] + up.y * l_mat[Matrix4::M01] + up.z * l_mat[Matrix4::M02],
+		 up.x * l_mat[Matrix4::M10] + up.y * l_mat[Matrix4::M11] + up.z * l_mat[Matrix4::M12],
+		 up.x * l_mat[Matrix4::M20] + up.y * l_mat[Matrix4::M21] + up.z * l_mat[Matrix4::M22]);
  }
 
- void Camera::rotate(Quaternion *) {
+ void Camera::rotate(Quaternion* _quat) {
+	 _quat->transform(direction);
+	 _quat->transform(up);
  }
 
- void Camera::rotateAround(const sf::Vector3f &, const sf::Vector3f &, float) {
+ void Camera::rotateAround(const sf::Vector3f& _point, const sf::Vector3f& _axis, float _angle) {
+	 sf::Vector3f tmpVec = _point - position;
+	 translate(tmpVec);
+	 rotate(_axis, _angle);
+	 tmpMat->setToRotation(_angle, _axis.x, _axis.y, _axis.z);
+	 tmpVec = tmpVec * tmpMat;
+	 translate(-tmpVec.x, -tmpVec.y, -tmpVec.z);
  }
 
- void Camera::transform(Matrix4 *) {
+ void Camera::transform(Matrix4* _transform) {
+	 position = position * _transform;
+	 rotate(_transform);
  }
 
- void Camera::translate(float, float, float) {
+ void Camera::translate(float _dx, float _dy, float _dz) {
+	 translate(sf::Vector3f(_dx, _dy, _dz));
  }
 
- void Camera::translate(const sf::Vector3f &) {
+ void Camera::translate(const sf::Vector3f& _delta) {
+	 position += _delta;
  }
 
- sf::Vector3f Camera::unproject(const sf::Vector3f &, float, float, float, float) {
-	 return sf::Vector3f();
+ sf::Vector3f Camera::unproject(sf::Vector3f& _screenCoords, float _viewportX, float _viewportY, float _viewportWidth, float _viewportHeight) {
+	 float x = _screenCoords.x, y = _screenCoords.y;
+	 x = x - _viewportX;
+	 y = Main::height() - y - 1;
+	 y = y - _viewportY;
+	 _screenCoords.x = (2 * x) / _viewportWidth - 1;
+	 _screenCoords.y = (2 * y) / _viewportHeight - 1;
+	 _screenCoords.z = 2 * _screenCoords.z - 1;
+
+	 const float* l_mat = invProjectionView->val;
+	 const float l_w = 1.f / (_screenCoords.x * l_mat[Matrix4::M30] + _screenCoords.y * l_mat[Matrix4::M31] + _screenCoords.z * l_mat[Matrix4::M32] + l_mat[Matrix4::M33]);
+	 _screenCoords = sf::Vector3f((_screenCoords.x * l_mat[Matrix4::M00] + _screenCoords.y * l_mat[Matrix4::M01] + _screenCoords.z * l_mat[Matrix4::M02] + l_mat[Matrix4::M03]) * l_w, 
+		 (x * l_mat[Matrix4::M10] + y * l_mat[Matrix4::M11] + _screenCoords.z * l_mat[Matrix4::M12] + l_mat[Matrix4::M13]) * l_w, 
+		 (_screenCoords.x * l_mat[Matrix4::M20] + _screenCoords.y * l_mat[Matrix4::M21] + _screenCoords.z * l_mat[Matrix4::M22] + l_mat[Matrix4::M23]) * l_w);
+	 return _screenCoords;
  }
 
- sf::Vector3f Camera::unproject(const sf::Vector3f &) {
-	 return sf::Vector3f();
+ sf::Vector3f Camera::unproject(sf::Vector3f& _screenCoords) {
+	 return unproject(_screenCoords, 0.f, 0.f, Main::width(), Main::height());
  }
 
- sf::Vector3f Camera::project(const sf::Vector3f &, float, float, float, float) {
-	 return sf::Vector3f();
+ sf::Vector3f Camera::project(sf::Vector3f& _worldCoords, float _viewportX, float _viewportY, float _viewportWidth, float _viewportHeight) {
+	 const float* l_mat = combined->val;
+	 const float l_w = 1.f / (_worldCoords.x * l_mat[Matrix4::M30] + _worldCoords.y * l_mat[Matrix4::M31] + _worldCoords.z * l_mat[Matrix4::M32] + l_mat[Matrix4::M33]);
+	 _worldCoords = sf::Vector3f((_worldCoords.x * l_mat[Matrix4::M00] + _worldCoords.y * l_mat[Matrix4::M01] + _worldCoords.z * l_mat[Matrix4::M02] + l_mat[Matrix4::M03]) * l_w,
+		 (_worldCoords.x * l_mat[Matrix4::M10] + _worldCoords.y * l_mat[Matrix4::M11] + _worldCoords.z * l_mat[Matrix4::M12] + l_mat[Matrix4::M13]) * l_w,
+		 (_worldCoords.x * l_mat[Matrix4::M20] + _worldCoords.y * l_mat[Matrix4::M21] + _worldCoords.z * l_mat[Matrix4::M22] + l_mat[Matrix4::M23]) * l_w);
+
+	 _worldCoords.x = _viewportWidth * (_worldCoords.x + 1.f) / 2.f + _viewportX;
+	 _worldCoords.y = _viewportHeight * (_worldCoords.y + 1.f) / 2.f + _viewportY;
+	 _worldCoords.z = (_worldCoords.z + 1.f) / 2.f;
+	 return _worldCoords;
  }
 
- sf::Vector3f Camera::project(const sf::Vector3f &) {
-	 return sf::Vector3f();
+ sf::Vector3f Camera::project(sf::Vector3f& _worldCoords) {
+	 return project(_worldCoords, 0.f, 0.f, Main::width(), Main::height());
  }
 
- const Ray* Camera::getPickRay(float, float, float, float, float) {
-	 return nullptr;
+ const Ray* Camera::getPickRay(float _screenX, float _screenY, float _viewportX, float _viewportY, float _viewportWidth, float _viewportHeight) {
+	 unproject(ray->origin = sf::Vector3f(_screenX, _screenY, 0), _viewportX, _viewportY, _viewportWidth, _viewportHeight);
+	 unproject(ray->direction = sf::Vector3f(_screenX, _screenY, 1), _viewportX, _viewportY, _viewportWidth, _viewportHeight);
+	 ray->direction = Main::nor(ray->direction - ray->origin);
+	 return ray;
  }
 
- const Ray* Camera::getPickRay(float, float) {
-	 return nullptr;
+ const Ray* Camera::getPickRay(float _screenX, float _screenY) {
+	 return getPickRay(_screenX, _screenY, 0.f, 0.f, Main::width(), Main::height());
+ }
+
+ PerspectiveCamera::PerspectiveCamera() : PerspectiveCamera(67, Main::width(), Main::height()){}
+
+ Heerbann::PerspectiveCamera::PerspectiveCamera(float _fieldOfViewY, float _viewportWidth, float _viewportHeight) :
+	 fieldOfView(_fieldOfViewY), Camera(_viewportWidth, _viewportHeight){
+ }
+
+ void PerspectiveCamera::update() {
+	 update(true);
+ }
+
+ void PerspectiveCamera::update(bool _updateFrustum) {
+	 float aspect = viewportWidth / viewportHeight;
+	 projection->setToProjection(std::abs(nearPlane), std::abs(farPlane), fieldOfView, aspect);
+	 view->setToLookAt(position, position + direction, up);
+	 combined->set(projection);
+	 Matrix4::matrix4_mul(combined->val, view->val);
+
+	 if (_updateFrustum) {
+		 invProjectionView->set(combined);
+		 Matrix4::matrix4_inv(invProjectionView->val);
+		 frustum->update(invProjectionView);
+	 }
+ }
+
+ OrthographicCamera::OrthographicCamera() : OrthographicCamera (Main::width(), Main::height()){}
+
+ OrthographicCamera::OrthographicCamera(float _viewportWidth, float _viewportHeight) : Camera(_viewportWidth, _viewportHeight) {}
+
+ void OrthographicCamera::update() {
+	 update(true);
+ }
+
+ void OrthographicCamera::update(bool _updateFrustum) {
+	 projection->setToOrtho(zoom * -viewportWidth * 0.5f, zoom * (viewportWidth * 0.5f), 
+		 zoom * -(viewportHeight * 0.5f), zoom * viewportHeight * 0.5f, nearPlane, farPlane);
+	 view->setToLookAt(position, position + direction, up);
+	 combined->set(projection);
+	 Matrix4::matrix4_mul(combined->val, view->val);
+
+	 if (_updateFrustum) {
+		 invProjectionView->set(combined);
+		 Matrix4::matrix4_inv(invProjectionView->val);
+		 frustum->update(invProjectionView);
+	 }
+ }
+
+ void OrthographicCamera::setToOrtho(bool _yDown) {
+	 setToOrtho(_yDown, Main::width(), Main::height());
+ }
+
+ void OrthographicCamera::setToOrtho(bool _yDown, float _viewportWidth, float _viewportHeight) {
+	 if (_yDown) {
+		 up = sf::Vector3f(0.f, -1.f, 0.f);
+		 direction = sf::Vector3f(0.f, 0.f, 1.f);
+	 } else {
+		 up = sf::Vector3f(0.f, 1.f, 0.f);
+		 direction = sf::Vector3f(0.f, 0.f, -1.f);
+	 }
+	 position = sf::Vector3f(zoom * viewportWidth * 0.5f, zoom * viewportHeight * 0.5f, 0.f);
+	 viewportWidth = viewportWidth;
+	 viewportHeight = viewportHeight;
+	 update();
+ }
+
+ void OrthographicCamera::rotate(float _angle) {
+	 Camera::rotate(direction, _angle);
+ }
+
+ void OrthographicCamera::translate(float _dx, float _dy) {
+	 Camera::translate(_dx, _dy, 0.f);
+ }
+
+ void OrthographicCamera::translate(sf::Vector2f _vec) {
+	 translate(_vec.x, _vec.y);
  }
