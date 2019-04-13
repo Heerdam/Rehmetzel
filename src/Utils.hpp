@@ -19,7 +19,7 @@ namespace Heerbann {
 	}
 
 	class ShaderProgram;
-	class Quaternion;
+	struct Quaternion;
 	class Matrix4;
 
 	struct Ray {
@@ -146,12 +146,13 @@ namespace Heerbann {
 		static const int M33 = 15;
 
 	private:			
-		float tmp[16]{ 0 };
+		float tmp[16]{ 0.f };
 
 	public:
 
 		static void matrix4_mul(float*, float*);
 		static bool matrix4_inv(float*);
+		static float matrix4_det(float*);
 
 		float val[16]{ 0 };
 

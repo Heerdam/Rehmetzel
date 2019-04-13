@@ -44,8 +44,8 @@ namespace Heerbann {
 #define UNRATIO (1.0F/RATIO)
 #define METERS_PER_PIXEL UNRATIO
 
-#define DEGTORAD (b2_pi / 180.0)
-#define RADTODEG (180.0 / b2_pi)
+#define DEGTORAD static_cast<float>(b2_pi / 180.0)
+#define RADTODEG static_cast<float>(180.0 / b2_pi)
 
 //diameter of a cell of the background
 #define BG_CELLDIAMETER 100
@@ -67,7 +67,7 @@ namespace Heerbann {
 	class LevelManager;
 	class SpriteBatch;
 	class Matrix4;
-	class Ray;
+	struct Ray;
 
 	namespace AI{
 		class AIHandler;
@@ -159,7 +159,7 @@ namespace Heerbann {
 		};
 
 		bool static inline almost_equal(float _x, float _y) {
-			return std::abs(_x - _y) >= std::numeric_limits<float>::epsilon() * (std::abs(_x) + (std::abs(_y) + 1.0f));
+			return std::abs(_x - _y) <= std::numeric_limits<float>::epsilon() * (std::abs(_x) + (std::abs(_y) + 1.0f));
 		};
 
 		static GLuint* getIndexBuffer();

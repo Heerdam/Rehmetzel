@@ -104,7 +104,7 @@ namespace Heerbann {
 
 	struct Frustum;
 	struct Ray;
-	class Quaternion;
+	struct Quaternion;
 
 	class Camera {
 
@@ -180,7 +180,7 @@ namespace Heerbann {
 
 	class PerspectiveCamera : public Camera {
 	public:
-		float fieldOfView = 67;
+		float fieldOfView = 67.f;
 
 		PerspectiveCamera();
 		PerspectiveCamera(float, float, float);

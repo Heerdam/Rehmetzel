@@ -88,6 +88,8 @@ namespace Heerbann {
 	namespace Text {
 		class TextBlock;
 	}
+
+	class PerspectiveCamera;
 	
 	struct TestWorldLevel : public Level {
 		TestWorldLevel() : Level("TestWorldLevel") {};
@@ -104,7 +106,9 @@ namespace Heerbann {
 		float* data;
 		int vertexCount;
 
-		Matrix4* cam;
+		PerspectiveCamera* cam;
+		bool buttonDown = false;
+		sf::Vector2i deltaOld;
 
 		Text::TextBlock* testblock;
 

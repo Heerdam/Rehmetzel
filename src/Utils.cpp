@@ -1061,6 +1061,18 @@ bool Heerbann::Matrix4::matrix4_inv(float* val) {
 	return true;
 }
 
+float Matrix4::matrix4_det(float* val) {
+	return val[M30] * val[M21] * val[M12] * val[M03] - val[M20] * val[M31] * val[M12] * val[M03] - val[M30] * val[M11]
+		* val[M22] * val[M03] + val[M10] * val[M31] * val[M22] * val[M03] + val[M20] * val[M11] * val[M32] * val[M03] - val[M10]
+		* val[M21] * val[M32] * val[M03] - val[M30] * val[M21] * val[M02] * val[M13] + val[M20] * val[M31] * val[M02] * val[M13]
+		+ val[M30] * val[M01] * val[M22] * val[M13] - val[M00] * val[M31] * val[M22] * val[M13] - val[M20] * val[M01] * val[M32]
+		* val[M13] + val[M00] * val[M21] * val[M32] * val[M13] + val[M30] * val[M11] * val[M02] * val[M23] - val[M10] * val[M31]
+		* val[M02] * val[M23] - val[M30] * val[M01] * val[M12] * val[M23] + val[M00] * val[M31] * val[M12] * val[M23] + val[M10]
+		* val[M01] * val[M32] * val[M23] - val[M00] * val[M11] * val[M32] * val[M23] - val[M20] * val[M11] * val[M02] * val[M33]
+		+ val[M10] * val[M21] * val[M02] * val[M33] + val[M20] * val[M01] * val[M12] * val[M33] - val[M00] * val[M21] * val[M12]
+		* val[M33] - val[M10] * val[M01] * val[M22] * val[M33] + val[M00] * val[M11] * val[M22] * val[M33];
+}
+
 Matrix4::Matrix4() {
 	val[M00] = 1.f;
 	val[M11] = 1.f;
@@ -1934,6 +1946,7 @@ void Quaternion::transform(sf::Vector3f& _vec) {
 
 Quaternion* Quaternion::operator*(Quaternion* _quat) {
 	mul(_quat);
+	return this;
 }
 
 Quaternion* Quaternion::operator+(Quaternion*  _quat) {
@@ -1941,6 +1954,7 @@ Quaternion* Quaternion::operator+(Quaternion*  _quat) {
 	y += _quat->y;
 	z += _quat->z;
 	w += _quat->w;
+	return this;
 }
 
 void Quaternion::mul(Quaternion* _quat) {
@@ -1956,6 +1970,7 @@ void Quaternion::mul(Quaternion* _quat) {
 
 Quaternion* Quaternion::operator*(float _scalar) {
 	mul(_scalar);
+	return this;
 }
 
 float Quaternion::dot(Quaternion* _quat) {
@@ -1973,7 +1988,7 @@ float Quaternion::getAxisAngle(sf::Vector3f& _axis) {
 float Quaternion::getAxisAngleRad(sf::Vector3f& _axis) {
 	if (w > 1.f) nor(); // if w>1 acos and sqrt will produce errors, this cant happen if quaternion is normalised
 	float angle = 2.0f * std::acosf(w);
-	double s = std::sqrtf(1.f - w * w); // assuming quaternion normalised then w is less than 1, so term always positive.
+	float s = std::sqrtf(1.f - w * w); // assuming quaternion normalised then w is less than 1, so term always positive.
 	if (Main::almost_equal(s, 0.f)) { // test to avoid divide by zero, s is always positive due to sqrt
 		// if s close to zero then direction of axis not important
 		_axis.x = x; // if it is important that axis is normalised then replace with x=1; y=z=0;
@@ -2093,7 +2108,7 @@ void Quaternion::setFromAxisRad(float _x, float _y, float _z, float _radians) {
 	float l_ang = _radians < 0 ? 2 * b2_pi - (-std::fmod(_radians, 2 * b2_pi)) : std::fmod(_radians, 2 * b2_pi);
 	float l_sin = std::sinf(l_ang / 2.f);
 	float l_cos = std::cosf(l_ang / 2.f);
-	set(d * x * l_sin, d * y * l_sin, d * z * l_sin, l_cos);
+	set(d * _x * l_sin, d * _y * l_sin, d * _z * l_sin, l_cos);
 	nor();
 }
 
@@ -2209,7 +2224,7 @@ void  Quaternion::slerp(const std::vector<Quaternion*>& _q) {
 	set(_q[0]);
 	exp(w);
 	Quaternion tmp1;
-	for (int i = 1; i < _q.size(); ++i) {
+	for (unsigned int i = 1; i < _q.size(); ++i) {
 		tmp1.set(_q[i]);
 		tmp1.exp(w);
 		mul(&tmp1);
@@ -2222,7 +2237,7 @@ void Quaternion::slerp(const std::vector<std::tuple<Quaternion*, float>>& _q) {
 	set(std::get<0>(_q[0]));
 	exp(std::get<1>(_q[0]));
 	Quaternion tmp1;
-	for (int i = 1; i < _q.size(); ++i) {
+	for (unsigned int i = 1; i < _q.size(); ++i) {
 		tmp1.set(std::get<0>(_q[0]));
 		tmp1.exp(std::get<1>(_q[0]));
 		mul(&tmp1);

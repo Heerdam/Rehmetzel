@@ -255,7 +255,12 @@ Viewport::Viewport(std::string _id, int _prio) {
 	 return true;
  }
 
- Camera::Camera(float _viewportWidth, float _viewportHeight) :viewportWidth(_viewportWidth), viewportHeight(_viewportHeight) {}
+ Camera::Camera(float _viewportWidth, float _viewportHeight) :viewportWidth(_viewportWidth), viewportHeight(_viewportHeight),
+	 projection(new Matrix4()), view(new Matrix4()), combined(new Matrix4()), invProjectionView(new Matrix4()),
+	 tmpMat(new Matrix4()), frustum(new Frustum()), ray(new Ray()){
+	 direction = sf::Vector3f(0.f, 0.f, -1.f);
+	 up = sf::Vector3f(0.f, 1.f, 0.f);
+ }
 
  void Camera::lookAt(float _x, float _y, float _z) {
 	 sf::Vector3f tmpVec = Main::nor(sf::Vector3f(_x, _y, _z) - position);
@@ -265,7 +270,7 @@ Viewport::Viewport(std::string _id, int _prio) {
 			 up = direction * -1.f; // Collinear
 		 else if (Main::almost_equal(std::abs(dot + 1.f), 0.f))			
 			 up = direction;  // Collinear opposite
-		 direction = tmpVec;
+		 direction = sf::Vector3f(tmpVec);
 		 normalizeUp();
 	 }
  }
@@ -276,11 +281,11 @@ Viewport::Viewport(std::string _id, int _prio) {
 
  void Camera::normalizeUp() {
 	 sf::Vector3f tmpVec = Main::nor(Main::crs(direction, up));
-	 up = Main::nor(Main::crs(direction, tmpVec));
+	 up = Main::nor(Main::crs(tmpVec, direction));
  }
 
- void Camera::rotate(float _angle, float _axisX, float _axisY, float _axisZ) {
-	 tmpMat->setToRotation(_angle, _axisX, _axisY, _axisZ);
+ void Camera::rotate(float _axisX, float _axisY, float _axisZ, float _angle) {
+	 tmpMat->setToRotation(_axisX, _axisY, _axisZ, _angle);
 	 direction = direction * tmpMat;
 	 up = up * tmpMat;
  }
@@ -308,7 +313,7 @@ Viewport::Viewport(std::string _id, int _prio) {
 	 sf::Vector3f tmpVec = _point - position;
 	 translate(tmpVec);
 	 rotate(_axis, _angle);
-	 tmpMat->setToRotation(_angle, _axis.x, _axis.y, _axis.z);
+	 tmpMat->setToRotation(_axis.x, _axis.y, _axis.z, _angle);
 	 tmpVec = tmpVec * tmpMat;
 	 translate(-tmpVec.x, -tmpVec.y, -tmpVec.z);
  }
@@ -329,7 +334,7 @@ Viewport::Viewport(std::string _id, int _prio) {
  sf::Vector3f Camera::unproject(sf::Vector3f& _screenCoords, float _viewportX, float _viewportY, float _viewportWidth, float _viewportHeight) {
 	 float x = _screenCoords.x, y = _screenCoords.y;
 	 x = x - _viewportX;
-	 y = Main::height() - y - 1;
+	 y = static_cast<float>(Main::height()) - y - 1;
 	 y = y - _viewportY;
 	 _screenCoords.x = (2 * x) / _viewportWidth - 1;
 	 _screenCoords.y = (2 * y) / _viewportHeight - 1;
@@ -344,7 +349,7 @@ Viewport::Viewport(std::string _id, int _prio) {
  }
 
  sf::Vector3f Camera::unproject(sf::Vector3f& _screenCoords) {
-	 return unproject(_screenCoords, 0.f, 0.f, Main::width(), Main::height());
+	 return unproject(_screenCoords, 0.f, 0.f, static_cast<float>(Main::width()), static_cast<float>(Main::height()));
  }
 
  sf::Vector3f Camera::project(sf::Vector3f& _worldCoords, float _viewportX, float _viewportY, float _viewportWidth, float _viewportHeight) {
@@ -361,7 +366,7 @@ Viewport::Viewport(std::string _id, int _prio) {
  }
 
  sf::Vector3f Camera::project(sf::Vector3f& _worldCoords) {
-	 return project(_worldCoords, 0.f, 0.f, Main::width(), Main::height());
+	 return project(_worldCoords, 0.f, 0.f, static_cast<float>(Main::width()), static_cast<float>(Main::height()));
  }
 
  const Ray* Camera::getPickRay(float _screenX, float _screenY, float _viewportX, float _viewportY, float _viewportWidth, float _viewportHeight) {
@@ -372,10 +377,10 @@ Viewport::Viewport(std::string _id, int _prio) {
  }
 
  const Ray* Camera::getPickRay(float _screenX, float _screenY) {
-	 return getPickRay(_screenX, _screenY, 0.f, 0.f, Main::width(), Main::height());
+	 return getPickRay(_screenX, _screenY, 0.f, 0.f, static_cast<float>(Main::width()), static_cast<float>(Main::height()));
  }
 
- PerspectiveCamera::PerspectiveCamera() : PerspectiveCamera(67, Main::width(), Main::height()){}
+ PerspectiveCamera::PerspectiveCamera() : PerspectiveCamera(67, static_cast<float>(Main::width()), static_cast<float>(Main::height())){}
 
  Heerbann::PerspectiveCamera::PerspectiveCamera(float _fieldOfViewY, float _viewportWidth, float _viewportHeight) :
 	 fieldOfView(_fieldOfViewY), Camera(_viewportWidth, _viewportHeight){
@@ -399,7 +404,7 @@ Viewport::Viewport(std::string _id, int _prio) {
 	 }
  }
 
- OrthographicCamera::OrthographicCamera() : OrthographicCamera (Main::width(), Main::height()){}
+ OrthographicCamera::OrthographicCamera() : OrthographicCamera (static_cast<float>(Main::width()), static_cast<float>(Main::height())){}
 
  OrthographicCamera::OrthographicCamera(float _viewportWidth, float _viewportHeight) : Camera(_viewportWidth, _viewportHeight) {}
 
@@ -422,7 +427,7 @@ Viewport::Viewport(std::string _id, int _prio) {
  }
 
  void OrthographicCamera::setToOrtho(bool _yDown) {
-	 setToOrtho(_yDown, Main::width(), Main::height());
+	 setToOrtho(_yDown, static_cast<float>(Main::width()), static_cast<float>(Main::height()));
  }
 
  void OrthographicCamera::setToOrtho(bool _yDown, float _viewportWidth, float _viewportHeight) {

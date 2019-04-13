@@ -8,6 +8,7 @@
 #include "TextUtil.hpp"
 #include "AI.hpp"
 #include "G3D.hpp"
+#include "InputMultiplexer.hpp"
 
 using namespace Heerbann;
 using namespace UI;
@@ -226,19 +227,39 @@ void TestWorldLevel::postLoad(AssetManager* _asset) {
 	//combined.set(projection);
 	//Matrix4.mul(combined.val, view.val);
 
-	Matrix4 projection;
-	float ar = static_cast<float>(Main::width()) / static_cast<float>(Main::height());
-	projection.setToProjection(0.1f, 1000.f, 67.f, ar);
+	cam = new PerspectiveCamera();
+	cam->nearPlane = 0.1f;
+	cam->farPlane = 1000.f;
+	cam->position = sf::Vector3f(0.f, 0.f, -250.f);
+	cam->lookAt(sf::Vector3f(0.f, 0.f, 0.f));
+	cam->update();
+	//cam->rotateAround(sf::Vector3f(0.f, 0.f, 0.f), sf::Vector3f(0.f, 1.f, 0.f), static_cast<float>(1.f));
 
-	sf::Vector3f pos(200.f, -75.f, 100.f);
-	sf::Vector3f dir(-1.f, 0.f, 0.f);
-	sf::Vector3f up(0.f, 0.f, 1.f);
-	Matrix4 view;
-	view.setToLookAt(pos, pos + dir, up);
+	InputEntry* entry = new InputEntry();
 
-	cam = new Matrix4(projection);
-	cam = *cam * &view;
+	entry->mouseButtonPressEvent = [&](sf::Mouse::Button _button, int _x, int _y)->bool {
+		if (_button == sf::Mouse::Button::Left)
+			buttonDown = true;
+		return false;
+	};
 
+	entry->mouseButtonReleaseEvent = [&](sf::Mouse::Button _button, int _x, int _y)->bool {
+		if (_button == sf::Mouse::Button::Left)
+			buttonDown = false;
+		return false;
+	};
+
+	entry->mouseMoveEvent = [&](int _x, int _y)->bool {
+		if (buttonDown) {
+			cam->rotateAround(sf::Vector3f(0.f, 0.f, 0.f), sf::Vector3f(1.f, 0.f, 0.f), static_cast<float>(_y - deltaOld.y));
+			cam->rotateAround(sf::Vector3f(0.f, 0.f, 0.f), sf::Vector3f(0.f, 0.f, 1.f), static_cast<float>(_x - deltaOld.x));
+			deltaOld = sf::Vector2i(_x, _y);
+			cam->update();
+		}
+		return false;	
+	};
+
+	Main::getInput()->add("camera", entry);
 }
 
 void TestWorldLevel::update(float _delta) {
@@ -253,7 +274,7 @@ void TestWorldLevel::draw(float _delta, SpriteBatch* _batch) {
 	//Main::getAI()->draw(Main::getViewport()->cam.getTransform());
 
 	modelShader->bind();
-	glUniformMatrix4fv(camPos, 1, false, cam->val);
+	glUniformMatrix4fv(camPos, 1, false, cam->combined->val);
 	glBindVertexArray(model->vao);
 	glDrawElements(GL_TRIANGLES, model->indexBufferSize, GL_UNSIGNED_INT, nullptr);
 	//glDrawArrays(GL_TRIANGLES, 0, 5000);
