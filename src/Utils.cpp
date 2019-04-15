@@ -883,7 +883,7 @@ bool ShaderProgram::compile(const std::string& _id, const char* _compute, const 
 		glGetShaderiv(vertex, GL_COMPILE_STATUS, &isCompiled);
 		if (isCompiled == GL_FALSE) {
 			GLint maxLength = 0;
-			glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
+			glGetShaderiv(vertex, GL_INFO_LOG_LENGTH, &maxLength);
 			std::vector<GLchar> errorLog(maxLength);
 			glGetShaderInfoLog(vertex, maxLength, &maxLength, &errorLog[0]);
 			glDeleteShader(vertex);
@@ -1081,11 +1081,11 @@ Matrix4::Matrix4() {
 }
 
 Matrix4::Matrix4(Matrix4* _mat) {
-	operator=(_mat);
+	set(_mat);
 }
 
 Matrix4::Matrix4(Quaternion* _quat) {
-	operator=(_quat);
+	set(_quat);
 }
 
 Matrix4::Matrix4(const sf::Vector3f& _pos, Quaternion* _quat, const sf::Vector3f& _scale) {
@@ -1096,40 +1096,7 @@ Matrix4::Matrix4(const aiVector3D& _pos, const aiQuaternion& _quat, const aiVect
 	set(_pos.x, _pos.y, _pos.z, _quat.x, _quat.y, _quat.z, _quat.w, _scale.x, _scale.y, _scale.z);
 }
 
-Matrix4* Matrix4::operator=(Matrix4* _mat) {
-	std::memcpy(val, _mat->val, sizeof(float) * 16);
-	return this;
-}
-
-Matrix4* Matrix4::operator=(Quaternion* _quat) {
-	const float xs = _quat->x * 2.f, ys = _quat->y * 2.f, zs = _quat->z * 2.f;
-	const float wx = _quat->w * xs, wy = _quat->w * ys, wz = _quat->w * zs;
-	const float xx = _quat->x * xs, xy = _quat->x * ys, xz = _quat->x * zs;
-	const float yy = _quat->y * ys, yz = _quat->y * zs, zz = _quat->z * zs;
-
-	val[M00] = (1.0f - (yy + zz));
-	val[M01] = (xy - wz);
-	val[M02] = (xz + wy);
-	val[M03] = 0.f;
-
-	val[M10] = (xy + wz);
-	val[M11] = (1.0f - (xx + zz));
-	val[M12] = (yz - wx);
-	val[M13] = 0.f;
-
-	val[M20] = (xz - wy);
-	val[M21] = (yz + wx);
-	val[M22] = (1.0f - (xx + yy));
-	val[M23] = 0.f;
-
-	val[M30] = 0.f;
-	val[M31] = 0.f;
-	val[M32] = 0.f;
-	val[M33] = 1.0f;
-	return this;
-}
-
-Matrix4* Heerbann::Matrix4::operator*(Matrix4* _mat) {
+Matrix4* Matrix4::operator*(Matrix4* _mat) {
 	matrix4_mul(val, _mat->val);
 	return this;
 }
@@ -1176,6 +1143,10 @@ Matrix4* Matrix4::set(Quaternion* _quat) {
 	return set(0.f, 0.f, 0.f, _quat->x, _quat->y, _quat->z, _quat->w);
 }
 
+Matrix4 * Heerbann::Matrix4::set(const sf::Vector3f& _pos, Quaternion* _quat) {
+	return set(_pos.x, _pos.y, _pos.z, _quat->x, _quat->y, _quat->z, _quat->w);
+}
+
 Matrix4 * Heerbann::Matrix4::set(float _translationX, float _translationY, float _translationZ, float _quaternionX, float _quaternionY,
 	float _quaternionZ, float _quaternionW) {
 	const float xs = _quaternionX * 2.f, ys = _quaternionY * 2.f, zs = _quaternionZ * 2.f;
@@ -1210,15 +1181,16 @@ Matrix4* Heerbann::Matrix4::set(Matrix4* _mat) {
 	return this;
 }
 
-void Matrix4::setToTranslation(const sf::Vector3f& _vec) {
-	setToTranslation(_vec.x, _vec.y, _vec.z);
+Matrix4* Matrix4::setToTranslation(const sf::Vector3f& _vec) {
+	return setToTranslation(_vec.x, _vec.y, _vec.z);
 }
 
-void Matrix4::setToTranslation(float _x, float _y, float _z) {
+Matrix4* Matrix4::setToTranslation(float _x, float _y, float _z) {
 	idt();
 	val[M03] = _x;
 	val[M13] = _y;
 	val[M23] = _z;
+	return this;
 }
 
 float Matrix4::operator[](int _index) {
@@ -1226,7 +1198,7 @@ float Matrix4::operator[](int _index) {
 	return val[_index];
 }
 
-void Matrix4::tra() {
+Matrix4* Matrix4::tra() {
 	tmp[M00] = val[M00];
 	tmp[M01] = val[M10];
 	tmp[M02] = val[M20];
@@ -1244,9 +1216,10 @@ void Matrix4::tra() {
 	tmp[M32] = val[M23];
 	tmp[M33] = val[M33];
 	set(tmp);
+	return this;
 }
 
-void Matrix4::idt() {
+Matrix4* Matrix4::idt() {
 	val[M00] = 1.f;
 	val[M01] = 0.f;
 	val[M02] = 0.f;
@@ -1263,6 +1236,7 @@ void Matrix4::idt() {
 	val[M31] = 0.f;
 	val[M32] = 0.f;
 	val[M33] = 1.f;
+	return this;
 }
 
 float Matrix4::det() {
@@ -1333,7 +1307,7 @@ bool Matrix4::inv() {
 	return true;
 }
 
-void Matrix4::setToProjection(float _near, float _far, float _fovy, float _aspectRatio) {
+Matrix4* Matrix4::setToProjection(float _near, float _far, float _fovy, float _aspectRatio) {
 	idt();
 	float l_fd = (float)(1.f / std::tanf((_fovy * (b2_pi / 180.f)) / 2.f));
 	float l_a1 = (_far + _near) / (_near - _far);
@@ -1354,9 +1328,10 @@ void Matrix4::setToProjection(float _near, float _far, float _fovy, float _aspec
 	val[M13] = 0.f;
 	val[M23] = l_a2;
 	val[M33] = 0.f;
+	return this;
 }
 
-void Matrix4::setToProjection(float _left, float _right, float _bottom, float _top, float _near, float _far) {
+Matrix4* Matrix4::setToProjection(float _left, float _right, float _bottom, float _top, float _near, float _far) {
 	float x = 2.f * _near / (_right - _left);
 	float y = 2.f * _near / (_top - _bottom);
 	float a = (_right + _left) / (_right - _left);
@@ -1379,17 +1354,18 @@ void Matrix4::setToProjection(float _left, float _right, float _bottom, float _t
 	val[M13] = 0.f;
 	val[M23] = l_a2;
 	val[M33] = 0.f;
+	return this;
 }
 
-void Matrix4::setToOrtho2D(float _x, float _y, float _width, float _height) {
-	setToOrtho(_x, _x + _width, _y, _y + _height, 0.f, 1.f);
+Matrix4* Matrix4::setToOrtho2D(float _x, float _y, float _width, float _height) {
+	return setToOrtho(_x, _x + _width, _y, _y + _height, 0.f, 1.f);
 }
 
-void Matrix4::setToOrtho2D(float _x, float _y, float _width, float _height, float _near, float _far) {
-	setToOrtho(_x, _x + _width, _y, _y + _height, _near, _far);
+Matrix4* Matrix4::setToOrtho2D(float _x, float _y, float _width, float _height, float _near, float _far) {
+	return setToOrtho(_x, _x + _width, _y, _y + _height, _near, _far);
 }
 
-void Matrix4::setToOrtho(float _left, float _right, float _bottom, float _top, float _near, float _far) {
+Matrix4* Matrix4::setToOrtho(float _left, float _right, float _bottom, float _top, float _near, float _far) {
 	idt();
 	float x_orth = 2.f / (_right - _left);
 	float y_orth = 2.f / (_top - _bottom);
@@ -1415,19 +1391,14 @@ void Matrix4::setToOrtho(float _left, float _right, float _bottom, float _top, f
 	val[M13] = ty;
 	val[M23] = tz;
 	val[M33] = 1.f;
+	return this;
 }
 
-void Matrix4::setToLookAt(const sf::Vector3f& _direction, const sf::Vector3f& _up) {
-	sf::Vector3f l_vex;
-	sf::Vector3f l_vey;
-	sf::Vector3f l_vez;
+Matrix4* Matrix4::setToLookAt(const sf::Vector3f& _direction, const sf::Vector3f& _up) {
 
-	l_vez = Main::nor(l_vez = _direction);
-	l_vex = Main::nor(l_vex = _direction);
-	l_vex = Main::crs(l_vex, _up);
-	l_vex = Main::nor(l_vex);
-	l_vey = Main::crs(l_vex, l_vez);
-	l_vey = Main::nor(l_vey);
+	sf::Vector3f l_vez = Main::nor(_direction);
+	sf::Vector3f l_vex = Main::nor(Main::crs(sf::Vector3f(l_vez), _up));
+	sf::Vector3f l_vey = Main::nor(Main::crs(l_vex, l_vez));
 
 	idt();
 	val[M00] = l_vex.x;
@@ -1439,15 +1410,16 @@ void Matrix4::setToLookAt(const sf::Vector3f& _direction, const sf::Vector3f& _u
 	val[M20] = -l_vez.x;
 	val[M21] = -l_vez.y;
 	val[M22] = -l_vez.z;
+	return this;
 }
 
-void Matrix4::setToLookAt(const sf::Vector3f& _position, const sf::Vector3f& _target, const sf::Vector3f& _up) {
-	sf::Vector3f tmpVec;
-	tmpVec = _target - _position;
+Matrix4* Matrix4::setToLookAt(const sf::Vector3f& _position, const sf::Vector3f& _target, const sf::Vector3f& _up) {
+	sf::Vector3f tmpVec = _target - _position;
 	setToLookAt(tmpVec, _up);
 	Matrix4 tmp;
-	tmp.setToTranslation(-_position.x, -_position.y, -_position.z);
+	tmp.setToTranslation(-_position.x, -_position.y, -_position.z);	
 	matrix4_mul(this->val, tmp.val);
+	return this;
 }
 
 void Matrix4::matrix4_proj(float* _mat, float* _vec) {
@@ -1460,35 +1432,36 @@ void Matrix4::matrix4_proj(float* _mat, float* _vec) {
 	_vec[2] = z;
 }
 
-void Matrix4::setToRotation(const sf::Vector3f& _axis, float _degrees) {
+Matrix4* Matrix4::setToRotation(const sf::Vector3f& _axis, float _degrees) {
 	if (Main::almost_equal(_degrees, 0.f)) {
 		idt();
-		return;
+		return this;
 	}
 	Quaternion quat(_axis, _degrees);
-	set(&quat);
+	return set(&quat);
 }
 
-void Matrix4::setToRotationRad(const sf::Vector3f& _axis, float _radians) {
-	setToRotation(_axis, _radians * RADTODEG);
+Matrix4* Matrix4::setToRotationRad(const sf::Vector3f& _axis, float _radians) {
+	return setToRotation(_axis, _radians * RADTODEG);
 }
 
-void Matrix4::setToRotation(float _x, float _y, float _z, float _degrees) {
-	setToRotation(sf::Vector3f(_x, _y, _z), _degrees);
+Matrix4* Matrix4::setToRotation(float _x, float _y, float _z, float _degrees) {
+	return setToRotation(sf::Vector3f(_x, _y, _z), _degrees);
 }
 
-void Matrix4::setToRotationRad(float _x, float _y, float _z, float _radians) {
-	setToRotationRad(sf::Vector3f(_x, _y, _z), _radians);
+Matrix4* Matrix4::setToRotationRad(float _x, float _y, float _z, float _radians) {
+	return setToRotationRad(sf::Vector3f(_x, _y, _z), _radians);
 }
 
-void Matrix4::setToRotation(const sf::Vector3f& _v1, const sf::Vector3f& _v2) {
+Matrix4* Matrix4::setToRotation(const sf::Vector3f& _v1, const sf::Vector3f& _v2) {
 	Quaternion quat;
 	quat.setFromCross(_v1, _v2);
 	set(&quat);
+	return this;
 }
 
-void Matrix4::setToRotation(float _x1, float _y1, float _z1, float _x2, float _y2, float _z2) {
-	setToRotation(sf::Vector3f(_x1, _y1, _z1), sf::Vector3f(_x2, _y2, _z2));
+Matrix4* Matrix4::setToRotation(float _x1, float _y1, float _z1, float _x2, float _y2, float _z2) {
+	return setToRotation(sf::Vector3f(_x1, _y1, _z1), sf::Vector3f(_x2, _y2, _z2));
 }
 
 void Matrix4::proj(float* _mat, float* _vecs, int _offset, int _numVecs, int _stride) {
@@ -1512,24 +1485,27 @@ Plane::Plane(const sf::Vector3f& _point1, const sf::Vector3f& _point2, const sf:
 	set(_point1, _point2, _point3);
 }
 
-void Plane::set(const Plane& _plane) {
-	set(_plane.normal, _plane.d);
+Plane* Plane::set(const Plane& _plane) {
+	return set(_plane.normal, _plane.d);
 }
 
-void Plane::set(const sf::Vector3f& _normal, float _d) {
+Plane* Plane::set(const sf::Vector3f& _normal, float _d) {
 	normal = sf::Vector3f(Main::nor(_normal));
 	d = _d;
+	return this;
 }
 
-void Plane::set(const sf::Vector3f& _point1, const sf::Vector3f& _point2, const sf::Vector3f& _point3) {
+Plane* Plane::set(const sf::Vector3f& _point1, const sf::Vector3f& _point2, const sf::Vector3f& _point3) {
 	normal = _point1 - _point2;
 	normal = Main::nor(Main::crs(normal, sf::Vector3f(_point2.x - _point3.x, _point2.y - _point3.y, _point2.z - _point3.z)));
 	d = -(normal.x + _point1.x + normal.y + _point1.y + normal.z + _point1.z);
+	return this;
 }
 
-void Plane::set(float _nx, float _ny, float _nz, float _d) {
+Plane* Plane::set(float _nx, float _ny, float _nz, float _d) {
 	normal = sf::Vector3f(_nx, _ny, _nz);
 	d = _d;
+	return this;
 }
 
 float Plane::distance(const sf::Vector3f& _point) {
@@ -1567,37 +1543,40 @@ BoundingBox::BoundingBox(const sf::Vector3f& _min, const sf::Vector3f& _max) {
 	set(_min, _max);
 }
 
-void BoundingBox::set(BoundingBox* _box) {
-	set(_box->min, _box->max);
+BoundingBox* BoundingBox::set(BoundingBox* _box) {
+	return set(_box->min, _box->max);
 }
 
-void BoundingBox::set(const sf::Vector3f& _min, const sf::Vector3f& _max) {
+BoundingBox* BoundingBox::set(const sf::Vector3f& _min, const sf::Vector3f& _max) {
 	min = sf::Vector3f(std::min(_min.x, _max.x), std::min(_min.y, _max.y), std::min(_min.z, _max.z));
 	max = sf::Vector3f(std::max(_min.x, _max.x), std::max(_min.y, _max.y), std::max(_min.z, _max.z));
 	cnt = (min + max) * 0.5f;
 	dim = max - min;
+	return this;
 }
 
-void BoundingBox::set(const std::vector<sf::Vector3f>& _points) {
+BoundingBox* BoundingBox::set(const std::vector<sf::Vector3f>& _points) {
 	inf();
 	for (auto& v : _points)
 		ext(v);
+	return this;
 }
 
-void BoundingBox::inf() {
+BoundingBox* BoundingBox::inf() {
 	min = sf::Vector3f(std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity());
 	max = sf::Vector3f(-std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity());
 	cnt = sf::Vector3f(0.f, 0.f, 0.f);
 	dim = sf::Vector3f(0.f, 0.f, 0.f);
+	return this;
 }
 
-void BoundingBox::ext(const sf::Vector3f& _point) {
-	set(sf::Vector3f(std::min(min.x, _point.x), std::min(min.y, _point.y), std::min(min.z, _point.z)), 
+BoundingBox* BoundingBox::ext(const sf::Vector3f& _point) {
+	return set(sf::Vector3f(std::min(min.x, _point.x), std::min(min.y, _point.y), std::min(min.z, _point.z)),
 		sf::Vector3f(std::max(max.x, _point.x), std::max(max.y, _point.y), std::max(max.z, _point.z)));
 }
 
-void BoundingBox::clr() {
-	set(sf::Vector3f(0.f, 0.f, 0.f), sf::Vector3f(0.f, 0.f, 0.f));
+BoundingBox* BoundingBox::clr() {
+	return set(sf::Vector3f(0.f, 0.f, 0.f), sf::Vector3f(0.f, 0.f, 0.f));
 }
 
 bool BoundingBox::isValid() {
@@ -1606,17 +1585,17 @@ bool BoundingBox::isValid() {
 		(min.z < max.z || Main::almost_equal(min.z, max.z));
 }
 
-void BoundingBox::ext(BoundingBox* _box) {
-	set(sf::Vector3f(std::min(min.x, _box->min.x), std::min(min.y, _box->min.y), std::min(min.z, _box->min.z)),
+BoundingBox* BoundingBox::ext(BoundingBox* _box) {
+	return set(sf::Vector3f(std::min(min.x, _box->min.x), std::min(min.y, _box->min.y), std::min(min.z, _box->min.z)),
 		sf::Vector3f(std::max(max.x, _box->max.x), std::max(max.y, _box->max.y), std::max(max.z, _box->max.z)));
 }
 
-void BoundingBox::ext(const sf::Vector3f& _centre, float _radius) {
-	set(sf::Vector3f(std::min(min.x, _centre.x - _radius), std::min(min.y, _centre.y - _radius), std::min(min.z, _centre.z - _radius)),
+BoundingBox* BoundingBox::ext(const sf::Vector3f& _centre, float _radius) {
+	return set(sf::Vector3f(std::min(min.x, _centre.x - _radius), std::min(min.y, _centre.y - _radius), std::min(min.z, _centre.z - _radius)),
 		sf::Vector3f(std::max(max.x, _centre.x + _radius), std::max(max.y, _centre.y + _radius), std::max(max.z, _centre.z + _radius)));
 }
 
-void BoundingBox::ext(BoundingBox* _box, Matrix4* _transform) {
+BoundingBox* BoundingBox::ext(BoundingBox* _box, Matrix4* _transform) {
 	ext(sf::Vector3f(_box->min.x, _box->min.y, _box->min.z) * _transform);
 	ext(sf::Vector3f(_box->min.x, _box->min.y, _box->max.z) * _transform);
 	ext(sf::Vector3f(_box->min.x, _box->max.y, _box->min.z) * _transform);
@@ -1625,6 +1604,7 @@ void BoundingBox::ext(BoundingBox* _box, Matrix4* _transform) {
 	ext(sf::Vector3f(_box->max.x, _box->min.y, _box->max.z) * _transform);
 	ext(sf::Vector3f(_box->max.x, _box->max.y, _box->min.z) * _transform);
 	ext(sf::Vector3f(_box->max.x, _box->max.y, _box->max.z) * _transform);
+	return this;
 }
 
 bool BoundingBox::contains(BoundingBox* _box) {
@@ -1696,7 +1676,7 @@ Frustum::Frustum() {
 }
 
 void Frustum::update(Matrix4* _inverseProjectionView) {
-	std::memcpy(_inverseProjectionView->val, planePointsArray, 24 * sizeof(float));
+	std::memcpy(planePointsArray, clipSpacePlanePointsArray, 24 * sizeof(float));
 	Matrix4::proj(_inverseProjectionView->val, planePointsArray, 0, 8, 3);
 	for (int i = 0, j = 0; i < 8; i++) {
 		auto& v = planePoints[i];
@@ -1790,8 +1770,8 @@ sf::Vector3f Ray::getEndPoint(float _distance) {
 	return out;
 }
 
-void Ray::set(Ray* _ray) {
-	set(_ray->origin, _ray->direction);
+Ray* Ray::set(Ray* _ray) {
+	return set(_ray->origin, _ray->direction);
 }
 
 Ray* Ray::operator*(Matrix4* _mat) {
@@ -1803,13 +1783,14 @@ Ray* Ray::operator*(Matrix4* _mat) {
 	return this;
 }
 
-void Ray::set(const sf::Vector3f& _origin, const sf::Vector3f& _direction) {
-	set(_origin.x, _origin.y, _origin.z, _direction.x, _direction.y, _direction.z);
+Ray* Ray::set(const sf::Vector3f& _origin, const sf::Vector3f& _direction) {
+	return set(_origin.x, _origin.y, _origin.z, _direction.x, _direction.y, _direction.z);
 }
 
-void Ray::set(float _x, float _y, float _z, float _dx, float _dy, float _dz) {
+Ray* Ray::set(float _x, float _y, float _z, float _dx, float _dy, float _dz) {
 	origin = sf::Vector3f(_x, _y, _z);
 	direction = sf::Vector3f(_dx, _dy, _dz);
+	return this;
 }
 
 Quaternion::Quaternion() {
@@ -1828,19 +1809,20 @@ Quaternion::Quaternion(const sf::Vector3f& _axis, float _angle) {
 	set(_axis, _angle);
 }
 
-void Quaternion::set(float _x, float _y, float _z, float _w) {
+Quaternion* Quaternion::set(float _x, float _y, float _z, float _w) {
 	x = _x;
 	y = _y;
 	z = _z;
 	w = _w;
+	return this;
 }
 
-void Quaternion::set(Quaternion* _quat) {
-	set(_quat->x, _quat->y, _quat->z, _quat->w);
+Quaternion* Quaternion::set(Quaternion* _quat) {
+	return set(_quat->x, _quat->y, _quat->z, _quat->w);
 }
 
-void Quaternion::set(const sf::Vector3f& _axis, float _angle) {
-	setFromAxis(_axis.x, _axis.y, _axis.z, _angle);
+Quaternion* Quaternion::set(const sf::Vector3f& _axis, float _angle) {
+	return setFromAxis(_axis.x, _axis.y, _axis.z, _angle);
 }
 
 float Quaternion::len() {
@@ -1851,11 +1833,11 @@ float Quaternion::len2() {
 	return x * x + y * y + z * z + w * w;
 }
 
-void Quaternion::setEulerAngles(float _yaw, float _pitch, float _roll) {
-	setEulerAnglesRad(_yaw * DEGTORAD, _pitch * DEGTORAD, _roll * DEGTORAD);
+Quaternion* Quaternion::setEulerAngles(float _yaw, float _pitch, float _roll) {
+	return  setEulerAnglesRad(_yaw * DEGTORAD, _pitch * DEGTORAD, _roll * DEGTORAD);
 }
 
-void Quaternion::setEulerAnglesRad(float _yaw, float _pitch, float _roll) {
+Quaternion* Quaternion::setEulerAnglesRad(float _yaw, float _pitch, float _roll) {
 	const float hr = _roll * 0.5f;
 	const float shr = std::sinf(hr);
 	const float chr = std::cosf(hr);
@@ -1874,6 +1856,7 @@ void Quaternion::setEulerAnglesRad(float _yaw, float _pitch, float _roll) {
 	y = (shy_chp * chr) - (chy_shp * shr); // sin(yaw/2) * cos(pitch/2) * cos(roll/2) - cos(yaw/2) * sin(pitch/2) * sin(roll/2)
 	z = (chy_chp * shr) - (shy_shp * chr); // cos(yaw/2) * cos(pitch/2) * sin(roll/2) - sin(yaw/2) * sin(pitch/2) * cos(roll/2)
 	w = (chy_chp * chr) + (shy_shp * shr); // cos(yaw/2) * cos(pitch/2) * cos(roll/2) + sin(yaw/2) * sin(pitch/2) * sin(roll/2)
+	return this;
 }
 
 int Quaternion::getGimbalPole() {
@@ -1907,12 +1890,13 @@ float Quaternion::getYaw() {
 	return getYawRad() * RADTODEG;
 }
 
-void Quaternion::idt() {
+Quaternion* Quaternion::idt() {
 	x = y = z = 0.f;
 	w = 1.f;
+	return this;
 }
 
-void Quaternion::nor() {
+Quaternion* Quaternion::nor() {
 	float len = len2();
 	if (len != 0.f && !Main::almost_equal(len, 1.f)) {
 		len = std::sqrtf(len);
@@ -1921,19 +1905,21 @@ void Quaternion::nor() {
 		y /= len;
 		z /= len;
 	}
+	return this;
 }
 
-void Quaternion::conjugate() {
+Quaternion* Quaternion::conjugate() {
 	x = -x;
 	y = -y;
 	z = -z;
+	return this;
 }
 
 bool Quaternion::isIDentity() {
 	return Main::almost_equal(x, 0.f) && Main::almost_equal(y, 0.f) && Main::almost_equal(z, 0.f) && Main::almost_equal(w, 1.f);
 }
 
-void Quaternion::transform(sf::Vector3f& _vec) {
+Quaternion* Quaternion::transform(sf::Vector3f& _vec) {
 	Quaternion tmp2(this);
 	tmp2.conjugate();
 	tmp2.mulLeft(&Quaternion(_vec.x, _vec.y, _vec.z, 0.f));
@@ -1942,6 +1928,7 @@ void Quaternion::transform(sf::Vector3f& _vec) {
 	_vec.x = tmp2.x;
 	_vec.y = tmp2.y;
 	_vec.z = tmp2.z;
+	return this;
 }
 
 Quaternion* Quaternion::operator*(Quaternion* _quat) {
@@ -1957,7 +1944,7 @@ Quaternion* Quaternion::operator+(Quaternion*  _quat) {
 	return this;
 }
 
-void Quaternion::mul(Quaternion* _quat) {
+Quaternion* Quaternion::mul(Quaternion* _quat) {
 	const float newX = w * _quat->x + x * _quat->w + y * _quat->z - z * _quat->y;
 	const float newY = w * _quat->y + y * _quat->w + z * _quat->x - x * _quat->z;
 	const float newZ = w * _quat->z + z * _quat->w + x * _quat->y - y * _quat->x;
@@ -1966,6 +1953,7 @@ void Quaternion::mul(Quaternion* _quat) {
 	y = newY;
 	z = newZ;
 	w = newW;
+	return this;
 }
 
 Quaternion* Quaternion::operator*(float _scalar) {
@@ -2011,11 +1999,11 @@ float Quaternion::getAngle() {
 	return getAngleRad() * RADTODEG;
 }
 
-void Quaternion::getSwingTwist(const sf::Vector3f& _axis, Quaternion* _swing, Quaternion* _twist) {
-	getSwingTwist(_axis.x, _axis.y, _axis.z, _swing, _twist);
+Quaternion* Quaternion::getSwingTwist(const sf::Vector3f& _axis, Quaternion* _swing, Quaternion* _twist) {
+	return getSwingTwist(_axis.x, _axis.y, _axis.z, _swing, _twist);
 }
 
-void Quaternion::getSwingTwist(float _axisX, float _axisY, float _axisZ, Quaternion* _swing, Quaternion* _twist) {
+Quaternion* Quaternion::getSwingTwist(float _axisX, float _axisY, float _axisZ, Quaternion* _swing, Quaternion* _twist) {
 	const float d = x * _axisX + y * _axisY + z * _axisZ;
 	_twist->set(_axisX * d, _axisY * d, _axisZ * d, w);
 	_twist->nor();
@@ -2023,6 +2011,7 @@ void Quaternion::getSwingTwist(float _axisX, float _axisY, float _axisZ, Quatern
 	_swing->set(_twist);
 	_swing->conjugate();
 	_swing->mulLeft(this);
+	return this;
 }
 
 float Quaternion::getAngleAroundRad(const sf::Vector3f& _axis) {
@@ -2043,11 +2032,11 @@ float Quaternion::getAngleAround(float _axisX, float _axisY, float _axisZ) {
 	return getAngleAroundRad(_axisX, _axisY, _axisZ);
 }
 
-void Quaternion::mulLeft(Quaternion* _quat) {
-	mulLeft(_quat->x, _quat->y, _quat->z, _quat->w);
+Quaternion* Quaternion::mulLeft(Quaternion* _quat) {
+	return mulLeft(_quat->x, _quat->y, _quat->z, _quat->w);
 }
 
-void Quaternion::mulLeft(float _x, float _y, float _z, float _w) {
+Quaternion* Quaternion::mulLeft(float _x, float _y, float _z, float _w) {
 	const float newX = _w * x + _x * w + _y * z - _z * y;
 	const float newY = _w * y + _y * w + _z * x - _x * z;
 	const float newZ = _w * z + _z * w + _x * y - _y * x;
@@ -2056,6 +2045,7 @@ void Quaternion::mulLeft(float _x, float _y, float _z, float _w) {
 	y = newY;
 	z = newZ;
 	w = newW;
+	return this;
 }
 
 Matrix4* Quaternion::toMatrix() {
@@ -2089,19 +2079,19 @@ Matrix4* Quaternion::toMatrix() {
 	return out;
 }
 
-void Quaternion::setFromAxis(const sf::Vector3f& _axis, float _degrees) {
-	setFromAxis(_axis.x, _axis.y, _axis.z, _degrees);
+Quaternion* Quaternion::setFromAxis(const sf::Vector3f& _axis, float _degrees) {
+	return setFromAxis(_axis.x, _axis.y, _axis.z, _degrees);
 }
 
-void Quaternion::setFromAxisRad(const sf::Vector3f& _axis, float _radians) {
-	setFromAxis(_axis.x, _axis.y, _axis.z, _radians);
+Quaternion* Quaternion::setFromAxisRad(const sf::Vector3f& _axis, float _radians) {
+	return setFromAxis(_axis.x, _axis.y, _axis.z, _radians);
 }
 
-void Quaternion::setFromAxis(float _x, float _y, float _z, float _degrees) {
-	setFromAxisRad(_x, _y, _z, _degrees * DEGTORAD);
+Quaternion* Quaternion::setFromAxis(float _x, float _y, float _z, float _degrees) {
+	return setFromAxisRad(_x, _y, _z, _degrees * DEGTORAD);
 }
 
-void Quaternion::setFromAxisRad(float _x, float _y, float _z, float _radians) {
+Quaternion* Quaternion::setFromAxisRad(float _x, float _y, float _z, float _radians) {
 	float d = std::sqrtf(_x * _x + _y * _y + _z * _z);
 	if (Main::almost_equal(d, 0.f)) return idt();
 	d = 1.f / d;
@@ -2110,23 +2100,25 @@ void Quaternion::setFromAxisRad(float _x, float _y, float _z, float _radians) {
 	float l_cos = std::cosf(l_ang / 2.f);
 	set(d * _x * l_sin, d * _y * l_sin, d * _z * l_sin, l_cos);
 	nor();
+	return this;
 }
 
-void Quaternion::setFromMatrix(bool _normalizeAxes, Matrix4* _mat) {
+Quaternion* Quaternion::setFromMatrix(bool _normalizeAxes, Matrix4* _mat) {
 	setFromAxes(_normalizeAxes, _mat->val[Matrix4::M00], _mat->val[Matrix4::M01], _mat->val[Matrix4::M02],
 		_mat->val[Matrix4::M10], _mat->val[Matrix4::M11], _mat->val[Matrix4::M12], _mat->val[Matrix4::M20],
 		_mat->val[Matrix4::M21], _mat->val[Matrix4::M22]);
+	return this;
 }
 
-void Quaternion::setFromMatrix(Matrix4* _mat) {
-	setFromMatrix(false, _mat);
+Quaternion* Quaternion::setFromMatrix(Matrix4* _mat) {
+	return setFromMatrix(false, _mat);
 }
 
-void Quaternion::setFromAxes(float _xx, float _xy, float _xz, float _yx, float _yy, float _yz, float _zx, float _zy, float _zz) {
-	setFromAxes(false, _xx, _xy, _xz, _yx, _yy, _yz, _zx, _zy, _zz);
+Quaternion* Quaternion::setFromAxes(float _xx, float _xy, float _xz, float _yx, float _yy, float _yz, float _zx, float _zy, float _zz) {
+	return setFromAxes(false, _xx, _xy, _xz, _yx, _yy, _yz, _zx, _zy, _zz);
 }
 
-void Quaternion::setFromAxes(bool _normalizeAxes, float _xx, float _xy, float _xz, float _yx, float _yy, float _yz, float _zx, float _zy, float _zz) {
+Quaternion* Quaternion::setFromAxes(bool _normalizeAxes, float _xx, float _xy, float _xz, float _yx, float _yy, float _yz, float _zx, float _zy, float _zz) {
 	if (_normalizeAxes) {
 		const float lx = 1.f / std::sqrtf(_xx * _xx + _xy * _xy + _xz * _xz);
 		const float ly = 1.f / std::sqrtf(_yx * _yx + _yy * _yy + _yz * _yz);
@@ -2175,19 +2167,20 @@ void Quaternion::setFromAxes(bool _normalizeAxes, float _xx, float _xy, float _x
 		y = (_zy + _yz) * s;
 		w = (_yx - _xy) * s;
 	}
+	return this;
 }
 
-void Quaternion::setFromCross(const sf::Vector3f& _v1, const sf::Vector3f& _v2) {
-	setFromCross(_v1.x, _v2.x, _v1.y, _v2.y, _v1.z, _v2.z);
+Quaternion* Quaternion::setFromCross(const sf::Vector3f& _v1, const sf::Vector3f& _v2) {
+	return setFromCross(_v1.x, _v2.x, _v1.y, _v2.y, _v1.z, _v2.z);
 }
 
-void Quaternion::setFromCross(float _x1, float _x2, float _y1, float _y2, float _z1, float _z2) {
+Quaternion* Quaternion::setFromCross(float _x1, float _x2, float _y1, float _y2, float _z1, float _z2) {
 	const float dot = std::clamp(_x1 * _x2 + _y1 * _y2 + _z1 * _z2, -1.f, 1.f);
 	const float angle = std::acosf(dot);
-	setFromAxisRad(_y1 * _z2 - _z1 * _y2, _z1 * _x2 - _x1 * _z2, _x1 * _y2 - _y1 * _x2, angle);
+	return setFromAxisRad(_y1 * _z2 - _z1 * _y2, _z1 * _x2 - _x1 * _z2, _x1 * _y2 - _y1 * _x2, angle);
 }
 
-void Quaternion::slerp(Quaternion* _end, float _alpha) {
+Quaternion* Quaternion::slerp(Quaternion* _end, float _alpha) {
 	const float d = x * _end->x + y * _end->y + z * _end->z + w * _end->w;
 	float absDot = d < 0.f ? -d : d;
 
@@ -2216,9 +2209,10 @@ void Quaternion::slerp(Quaternion* _end, float _alpha) {
 	y = (scale0 * y) + (scale1 * _end->y);
 	z = (scale0 * z) + (scale1 * _end->z);
 	w = (scale0 * w) + (scale1 * _end->w);
+	return this;
 }
 
-void  Quaternion::slerp(const std::vector<Quaternion*>& _q) {
+Quaternion*  Quaternion::slerp(const std::vector<Quaternion*>& _q) {
 	// Calculate exponents and multiply everything from left to right
 	const float w = 1.0f / _q.size();
 	set(_q[0]);
@@ -2230,9 +2224,10 @@ void  Quaternion::slerp(const std::vector<Quaternion*>& _q) {
 		mul(&tmp1);
 	}
 	nor();
+	return this;
 }
 
-void Quaternion::slerp(const std::vector<std::tuple<Quaternion*, float>>& _q) {
+Quaternion* Quaternion::slerp(const std::vector<std::tuple<Quaternion*, float>>& _q) {
 	// Calculate exponents and multiply everything from left to right
 	set(std::get<0>(_q[0]));
 	exp(std::get<1>(_q[0]));
@@ -2243,9 +2238,10 @@ void Quaternion::slerp(const std::vector<std::tuple<Quaternion*, float>>& _q) {
 		mul(&tmp1);
 	}
 	nor();
+	return this;
 }
 
-void Quaternion::exp(float _alpha) {
+Quaternion* Quaternion::exp(float _alpha) {
 	// Calculate |q|^alpha
 	float norm = len();
 	float normExp = std::powf(norm, _alpha);
@@ -2268,11 +2264,13 @@ void Quaternion::exp(float _alpha) {
 
 	// Fix any possible discrepancies
 	nor();
+	return this;
 }
 
-void Quaternion::mul(float _scalar) {
+Quaternion* Quaternion::mul(float _scalar) {
 	x *= _scalar;
 	y *= _scalar;
 	z *= _scalar;
 	w *= _scalar;
+	return this;
 }

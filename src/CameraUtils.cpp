@@ -46,7 +46,7 @@ Viewport::Viewport(std::string _id, int _prio) {
 			cam.move(sf::Vector2f(delta));
 			last.x = _x;
 			last.y = _y;
-			return true;
+			return false;
 		} else if (resizing || (mouseLeftPressed && bounds > 0)) {
 			if (resizing == false) {
 				borderRes = bounds;
@@ -260,6 +260,7 @@ Viewport::Viewport(std::string _id, int _prio) {
 	 tmpMat(new Matrix4()), frustum(new Frustum()), ray(new Ray()){
 	 direction = sf::Vector3f(0.f, 0.f, -1.f);
 	 up = sf::Vector3f(0.f, 1.f, 0.f);
+
  }
 
  void Camera::lookAt(float _x, float _y, float _z) {
@@ -271,7 +272,7 @@ Viewport::Viewport(std::string _id, int _prio) {
 		 else if (Main::almost_equal(std::abs(dot + 1.f), 0.f))			
 			 up = direction;  // Collinear opposite
 		 direction = sf::Vector3f(tmpVec);
-		 normalizeUp();
+		 //normalizeUp();
 	 }
  }
 
@@ -280,8 +281,18 @@ Viewport::Viewport(std::string _id, int _prio) {
  }
 
  void Camera::normalizeUp() {
-	 sf::Vector3f tmpVec = Main::nor(Main::crs(direction, up));
-	 up = Main::nor(Main::crs(tmpVec, direction));
+	 right = Main::nor(Main::crs(direction, up));
+	 up = Main::nor(Main::crs(right, direction));
+ }
+
+ void Camera::normalizeUpYLocked() {
+	 right = Main::nor(Main::crs(sf::Vector3f(0.f, 1.f, 0.f), direction));
+	 up = Main::nor(Main::crs(right, direction));
+ }
+
+ Quaternion* Camera::getRotation(Quaternion* _quat) {
+	 _quat->setFromAxes(direction.x, direction.y, direction.z, right.x, right.y, right.z, up.x, up.y, up.z);
+	 return _quat;
  }
 
  void Camera::rotate(float _axisX, float _axisY, float _axisZ, float _angle) {
@@ -316,6 +327,27 @@ Viewport::Viewport(std::string _id, int _prio) {
 	 tmpMat->setToRotation(_axis.x, _axis.y, _axis.z, _angle);
 	 tmpVec = tmpVec * tmpMat;
 	 translate(-tmpVec.x, -tmpVec.y, -tmpVec.z);
+ }
+
+ void Camera::arcball(const sf::Vector3f& _point, float _azimuth, float _altitude, float _radius) {
+	
+	 float ahh = _altitude * DEGTORAD;
+	 float azz = _azimuth * DEGTORAD;
+	 float ah = std::sinf(ahh);
+	 float az = std::cosf(azz);
+
+	 float x = _radius * std::sinf(_altitude * DEGTORAD) * std::cosf(_azimuth* DEGTORAD);
+	 float y = _radius * std::sinf(_altitude* DEGTORAD) * std::sinf(_azimuth* DEGTORAD);
+	 float z = _radius * std::cosf(_altitude* DEGTORAD);
+
+	 position.x = x;
+	 position.y = z;
+	 position.z = y;
+
+	 lookAt(_point);
+	
+	 normalizeUpYLocked();
+	 update();
  }
 
  void Camera::transform(Matrix4* _transform) {
@@ -394,9 +426,8 @@ Viewport::Viewport(std::string _id, int _prio) {
 	 float aspect = viewportWidth / viewportHeight;
 	 projection->setToProjection(std::abs(nearPlane), std::abs(farPlane), fieldOfView, aspect);
 	 view->setToLookAt(position, position + direction, up);
-	 combined->set(projection);
-	 Matrix4::matrix4_mul(combined->val, view->val);
-
+	 Matrix4::matrix4_mul(combined->set(projection)->val, view->val);
+	 
 	 if (_updateFrustum) {
 		 invProjectionView->set(combined);
 		 Matrix4::matrix4_inv(invProjectionView->val);
@@ -438,9 +469,9 @@ Viewport::Viewport(std::string _id, int _prio) {
 		 up = sf::Vector3f(0.f, 1.f, 0.f);
 		 direction = sf::Vector3f(0.f, 0.f, -1.f);
 	 }
-	 position = sf::Vector3f(zoom * viewportWidth * 0.5f, zoom * viewportHeight * 0.5f, 0.f);
-	 viewportWidth = viewportWidth;
-	 viewportHeight = viewportHeight;
+	 position = sf::Vector3f(zoom * _viewportWidth * 0.5f, zoom * _viewportHeight * 0.5f, 0.f);
+	 viewportWidth = _viewportWidth;
+	 viewportHeight = _viewportHeight;
 	 update();
  }
 
@@ -454,4 +485,146 @@ Viewport::Viewport(std::string _id, int _prio) {
 
  void OrthographicCamera::translate(sf::Vector2f _vec) {
 	 translate(_vec.x, _vec.y);
+ }
+
+ AxisWidgetCamera::AxisWidgetCamera(Camera* _camera) : Camera(200.f, 200.f){
+
+	 cam = _camera;
+
+	 nearPlane = 0.1f;
+	 farPlane = 50.f;
+
+	 direction = sf::Vector3f(0.f, 0.f, -1.f);
+	 up = sf::Vector3f(0.f, 1.f, 0.f);
+	 right = sf::Vector3f(1.f, 0.f, 0.f);
+	 position = sf::Vector3f(0.f, 0.f, 100.f);
+
+	 projection->setToOrtho(-viewportWidth * 0.5f, (viewportWidth * 0.5f),
+		 -(viewportHeight * 0.5f), viewportHeight * 0.5f, nearPlane, farPlane);
+	 view->setToLookAt(position, position + direction, up);
+	 combined->set(projection);
+	 Matrix4::matrix4_mul(combined->val, view->val);
+
+	 transform = new Matrix4();
+	 transform->idt();
+
+	 const std::string vertex =
+		 "#version 460 core \n"
+		 "layout (location = 0) in vec3 a_Pos;"
+		 "layout (location = 1) in vec4 a_Col;"
+		 "out vec4 col;"
+		 "uniform mat4 transform;"
+		 "void main() {"
+		 "gl_Position = transform * vec4(a_Pos.xyz, 1.0);"
+		 "col = a_Col;"
+		 "}";
+
+	 std::string fragment =
+		 "#version 460 core \n"
+		 "out vec4 FragColor;"
+		 "in vec4 col;"
+		 "void main(){"
+		 "FragColor = col;"
+		 "}";
+
+	 shader = new ShaderProgram();
+	 shader->loadFromMemory("TransformWidget Shader", "", vertex, "", fragment);
+	 camLocation = glGetUniformLocation(shader->getHandle(), "transform");
+
+	 float* vertexBuffer = new float[4 * 6];
+	 unsigned int* indexBuffer = new unsigned int[6];
+
+	 float l = 90.f;
+	 int k = 0;
+	 //x arrow
+	 vertexBuffer[k] = 0.f; //x
+	 vertexBuffer[++k] = 0.f; //y
+	 vertexBuffer[++k] = 0.f; //z
+	 vertexBuffer[++k] = Main::toFloatBits(sf::Color::Red); //c
+
+	 vertexBuffer[++k] = l; //x
+	 vertexBuffer[++k] = 0.f; //y
+	 vertexBuffer[++k] = 0.f; //z
+	 vertexBuffer[++k] = Main::toFloatBits(sf::Color::Red); //c
+
+		 //y arrow
+	 vertexBuffer[++k] = 0.f; //x
+	 vertexBuffer[++k] = 0.f; //y
+	 vertexBuffer[++k] = 0.f; //z
+	 vertexBuffer[++k] = Main::toFloatBits(sf::Color::Green); //c
+
+	 vertexBuffer[++k] = 0.f; //x
+	 vertexBuffer[++k] = l; //y
+	 vertexBuffer[++k] = 0.f; //z
+	 vertexBuffer[++k] = Main::toFloatBits(sf::Color::Green); //c
+
+		 //z arrow
+	 vertexBuffer[++k] = 0.f; //x
+	 vertexBuffer[++k] = 0.f; //y
+	 vertexBuffer[++k] = 0.f; //z
+	 vertexBuffer[++k] = Main::toFloatBits(sf::Color::Blue); //c
+
+	 vertexBuffer[++k] = 0.f; //x
+	 vertexBuffer[++k] = 0.f; //y
+	 vertexBuffer[++k] = l; //z
+	 vertexBuffer[++k] = Main::toFloatBits(sf::Color::Blue); //c
+
+	 k = 0;
+	 indexBuffer[k] = 0;
+	 indexBuffer[++k] = 1;
+
+	 indexBuffer[++k] = 2;
+	 indexBuffer[++k] = 3;
+
+	 indexBuffer[++k] = 4;
+	 indexBuffer[++k] = 5;
+
+	 GLuint vbo, index;
+
+	 //create buffer
+	 glGenVertexArrays(1, &vao);
+	 glGenBuffers(1, &vbo);
+	 glGenBuffers(1, &index);
+
+	 glBindVertexArray(vao);
+
+	 //vbo
+	 glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	 glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 24, vertexBuffer, GL_STATIC_DRAW);
+
+	 //index
+	 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index);
+	 glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * 6, indexBuffer, GL_STATIC_DRAW);
+
+	 glEnableVertexAttribArray(0); //pos(3)
+	 glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+
+	 glEnableVertexAttribArray(1); //color1 (1)
+	 glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, 4 * sizeof(float), (void*)(3 * sizeof(float)));
+
+	 glBindBuffer(GL_ARRAY_BUFFER, 0);
+	 glBindVertexArray(0);
+
+	 delete vertexBuffer;
+	 delete indexBuffer;
+ }
+
+ void AxisWidgetCamera::update() {
+	 update(true);
+ }
+
+ void AxisWidgetCamera::update(bool) {
+	 if (cam == nullptr) return;
+
+	 glViewport(0, 0, static_cast<GLuint>(viewportWidth), static_cast<GLuint>(viewportHeight));
+
+	// transform->setToRotation(cam->direction, cam->up);
+
+	 shader->bind();
+	 glUniformMatrix4fv(camLocation, 1, false, cam->combined->val);
+	 glBindVertexArray(vao);
+	 glDrawElements(GL_LINES, 6, GL_UNSIGNED_INT, 0);
+	 shader->unbind();
+
+	 glViewport(0, 0, static_cast<GLuint>(cam->viewportWidth), static_cast<GLuint>(cam->viewportHeight));
  }

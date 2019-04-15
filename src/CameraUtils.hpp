@@ -7,6 +7,7 @@ namespace Heerbann {
 	using namespace Heerbann;
 
 	struct WorldObject;
+	class ShaderProgram;
 
     class Viewport{
 	public:
@@ -110,7 +111,7 @@ namespace Heerbann {
 
 		Ray* ray;
 		Matrix4* tmpMat;
-
+	
 	public:
 
 		Camera(float, float);
@@ -118,6 +119,7 @@ namespace Heerbann {
 		sf::Vector3f position;
 		sf::Vector3f direction;
 		sf::Vector3f up;
+		sf::Vector3f right;
 
 		Matrix4* projection;
 		Matrix4* view;
@@ -137,6 +139,9 @@ namespace Heerbann {
 		void lookAt(float, float, float);
 		void lookAt(const sf::Vector3f&);
 		void normalizeUp();
+		void normalizeUpYLocked();
+
+		Quaternion* getRotation(Quaternion*);
 		
 		void rotate(float, float, float, float);
 		void rotate(const sf::Vector3f&, float);
@@ -144,6 +149,7 @@ namespace Heerbann {
 		void rotate(Quaternion*);
 		
 		void rotateAround(const sf::Vector3f&, const sf::Vector3f&, float);
+		void arcball(const sf::Vector3f&, float, float, float);
 
 		void transform(Matrix4*);
 
@@ -189,4 +195,23 @@ namespace Heerbann {
 		void update (bool) override;
 	};
 
+	class AxisWidgetCamera : public Camera {
+
+		//x - red
+		//y - green (dir)
+		//z - blue (up)
+
+		ShaderProgram* shader;
+		GLuint camLocation;
+		GLuint vao;
+
+		Camera* cam;
+		Matrix4* transform;
+
+	public:
+		AxisWidgetCamera(Camera*);
+
+		void update() override;
+		void update(bool) override;
+	};
 }

@@ -60,7 +60,12 @@ void InputMultiplexer::add(std::string _id, InputEntry* _entry) {
 	update();
 }
 
+void InputMultiplexer::remove(std::string _id) {
+	remove(operator[](_id));
+}
+
 void InputMultiplexer::remove(InputEntry* _entry) {
+	if (_entry == nullptr) return;
 	for (int i = 0; i <= 21; ++i) {
 		auto& o = entries[i];
 		for (auto it = o.begin(); it < o.end(); ++it)

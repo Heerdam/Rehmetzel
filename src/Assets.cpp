@@ -585,7 +585,13 @@ void AssetManager::asyncDiscreteLoad() {
 			{		
 
 				Assimp::Importer importer;
-				const aiScene *scene = importer.ReadFile(next->id, 0);
+				const aiScene *scene = importer.ReadFile(next->id, aiProcess_ValidateDataStructure | aiProcess_FixInfacingNormals |
+					aiProcess_FlipUVs | aiProcess_FlipWindingOrder);
+
+				unsigned int severity = 0;
+				severity |= Assimp::Logger::VERBOSE;
+				// Detach debug messages from you self defined stream
+				Assimp::DefaultLogger::get()->attachStream(new myStream(), severity);
 			
 				//vec3 pos
 				//vec3 normals
@@ -616,27 +622,26 @@ void AssetManager::asyncDiscreteLoad() {
 				int meshIndexOffset = 0;
 				int meshVertexOffset = 0;
 				//meshes
-				for (unsigned int i = 0; i < scene->mNumMeshes; ++i) {
+				for (unsigned int i = 5; i < 6; ++i) {
 					//if (i == 1) break;
 					aiMesh* mesh = scene->mMeshes[i];
-					
 					//vertex
 					for (unsigned int k = 0; k < mesh->mNumVertices; ++k) {
 						auto pos = mesh->mVertices[k];
 						auto norm = mesh->mNormals[k];
-						//auto uv = mesh->mTextureCoords[k];
+						auto uv = mesh->mTextureCoords[0];
 
 						//pos
 						vertexBuffer.emplace_back(pos.x);
 						vertexBuffer.emplace_back(pos.y);
 						vertexBuffer.emplace_back(pos.z);
 						//norm
-						vertexBuffer.emplace_back(0.f);
-						vertexBuffer.emplace_back(0.f);
-						vertexBuffer.emplace_back(0.f);
+						vertexBuffer.emplace_back(norm.x);
+						vertexBuffer.emplace_back(norm.y);
+						vertexBuffer.emplace_back(norm.z);
 						//uv
-						vertexBuffer.emplace_back(0.f);
-						vertexBuffer.emplace_back(0.f);
+						vertexBuffer.emplace_back(uv == NULL ? 0.f : uv[k].x);
+						vertexBuffer.emplace_back(uv == NULL ? 0.f : uv[k].y);
 						//index
 						vertexBuffer.emplace_back(0.f);
 
@@ -692,7 +697,7 @@ void AssetManager::asyncDiscreteLoad() {
 				Main::addJob([](void* _entry)->void {
 					LoadItem* item = reinterpret_cast<LoadItem*>(_entry);
 					G3D::Model* model = reinterpret_cast<G3D::Model*>(item->data);
-
+					std::cout << "Loading: [Model] " << item->id << std::endl;
 					GLuint vbo;
 					GLuint index;
 					//create buffer
@@ -728,6 +733,9 @@ void AssetManager::asyncDiscreteLoad() {
 					if (model->vertexBuffer != nullptr) delete model->vertexBuffer;
 					if (model->indexBuffer != nullptr) delete model->indexBuffer;
 					if (model->ssboBuffer != nullptr) delete model->ssboBuffer;
+
+					item->isLoaded = true;
+					item->isLocked = false;
 
 				}, next);
 			

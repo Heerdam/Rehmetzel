@@ -190,4 +190,15 @@ namespace Heerbann {
 		TextureAtlas* operator()(std::string);
 	};
 
+	class myStream : public Assimp::LogStream {
+	public:
+
+		myStream() {}
+		~myStream() {}
+
+		void write(const char* message) {
+			std::cout << message << std::endl;
+		}
+	};
+
 }

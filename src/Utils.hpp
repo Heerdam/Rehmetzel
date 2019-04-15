@@ -34,9 +34,9 @@ namespace Heerbann {
 
 		Ray* operator*(Matrix4*);
 
-		void set(Ray*);
-		void set(const sf::Vector3f&, const sf::Vector3f&);
-		void set(float, float, float, float, float, float);
+		Ray* set(Ray*);
+		Ray* set(const sf::Vector3f&, const sf::Vector3f&);
+		Ray* set(float, float, float, float, float, float);
 	};
 
 	struct Plane {
@@ -53,10 +53,10 @@ namespace Heerbann {
 		Plane(const sf::Vector3f&, const sf::Vector3f&);
 		Plane(const sf::Vector3f&, const sf::Vector3f&, const sf::Vector3f&);
 
-		void set(const Plane&);
-		void set(const sf::Vector3f&, float);
-		void set(const sf::Vector3f&, const sf::Vector3f&, const sf::Vector3f&);
-		void set(float, float, float, float);
+		Plane* set(const Plane&);
+		Plane* set(const sf::Vector3f&, float);
+		Plane* set(const sf::Vector3f&, const sf::Vector3f&, const sf::Vector3f&);
+		Plane* set(float, float, float, float);
 
 		float distance(const sf::Vector3f&);
 
@@ -75,18 +75,18 @@ namespace Heerbann {
 		BoundingBox(BoundingBox*);
 		BoundingBox(const sf::Vector3f&, const sf::Vector3f&);
 
-		void set(BoundingBox*);
-		void set(const sf::Vector3f&, const sf::Vector3f&);
-		void set(const std::vector<sf::Vector3f>&);
+		BoundingBox* set(BoundingBox*);
+		BoundingBox* set(const sf::Vector3f&, const sf::Vector3f&);
+		BoundingBox* set(const std::vector<sf::Vector3f>&);
 
-		void inf();
-		void ext(const sf::Vector3f&);
-		void clr();
+		BoundingBox* inf();
+		BoundingBox* ext(const sf::Vector3f&);
+		BoundingBox* clr();
 		bool isValid();
 
-		void ext(BoundingBox*);
-		void ext(const sf::Vector3f&, float);
-		void ext(BoundingBox*, Matrix4*);
+		BoundingBox* ext(BoundingBox*);
+		BoundingBox* ext(const sf::Vector3f&, float);
+		BoundingBox* ext(BoundingBox*, Matrix4*);
 
 		BoundingBox* operator*= (Matrix4*);
 
@@ -162,25 +162,24 @@ namespace Heerbann {
 		Matrix4(const sf::Vector3f&, Quaternion*, const sf::Vector3f&);
 		Matrix4(const aiVector3D&, const aiQuaternion&, const aiVector3D&);
 
-		Matrix4* operator=(Matrix4*);
-		Matrix4* operator=(Quaternion*);
 		Matrix4* operator*(Matrix4*);
 
 		Matrix4* set(const sf::Vector3f&, Quaternion*, const sf::Vector3f&);
 		Matrix4* set(float, float, float, float, float, float, float, float, float, float);	
 		Matrix4* set(float*);
 		Matrix4* set(Quaternion*);
+		Matrix4* set(const sf::Vector3f&, Quaternion*);
 		Matrix4* set(float, float, float, float, float, float, float);
 		Matrix4* set(Matrix4*);
 
-		void setToTranslation(const sf::Vector3f&);
-		void setToTranslation(float, float, float);
+		Matrix4* setToTranslation(const sf::Vector3f&);
+		Matrix4* setToTranslation(float, float, float);
 
 		float operator[](int);
 
 		//Transposes the matrix.
-		void tra();
-		void idt();
+		Matrix4* tra();
+		Matrix4* idt();
 		float det();
 		bool inv();
 
@@ -195,7 +194,7 @@ namespace Heerbann {
 		aspectRatio: The "width over height" aspect ratio
 		return: This matrix for the purpose of chaining methods together. 
 		 */
-		void setToProjection(float, float, float, float);
+		Matrix4* setToProjection(float, float, float, float);
 
 		/*
 		Sets the matrix to a projection matrix with a near/far plane, and left, bottom, right and top specifying the points on the
@@ -206,7 +205,7 @@ namespace Heerbann {
 		far: The far plane
 		return: This matrix for the purpose of chaining methods together. 
 		*/
-		void setToProjection(float, float, float, float, float, float);
+		Matrix4* setToProjection(float, float, float, float, float, float);
 
 		/*
 		Sets this matrix to an orthographic projection matrix with the origin at (x,y) extending by width and height. The near plane
@@ -218,7 +217,7 @@ namespace Heerbann {
 		height: The height
 		return: This matrix for the purpose of chaining methods together. 
 		*/
-		void setToOrtho2D(float, float, float, float);
+		Matrix4* setToOrtho2D(float, float, float, float);
 
 		/*
 		Sets this matrix to an orthographic projection matrix with the origin at (x,y) extending by width and height, having a near
@@ -232,7 +231,7 @@ namespace Heerbann {
 		far: The far plane
 		return: This matrix for the purpose of chaining methods together. 
 		*/
-		void setToOrtho2D(float, float, float, float, float, float);
+		Matrix4* setToOrtho2D(float, float, float, float, float, float);
 
 		/*
 		Sets the matrix to an orthographic projection like glOrtho (http://www.opengl.org/sdk/docs/man/xhtml/glOrtho.xml) following
@@ -246,17 +245,17 @@ namespace Heerbann {
 		far The far clipping plane
 		return This matrix for the purpose of chaining methods together. 
 		*/
-		void setToOrtho(float, float, float, float, float, float);
+		Matrix4* setToOrtho(float, float, float, float, float, float);
 
-		void setToLookAt(const sf::Vector3f&, const sf::Vector3f&);
-		void setToLookAt(const sf::Vector3f&, const sf::Vector3f&, const sf::Vector3f&);
+		Matrix4* setToLookAt(const sf::Vector3f&, const sf::Vector3f&);
+		Matrix4* setToLookAt(const sf::Vector3f&, const sf::Vector3f&, const sf::Vector3f&);
 	
-		void setToRotation(const sf::Vector3f&, float);
-		void setToRotationRad(const sf::Vector3f&, float);
-		void setToRotation(float, float, float, float);
-		void setToRotationRad(float, float, float, float);
-		void setToRotation(const sf::Vector3f&, const sf::Vector3f&);
-		void setToRotation(float, float, float, float, float, float);
+		Matrix4* setToRotation(const sf::Vector3f&, float);
+		Matrix4* setToRotationRad(const sf::Vector3f&, float);
+		Matrix4* setToRotation(float, float, float, float);
+		Matrix4* setToRotationRad(float, float, float, float);
+		Matrix4* setToRotation(const sf::Vector3f&, const sf::Vector3f&);
+		Matrix4* setToRotation(float, float, float, float, float, float);
 
 		static void proj(float*, float*, int, int, int);
 		static void matrix4_proj(float*, float*);
@@ -271,15 +270,15 @@ namespace Heerbann {
 		Quaternion(float, float, float, float);
 		Quaternion(const sf::Vector3f&, float);
 
-		void set(float, float, float, float);
-		void set(Quaternion*);
-		void set(const sf::Vector3f&, float);
+		Quaternion* set(float, float, float, float);
+		Quaternion* set(Quaternion*);
+		Quaternion* set(const sf::Vector3f&, float);
 
 		float len();
 		float len2();
 
-		void setEulerAngles(float, float, float);
-		void setEulerAnglesRad(float, float, float);
+		Quaternion* setEulerAngles(float, float, float);
+		Quaternion* setEulerAnglesRad(float, float, float);
 
 		int getGimbalPole();
 
@@ -292,43 +291,43 @@ namespace Heerbann {
 		float getYawRad();
 		float getYaw();
 		
-		void idt();
-		void nor();
-		void conjugate();
+		Quaternion* idt();
+		Quaternion* nor();
+		Quaternion* conjugate();
 
 		bool isIDentity();
 
-		void transform(sf::Vector3f&);
+		Quaternion* transform(sf::Vector3f&);
 
 		Quaternion* operator*(Quaternion*);
 		Quaternion* operator+(Quaternion*);
 		
-		void mulLeft(Quaternion*);
-		void mulLeft(float, float, float, float);
+		Quaternion* mulLeft(Quaternion*);
+		Quaternion* mulLeft(float, float, float, float);
 
 		Matrix4* toMatrix();
 
-		void setFromAxis(const sf::Vector3f&, float);
-		void setFromAxisRad(const sf::Vector3f&, float);
-		void setFromAxis(float, float, float, float);
-		void setFromAxisRad(float, float, float, float);
+		Quaternion* setFromAxis(const sf::Vector3f&, float);
+		Quaternion* setFromAxisRad(const sf::Vector3f&, float);
+		Quaternion* setFromAxis(float, float, float, float);
+		Quaternion* setFromAxisRad(float, float, float, float);
 
-		void setFromMatrix(bool, Matrix4*);
-		void setFromMatrix(Matrix4*);
+		Quaternion* setFromMatrix(bool, Matrix4*);
+		Quaternion* setFromMatrix(Matrix4*);
 
-		void setFromAxes(float, float, float, float, float, float, float, float, float);
-		void setFromAxes(bool, float, float, float, float, float, float, float, float, float);
+		Quaternion* setFromAxes(float, float, float, float, float, float, float, float, float);
+		Quaternion* setFromAxes(bool, float, float, float, float, float, float, float, float, float);
 
-		void setFromCross(const sf::Vector3f&, const sf::Vector3f&);
-		void setFromCross(float, float, float, float, float, float);
+		Quaternion* setFromCross(const sf::Vector3f&, const sf::Vector3f&);
+		Quaternion* setFromCross(float, float, float, float, float, float);
 
-		void slerp(Quaternion*, float);
-		void slerp(const std::vector<Quaternion*>&);
-		void slerp(const std::vector<std::tuple<Quaternion*, float>>&);
+		Quaternion* slerp(Quaternion*, float);
+		Quaternion* slerp(const std::vector<Quaternion*>&);
+		Quaternion* slerp(const std::vector<std::tuple<Quaternion*, float>>&);
 
-		void exp(float);
-		void mul(float);
-		void mul(Quaternion*);
+		Quaternion* exp(float);
+		Quaternion* mul(float);
+		Quaternion* mul(Quaternion*);
 
 		Quaternion* operator*(float);
 
@@ -341,8 +340,8 @@ namespace Heerbann {
 		float getAngleRad();
 		float getAngle();
 
-		void getSwingTwist(const sf::Vector3f&, Quaternion*, Quaternion*);
-		void getSwingTwist(float, float, float, Quaternion*, Quaternion*);
+		Quaternion* getSwingTwist(const sf::Vector3f&, Quaternion*, Quaternion*);
+		Quaternion* getSwingTwist(float, float, float, Quaternion*, Quaternion*);
 
 		float getAngleAroundRad(const sf::Vector3f&);
 		float getAngleAroundRad(float, float, float);

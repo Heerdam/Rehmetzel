@@ -90,6 +90,7 @@ namespace Heerbann {
 	}
 
 	class PerspectiveCamera;
+	class AxisWidgetCamera;
 	
 	struct TestWorldLevel : public Level {
 		TestWorldLevel() : Level("TestWorldLevel") {};
@@ -106,9 +107,12 @@ namespace Heerbann {
 		float* data;
 		int vertexCount;
 
-		PerspectiveCamera* cam;
-		bool buttonDown = false;
-		sf::Vector2i deltaOld;
+		AxisWidgetCamera* wCam;
+		PerspectiveCamera* camera;
+		bool buttonPressed = false;
+		sf::Vector2i oldPos;
+		float azimuth = 90.f;
+		float altitude = 90.f;
 
 		Text::TextBlock* testblock;
 

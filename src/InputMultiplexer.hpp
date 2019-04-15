@@ -159,6 +159,7 @@ namespace Heerbann {
 			return entries_cache[_id];
 		};
 	
+		void remove(std::string);
 		void remove(InputEntry*);
 
 		bool fire(sf::Event&);

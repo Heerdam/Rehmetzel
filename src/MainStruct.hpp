@@ -1,6 +1,7 @@
 #pragma once
 
 #include <GL/glew.h>
+#include <glm/glm.hpp>
 #include <SFML/Graphics.hpp>
 #include <SFML/System.hpp>
 
@@ -29,6 +30,8 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <assimp/Logger.hpp>
+#include <assimp/DefaultLogger.hpp>
 
 #include <Box2D/Box2D.h>
 
@@ -59,6 +62,9 @@ namespace Heerbann {
 
 //how many sprites the spritebatch holds
 #define TEXTURECOUNT 15
+
+//#define glm:mat4 Matrix4
+//#define 
 
 	class InputMultiplexer;
 	class World;

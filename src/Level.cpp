@@ -210,56 +210,65 @@ void TestWorldLevel::preLoad(AssetManager *) {
 void TestWorldLevel::load(AssetManager* _asset) {	
 	//WorldBuilderDefinition def;
 	//world = Main::getWorld()->builder->build(def);	
-	//bgShader = reinterpret_cast<ShaderProgram*>(Main::getAssetManager()->getAsset("assets/shader/bg_shader")->data);
-	//treeShader = reinterpret_cast<ShaderProgram*>(Main::getAssetManager()->getAsset("assets/shader/tree_shader")->data);
-	modelShader = reinterpret_cast<ShaderProgram*>(Main::getAssetManager()->getAsset("assets/shader/model_shader")->data);
-	camPos = glGetUniformLocation(modelShader->getHandle(), "camera");
+
 }
 
 void TestWorldLevel::postLoad(AssetManager* _asset) {	
 	//world->finalize(bgShader, treeShader);
 	//Main::getAI()->create();
+	//bgShader = reinterpret_cast<ShaderProgram*>(Main::getAssetManager()->getAsset("assets/shader/bg_shader")->data);
+	//treeShader = reinterpret_cast<ShaderProgram*>(Main::getAssetManager()->getAsset("assets/shader/tree_shader")->data);
 
+	modelShader = reinterpret_cast<ShaderProgram*>(Main::getAssetManager()->getAsset("assets/shader/model_shader")->data);
+	camPos = glGetUniformLocation(modelShader->getHandle(), "camera");
 	model = static_cast<G3D::Model*>(Main::getAssetManager()->getAsset("assets/3d/deer/Model/Deer_old.dae")->data);
 
-	//projection.setToProjection(Math.abs(near), Math.abs(far), fieldOfView, aspect);
-	//view.setToLookAt(position, tmp.set(position).add(direction), up);
-	//combined.set(projection);
-	//Matrix4.mul(combined.val, view.val);
+	azimuth = 315.f;
+	altitude = 47.f;
 
-	cam = new PerspectiveCamera();
-	cam->nearPlane = 0.1f;
-	cam->farPlane = 1000.f;
-	cam->position = sf::Vector3f(0.f, 0.f, -250.f);
-	cam->lookAt(sf::Vector3f(0.f, 0.f, 0.f));
-	cam->update();
-	//cam->rotateAround(sf::Vector3f(0.f, 0.f, 0.f), sf::Vector3f(0.f, 1.f, 0.f), static_cast<float>(1.f));
+	camera = new PerspectiveCamera();
+	camera->nearPlane = 0.1f;
+	camera->farPlane = 10000.f;	
+	camera->arcball(sf::Vector3f(0.f, 0.f, 0.f), azimuth, altitude, 250.f);
+	//camera->update();
+
+	wCam = new AxisWidgetCamera(camera);
 
 	InputEntry* entry = new InputEntry();
 
+	entry->mouseMoveEvent = [&](int _x, int _y)->bool{
+		if (buttonPressed) {
+			azimuth -= static_cast<float>(_x - oldPos.x);
+			altitude += static_cast<float>(_y - oldPos.y);
+			altitude = std::clamp(altitude, 1.f, 179.f);
+			camera->arcball(sf::Vector3f(0.f, 0.f, 0.f), azimuth, altitude, 250.f);
+			std::cout << azimuth << "  "<< altitude << std::endl;
+			//camera->arcball(sf::Vector3f(0.f, 0.f, 0.f), azimuth, altitude, 500.f);
+			oldPos = sf::Vector2i(_x, _y);
+			
+		}		
+		return false;
+	};
+
 	entry->mouseButtonPressEvent = [&](sf::Mouse::Button _button, int _x, int _y)->bool {
-		if (_button == sf::Mouse::Button::Left)
-			buttonDown = true;
+		if (_button == sf::Mouse::Button::Right) {
+			buttonPressed = true;
+			oldPos = sf::Vector2i(_x, _y);
+		}
 		return false;
 	};
 
 	entry->mouseButtonReleaseEvent = [&](sf::Mouse::Button _button, int _x, int _y)->bool {
-		if (_button == sf::Mouse::Button::Left)
-			buttonDown = false;
+		if (_button == sf::Mouse::Button::Right) {
+			buttonPressed = false;
+			oldPos = sf::Vector2i(_x, _y);
+		}
 		return false;
 	};
 
-	entry->mouseMoveEvent = [&](int _x, int _y)->bool {
-		if (buttonDown) {
-			cam->rotateAround(sf::Vector3f(0.f, 0.f, 0.f), sf::Vector3f(1.f, 0.f, 0.f), static_cast<float>(_y - deltaOld.y));
-			cam->rotateAround(sf::Vector3f(0.f, 0.f, 0.f), sf::Vector3f(0.f, 0.f, 1.f), static_cast<float>(_x - deltaOld.x));
-			deltaOld = sf::Vector2i(_x, _y);
-			cam->update();
-		}
-		return false;	
-	};
+	Main::getInput()->add("test", entry);
 
-	Main::getInput()->add("camera", entry);
+
 }
 
 void TestWorldLevel::update(float _delta) {
@@ -273,11 +282,37 @@ void TestWorldLevel::draw(float _delta, SpriteBatch* _batch) {
 		//v->draw(treeShader);
 	//Main::getAI()->draw(Main::getViewport()->cam.getTransform());
 
+	//azimuth++;
+
+	
+	Matrix4 mat;
+	mat.val[0] = 0.6009309f;
+	mat.val[1] = 0.7283804f;
+	mat.val[2] = -0.51728725f;
+	mat.val[3] = -0.51727694f;
+
+	mat.val[4] = 1.01309375E-7f;
+	mat.val[5] = -1.1052365f;
+	mat.val[6] = -0.6818121f;
+	mat.val[7] = -0.6817985f;
+
+	mat.val[8] = 0.6009311f;
+	mat.val[9] = -0.72838f;
+	mat.val[10] = 0.51728725f;
+	mat.val[11] = 0.51727694f;
+
+	mat.val[12] = -3.2419004E-5f;
+	mat.val[13] = -0.0021093967f;
+	mat.val[14] = 249.83058f;
+	mat.val[15] = 250.0256f;
+	
+	
 	modelShader->bind();
-	glUniformMatrix4fv(camPos, 1, false, cam->combined->val);
+	glUniformMatrix4fv(camPos, 1, false, mat.val);
 	glBindVertexArray(model->vao);
 	glDrawElements(GL_TRIANGLES, model->indexBufferSize, GL_UNSIGNED_INT, nullptr);
-	//glDrawArrays(GL_TRIANGLES, 0, 5000);
 	modelShader->unbind();
+
+	wCam->update();
 }
 
