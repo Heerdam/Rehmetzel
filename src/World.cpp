@@ -7,12 +7,12 @@
 
 using namespace Heerbann;
 
-void World::raycast(b2RayCastCallback* callback, const sf::Vector2f& _p1, const sf::Vector2f& _p2) {
+void World::raycast(b2RayCastCallback* callback, const Vec2& _p1, const Vec2& _p2) {
 	std::lock_guard<std::mutex> guard(worldLock);
 	bworld->RayCast(callback, b2Vec2(_p1.x, _p1.y), b2Vec2(_p2.x, _p2.y));
 };
 
-void World::AABB(b2QueryCallback* callback, const sf::Vector2f& _p1, const sf::Vector2f& _p2) {
+void World::AABB(b2QueryCallback* callback, const Vec2& _p1, const Vec2& _p2) {
 	std::lock_guard<std::mutex> guard(worldLock);
 	b2AABB aabb;
 	aabb.lowerBound.Set(_p1.x, _p1.y);
@@ -41,7 +41,7 @@ void World::debugDraw() {
 	bworld->DrawDebugData();
 }
 
-long World::create(EntityType _type, sf::Vector2f _pos) {
+long World::create(EntityType _type, Vec2 _pos) {
 	WorldObject *ob = new WorldObject();
 
 	switch (_type) {
@@ -89,7 +89,7 @@ long World::create(EntityType _type, sf::Vector2f _pos) {
 		ob->draw = [](WorldObject* _object, float, sf::RenderWindow& _window)->void {	
 			_window.resetGLStates();
 			auto pos = _object->body->GetPosition();
-			_object->sprite->setPosition(sf::Vector2f(pos.x * RATIO, pos.y * RATIO));
+			_object->sprite->setPosition(Vec2(pos.x * RATIO, pos.y * RATIO));
 			_window.draw(*_object->sprite);
 		};
 		*/
@@ -102,7 +102,7 @@ long World::create(EntityType _type, sf::Vector2f _pos) {
 	return ob->id;
 }
 //pos: lower left corner
-BGVAO* WorldBuilder::createBGVAO(sf::Vector2f _pos, int _tex) {
+BGVAO* WorldBuilder::createBGVAO(Vec2 _pos, int _tex) {
 	int cellvertex = BG_CELLCOUNT * BG_CELLCOUNT;
 
 	float* data = new float[3 * cellvertex];
@@ -127,7 +127,7 @@ BGVAO* WorldBuilder::createBGVAO(sf::Vector2f _pos, int _tex) {
 	return out;
 }
 
-IndexedVAO* WorldBuilder::createTrees(int _treeCount, sf::Vector2f _low, sf::Vector2f _high) {
+IndexedVAO* WorldBuilder::createTrees(int _treeCount, Vec2 _low, Vec2 _high) {
 
 	TextureAtlas* atlas = (TextureAtlas*)Main::getAssetManager()->getAsset("assets/trees/trees")->data;
 
@@ -143,13 +143,13 @@ IndexedVAO* WorldBuilder::createTrees(int _treeCount, sf::Vector2f _low, sf::Vec
 
 	for (int i = 0; i < _treeCount; ++i) {
 
-		sf::Vector2f pos(Main::getRandom(_low.x, _high.x), Main::getRandom(_low.y, _high.y));
-		//sf::Vector2f pos(0, 0);
+		Vec2 pos(Main::getRandom(_low.x, _high.x), Main::getRandom(_low.y, _high.y));
+		//Vec2 pos(0, 0);
 		AtlasRegion* region = (*atlas)[(int)(Main::getRandom(0.f, (float)treeSpriteCount))];
 
 		//AtlasRegion* region = (*atlas)["strees_05_top"];
-		sf::Vector2f u = region->getU();
-		sf::Vector2f v = region->getV();
+		Vec2 u = region->getU();
+		Vec2 v = region->getV();
 
 		float w = region->width * 0.5f;
 		float h = region->height * 0.5f;
@@ -228,8 +228,8 @@ WorldOut * WorldBuilder::build(const WorldBuilderDefinition& _def) {
 	WorldOut* out = new WorldOut();
 	Main::setSeed(_def.seed);
 
-	out->bgVAOs.emplace_back(createBGVAO(sf::Vector2f(0, 0), 4));
-	//out->indexVAOs.emplace_back(createTrees(50, sf::Vector2f(0, 0), sf::Vector2f(cosf(DEGTORAD * 30.f) * BG_CELLDIAMETER * BG_CELLCOUNT, 1.5f * BG_CELLDIAMETER * BG_CELLCOUNT)));
+	out->bgVAOs.emplace_back(createBGVAO(Vec2(0, 0), 4));
+	//out->indexVAOs.emplace_back(createTrees(50, Vec2(0, 0), Vec2(cosf(DEGTORAD * 30.f) * BG_CELLDIAMETER * BG_CELLCOUNT, 1.5f * BG_CELLDIAMETER * BG_CELLCOUNT)));
 
 	return out;
 }

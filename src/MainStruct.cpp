@@ -12,6 +12,7 @@
 #include "AI.hpp"
 
 using namespace Heerbann;
+using namespace App;
 
 Main::Main() {}
 
@@ -30,14 +31,10 @@ void Main::update() {
 	}
 }
 
-void Main::intialize() {
-
-	sf::ContextSettings settings;
-	settings.majorVersion = 4;
-	settings.minorVersion = 6;
+void Main::intialize(MainConfig* _config) {
 
 	context = new sf::RenderWindow();
-	context->create(sf::VideoMode(640, 480, 32), "Rehmetzel a.0.2", sf::Style::Default, settings);
+	context->create(sf::VideoMode(_config->windowWidth, _config->windowHeight, 32), _config->name, _config->windowStyle, _config->settings);
 	//context->setVerticalSyncEnabled(true);
 	context->setFramerateLimit(60);	
 
@@ -49,8 +46,8 @@ void Main::intialize() {
 	
 	mainCam = new Viewport("main", -100);
 
-	indexBuffer = new GLuint[MAXSPRITES * 6];
-	for (int i = 0; i < MAXSPRITES; ++i) {
+	indexBuffer = new GLuint[_config->MAXSPRITES * 6];
+	for (int i = 0; i < _config->MAXSPRITES; ++i) {
 		int k = 0;
 		indexBuffer[i * 6] = 4 * i;
 		indexBuffer[i * 6 + ++k] = 4 * i + 1;
@@ -61,7 +58,6 @@ void Main::intialize() {
 		indexBuffer[i * 6 + ++k] = 4 * i;
 	}
 	
-
 	glewExperimental = GL_TRUE;
 	auto status = glewInit();
 	if (!status == GLEW_OK) {
@@ -87,46 +83,40 @@ void Main::intialize() {
 	intializeFont(getDefaultFont());
 
 	cache = new Text::FontCache();
-	cache->addFont(s2ws("default"), getDefaultFont());
+	cache->addFont(Util::s2ws("default"), getDefaultFont());
 	
-	batch = new SpriteBatch(TEXTURECOUNT, MAXSPRITES);
+	batch = new SpriteBatch(_config->MAXSPRITES);
 	
 	batch->addTexture(getDefaultFont());
 	
 	level->initialize();
 
-	aiHandler = new AI::AIHandler();
+	//aiHandler = new AI::AIHandler();
 	
+	delete _config;
 }
 
-sf::Vector3f Main::nor(const sf::Vector3f& _vec) {
-	const float len2 = _vec.x * _vec.x + _vec.y * _vec.y + _vec.z * _vec.z;
-	if (almost_equal(len2, 0.f) || almost_equal(len2, 1.f)) return sf::Vector3f(_vec);
-	return sf::Vector3f(_vec * (1.f / std::sqrtf(len2)));
+Main* App::Main::getInstance() {
+	return instance;
 }
 
-sf::Vector3f Main::crs(const sf::Vector3f& _vec1, const sf::Vector3f& _vec2) {
-	sf::Vector3f out(_vec1.y * _vec2.z - _vec1.z * _vec2.y, _vec1.z * _vec2.x - _vec1.x * _vec2.z, _vec1.x * _vec2.y - _vec1.y * _vec2.x);
-	return out;
-}
-
-std::wstring Main::s2ws(const char* _in) {
+std::wstring Util::s2ws(const char* _in) {
 	return s2ws(std::string(_in));
 }
 
- float Main::toFloatBits(int _r, int _g, int _b, int _a) {
+ float Util::toFloatBits(int _r, int _g, int _b, int _a) {
 	int color = (((int)(_a) << 24) | ((int)(_b) << 16) | ((int)(_g) << 8) | ((int)(_r)))&0xfeffffff;
 	return *reinterpret_cast<float*>(&color);
 };
 
-std::wstring Main::s2ws(const std::string& _str) {
+std::wstring Util::s2ws(const std::string& _str) {
 	int size_needed = MultiByteToWideChar(CP_UTF8, 0, &_str[0], (int)_str.size(), NULL, 0);
 	std::wstring wstrTo(size_needed, 0);
 	MultiByteToWideChar(CP_UTF8, 0, &_str[0], (int)_str.size(), &wstrTo[0], size_needed);
 	return wstrTo;
 }
 
-std::vector<std::wstring> Heerbann::Main::split(std::wstring _in, std::wstring _del) {
+std::vector<std::wstring> Util::split(std::wstring _in, std::wstring _del) {
 	return Text::SplitFunctor(std::wregex(_del), _in);
 }
 
@@ -164,7 +154,7 @@ void Main::setSize(unsigned int _width, unsigned int _height) {
 //---------------------- Inputs ----------------------\\
 
 SpriteBatch* Main::getBatch() {
-	return get()->batch;
+	return getInstance()->batch;
 }
 
 InputMultiplexer* Main::getInput() {
@@ -185,30 +175,26 @@ Viewport* Main::getViewport() {
 
 //---------------------- AI ----------------------\\
 
-AI::AIHandler* Main::getAI() {
-	return get()->aiHandler;
-}
-
 //---------------------- Assets ----------------------\\
 
 AssetManager* Main::getAssetManager() {
 	return instance->assets;
 }
 
-GLuint* Heerbann::Main::getIndexBuffer() {
-	return get()->indexBuffer;
+GLuint* Main::getIndexBuffer() {
+	return getInstance()->indexBuffer;
 }
 
 
 Text::FontCache* Main::getFontCache() {
-	return get()->cache;
+	return getInstance()->cache;
 }
 
 sf::Font* Main::getDefaultFont() {
-	return get()->defaultFont;
+	return getInstance()->defaultFont;
 }
 
-void Heerbann::Main::intializeFont(sf::Font* _font) {
+void Main::intializeFont(sf::Font* _font) {
 	//basic latins
 	for (uint32 i = 32; i <= 126; ++i) {
 		_font->getGlyph(i, SMALLFONTSIZE, false);
@@ -234,19 +220,12 @@ void Heerbann::Main::intializeFont(sf::Font* _font) {
 //---------------------- Stage ----------------------\\
 
 UI::Stage* Main::getStage() {
-	return get()->stage;
+	return getInstance()->stage;
 }
 
 //---------------------- Level ----------------------\\
 
 LevelManager* Main::getLevel() {
-	return get()->level;
+	return getInstance()->level;
 }
 
-sf::Vector3f Heerbann::operator* (const sf::Vector3f& _vec, Heerbann::Matrix4* _mat) {
-	float* l_mat = _mat->val;
-	sf::Vector3f out(_vec.x * l_mat[Matrix4::M00] + _vec.y * l_mat[Matrix4::M01] + _vec.z * l_mat[Matrix4::M02] + l_mat[Matrix4::M03],
-		_vec.x * l_mat[Matrix4::M10] + _vec.y * l_mat[Matrix4::M11] + _vec.z * l_mat[Matrix4::M12] + l_mat[Matrix4::M13],
-		_vec.x * l_mat[Matrix4::M20] + _vec.y * l_mat[Matrix4::M21] + _vec.z * l_mat[Matrix4::M22] + l_mat[Matrix4::M23]);
-	return out;
-}

@@ -4,19 +4,7 @@
 
 namespace Heerbann {
 
-	class SpriteBatch;
-	class BoundingBox2f;
-	class Viewport;
-	
-	namespace Text {
-		class FontCache;
-		struct StaticTextBlock;
-		enum Align : int;
-	}
-
 	namespace UI {
-
-		class Actor;
 
 		class Stage {
 
@@ -32,13 +20,13 @@ namespace Heerbann {
 		class Actor {
 
 		protected:
-			sf::Vector2f position;
+			Vec2 position;
 
 		public:
 		
 			virtual void act() {};
 			virtual void draw(SpriteBatch*) {};
-			virtual const sf::Vector2f& getPosition();
+			virtual const Vec2& getPosition();
 		};
 
 		class Label : public Actor {
@@ -52,7 +40,7 @@ namespace Heerbann {
 		public:
 			StaticLabel(std::string, std::wstring, float, Text::Align);
 			bool isLoaded();
-			void setPosition(sf::Vector2f);
+			void setPosition(Vec2);
 			void draw(SpriteBatch*) override;
 		};
 

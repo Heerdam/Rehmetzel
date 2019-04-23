@@ -875,12 +875,12 @@ sf::Sprite* AtlasRegion::createSprite() {
 	return sprite;
 }
 
-sf::Vector2f AtlasRegion::getU() {
-	return sf::Vector2f(1.f / (float)parent->tex[texIndex]->getSize().x * (float) x, 1.f / (float)parent->tex[texIndex]->getSize().x * (float)(x + width));
+Vec2 AtlasRegion::getU() {
+	return Vec2(1.f / (float)parent->tex[texIndex]->getSize().x * (float) x, 1.f / (float)parent->tex[texIndex]->getSize().x * (float)(x + width));
 }
 
-sf::Vector2f AtlasRegion::getV() {
-	return sf::Vector2f(1.f / (float)parent->tex[texIndex]->getSize().y * (float)y, 1.f / (float)parent->tex[texIndex]->getSize().y * (float)(y + height));
+Vec2 AtlasRegion::getV() {
+	return Vec2(1.f / (float)parent->tex[texIndex]->getSize().y * (float)y, 1.f / (float)parent->tex[texIndex]->getSize().y * (float)(y + height));
 }
 
 AtlasRegion* TextureAtlas::operator[](std::string _id) {

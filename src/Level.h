@@ -4,20 +4,6 @@
 
 namespace Heerbann {
 
-	enum State : int;
-
-	class ShaderProgram;
-	class Matrix4;
-
-	namespace UI {
-		class Label;
-		class StaticLabel;
-	}
-
-	namespace G3D {
-		struct Model;
-	}
-
 	using namespace UI;
 
 	//base class to be inherited
@@ -81,17 +67,6 @@ namespace Heerbann {
 		void update(float) override;
 	};
 
-	class BGVAO;
-
-	struct WorldOut;
-
-	namespace Text {
-		class TextBlock;
-	}
-
-	class PerspectiveCamera;
-	class AxisWidgetCamera;
-	
 	struct TestWorldLevel : public Level {
 		TestWorldLevel() : Level("TestWorldLevel") {};
 

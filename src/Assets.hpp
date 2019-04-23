@@ -6,15 +6,6 @@ namespace Heerbann {
 
 	using namespace Heerbann;
 
-	class AssetManager;
-	namespace Text {
-		struct StaticTextBlock;
-		class FontCache;
-		enum Align : int;
-	}
-
-	struct Level;
-
 	enum Type {
 		texture_png, texture_dds, font, level, atlas, shader, static_text, model
 	};
@@ -162,8 +153,6 @@ namespace Heerbann {
 
 	};
 
-	struct TextureAtlas;
-
 	struct AtlasRegion {
 		TextureAtlas* parent;
 		sf::Sprite* sprite;
@@ -171,8 +160,8 @@ namespace Heerbann {
 		int x, y, width, height;
 
 		sf::Sprite* createSprite();
-		sf::Vector2f getU();
-		sf::Vector2f getV();
+		Vec2 getU();
+		Vec2 getV();
 	};
 
 	struct TextureAtlas {

@@ -7,19 +7,8 @@
 
 namespace Heerbann {
 
-	class ShaderProgram;
-
 	namespace AI {
 		
-
-
-
-
-
-		class AIHandler {
-
-		};
-
 
 
 

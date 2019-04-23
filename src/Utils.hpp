@@ -4,398 +4,6 @@
 
 namespace Heerbann {
 
-#define VERTEXSIZE 8 //pos + index + typ + uv + color1 + color2
-#define MAXSPRITES 1000
-#define TYP_SPRITE 0.f
-#define TYP_FONT 1.f
-#define TYP_LINE 2.f
-#define TYP_BOX 3.f
-#define TYP_FONT_STATIC 4.f
-
-	namespace Text {
-		class TextBlock;
-		class FontCache;
-		struct StaticTextBlock;
-	}
-
-	class ShaderProgram;
-	struct Quaternion;
-	class Matrix4;
-
-	struct Ray {
-		sf::Vector3f origin;
-		sf::Vector3f direction;
-
-		Ray();
-		Ray(const Ray&);
-		Ray(const sf::Vector3f&, const sf::Vector3f&);
-
-		sf::Vector3f getEndPoint(float);
-
-		Ray* operator*(Matrix4*);
-
-		Ray* set(Ray*);
-		Ray* set(const sf::Vector3f&, const sf::Vector3f&);
-		Ray* set(float, float, float, float, float, float);
-	};
-
-	struct Plane {
-		enum PlaneSide {
-			OnPlane, Back, Front
-		};
-
-		sf::Vector3f normal;
-		float d; //The distance to the origin
-
-		Plane();
-		Plane(const sf::Vector3f&, float);
-		Plane(const Plane&);
-		Plane(const sf::Vector3f&, const sf::Vector3f&);
-		Plane(const sf::Vector3f&, const sf::Vector3f&, const sf::Vector3f&);
-
-		Plane* set(const Plane&);
-		Plane* set(const sf::Vector3f&, float);
-		Plane* set(const sf::Vector3f&, const sf::Vector3f&, const sf::Vector3f&);
-		Plane* set(float, float, float, float);
-
-		float distance(const sf::Vector3f&);
-
-		PlaneSide testPoint(const sf::Vector3f&);
-		PlaneSide testPoint(float, float, float);
-
-		bool isFrontFacing(const sf::Vector3f&);
-
-	};
-
-	struct BoundingBox {
-		sf::Vector3f min, max;
-		sf::Vector3f cnt, dim;
-
-		BoundingBox();
-		BoundingBox(BoundingBox*);
-		BoundingBox(const sf::Vector3f&, const sf::Vector3f&);
-
-		BoundingBox* set(BoundingBox*);
-		BoundingBox* set(const sf::Vector3f&, const sf::Vector3f&);
-		BoundingBox* set(const std::vector<sf::Vector3f>&);
-
-		BoundingBox* inf();
-		BoundingBox* ext(const sf::Vector3f&);
-		BoundingBox* clr();
-		bool isValid();
-
-		BoundingBox* ext(BoundingBox*);
-		BoundingBox* ext(const sf::Vector3f&, float);
-		BoundingBox* ext(BoundingBox*, Matrix4*);
-
-		BoundingBox* operator*= (Matrix4*);
-
-		bool contains(BoundingBox*);
-		bool contains(const sf::Vector3f&);
-
-		bool intersects(BoundingBox*);
-	};
-
-	struct Frustum {
-
-		sf::Vector3f clipSpacePlanePoints[8];
-		float clipSpacePlanePointsArray[24];
-
-		Plane planes[6];
-
-		sf::Vector3f planePoints[8];
-		float planePointsArray[24];
-
-		Frustum();
-
-		void update(Matrix4*);
-
-		bool pointInFrustum(const sf::Vector3f&);
-		bool pointInFrustum(float, float, float);
-
-		bool sphereInFrustum(const sf::Vector3f&, float);
-		bool sphereInFrustum(float, float, float, float);
-
-		bool sphereInFrustumWithoutNearFar(const sf::Vector3f&, float);
-		bool sphereInFrustumWithoutNearFar(float, float, float, float);
-
-		bool boundsInFrustum(BoundingBox*);
-		bool boundsInFrustum(const sf::Vector3f&, const sf::Vector3f&);
-		bool boundsInFrustum(float, float, float, float, float, float);
-
-	};
-
-	class Matrix4 {
-
-	public:
-		static const int M00 = 0;
-		static const int M01 = 4;
-		static const int M02 = 8;
-		static const int M03 = 12;
-		static const int M10 = 1;
-		static const int M11 = 5;
-		static const int M12 = 9;
-		static const int M13 = 13;
-		static const int M20 = 2;
-		static const int M21 = 6;
-		static const int M22 = 10;
-		static const int M23 = 14;
-		static const int M30 = 3;
-		static const int M31 = 7;
-		static const int M32 = 11;
-		static const int M33 = 15;
-
-	private:			
-		float tmp[16]{ 0.f };
-
-	public:
-
-		static void matrix4_mul(float*, float*);
-		static bool matrix4_inv(float*);
-		static float matrix4_det(float*);
-
-		float val[16]{ 0 };
-
-		Matrix4();
-		Matrix4(Matrix4*);
-		Matrix4(Quaternion*);
-		Matrix4(const sf::Vector3f&, Quaternion*, const sf::Vector3f&);
-		Matrix4(const aiVector3D&, const aiQuaternion&, const aiVector3D&);
-
-		Matrix4* operator*(Matrix4*);
-
-		Matrix4* set(const sf::Vector3f&, Quaternion*, const sf::Vector3f&);
-		Matrix4* set(float, float, float, float, float, float, float, float, float, float);	
-		Matrix4* set(float*);
-		Matrix4* set(Quaternion*);
-		Matrix4* set(const sf::Vector3f&, Quaternion*);
-		Matrix4* set(float, float, float, float, float, float, float);
-		Matrix4* set(Matrix4*);
-
-		Matrix4* setToTranslation(const sf::Vector3f&);
-		Matrix4* setToTranslation(float, float, float);
-
-		float operator[](int);
-
-		//Transposes the matrix.
-		Matrix4* tra();
-		Matrix4* idt();
-		float det();
-		bool inv();
-
-		/*
-		Sets the matrix to a projection matrix with a near- and far plane, a field of view in degrees and an aspect ratio. Note that
-		the field of view specified is the angle in degrees for the height, the field of view for the width will be calculated
-		according to the aspect ratio.
-
-		near: The near plane
-		far: The far plane
-		fovy: The field of view of the height in degrees
-		aspectRatio: The "width over height" aspect ratio
-		return: This matrix for the purpose of chaining methods together. 
-		 */
-		Matrix4* setToProjection(float, float, float, float);
-
-		/*
-		Sets the matrix to a projection matrix with a near/far plane, and left, bottom, right and top specifying the points on the
-		near plane that are mapped to the lower left and upper right corners of the viewport. This allows to create projection
-		matrix with off-center vanishing point.
-
-		near: The near plane
-		far: The far plane
-		return: This matrix for the purpose of chaining methods together. 
-		*/
-		Matrix4* setToProjection(float, float, float, float, float, float);
-
-		/*
-		Sets this matrix to an orthographic projection matrix with the origin at (x,y) extending by width and height. The near plane
-		is set to 0, the far plane is set to 1.
-
-		x: The x-coordinate of the origin
-		y: The y-coordinate of the origin
-		width: The width
-		height: The height
-		return: This matrix for the purpose of chaining methods together. 
-		*/
-		Matrix4* setToOrtho2D(float, float, float, float);
-
-		/*
-		Sets this matrix to an orthographic projection matrix with the origin at (x,y) extending by width and height, having a near
-		and far plane.
-
-		x: The x-coordinate of the origin
-		y: The y-coordinate of the origin
-		width: The width
-		height: The height
-		near: The near plane
-		far: The far plane
-		return: This matrix for the purpose of chaining methods together. 
-		*/
-		Matrix4* setToOrtho2D(float, float, float, float, float, float);
-
-		/*
-		Sets the matrix to an orthographic projection like glOrtho (http://www.opengl.org/sdk/docs/man/xhtml/glOrtho.xml) following
-		the OpenGL equivalent
-	
-		left The left clipping plane
-		right The right clipping plane
-		bottom The bottom clipping plane
-		top The top clipping plane
-		near The near clipping plane
-		far The far clipping plane
-		return This matrix for the purpose of chaining methods together. 
-		*/
-		Matrix4* setToOrtho(float, float, float, float, float, float);
-
-		Matrix4* setToLookAt(const sf::Vector3f&, const sf::Vector3f&);
-		Matrix4* setToLookAt(const sf::Vector3f&, const sf::Vector3f&, const sf::Vector3f&);
-	
-		Matrix4* setToRotation(const sf::Vector3f&, float);
-		Matrix4* setToRotationRad(const sf::Vector3f&, float);
-		Matrix4* setToRotation(float, float, float, float);
-		Matrix4* setToRotationRad(float, float, float, float);
-		Matrix4* setToRotation(const sf::Vector3f&, const sf::Vector3f&);
-		Matrix4* setToRotation(float, float, float, float, float, float);
-
-		static void proj(float*, float*, int, int, int);
-		static void matrix4_proj(float*, float*);
-};
-
-	struct Quaternion {
-
-		float x, y, z, w;
-
-		Quaternion();
-		Quaternion(Quaternion*);
-		Quaternion(float, float, float, float);
-		Quaternion(const sf::Vector3f&, float);
-
-		Quaternion* set(float, float, float, float);
-		Quaternion* set(Quaternion*);
-		Quaternion* set(const sf::Vector3f&, float);
-
-		float len();
-		float len2();
-
-		Quaternion* setEulerAngles(float, float, float);
-		Quaternion* setEulerAnglesRad(float, float, float);
-
-		int getGimbalPole();
-
-		float getRollRad();
-		float getRoll();
-
-		float getPitchRad();
-		float getPitch();
-
-		float getYawRad();
-		float getYaw();
-		
-		Quaternion* idt();
-		Quaternion* nor();
-		Quaternion* conjugate();
-
-		bool isIDentity();
-
-		Quaternion* transform(sf::Vector3f&);
-
-		Quaternion* operator*(Quaternion*);
-		Quaternion* operator+(Quaternion*);
-		
-		Quaternion* mulLeft(Quaternion*);
-		Quaternion* mulLeft(float, float, float, float);
-
-		Matrix4* toMatrix();
-
-		Quaternion* setFromAxis(const sf::Vector3f&, float);
-		Quaternion* setFromAxisRad(const sf::Vector3f&, float);
-		Quaternion* setFromAxis(float, float, float, float);
-		Quaternion* setFromAxisRad(float, float, float, float);
-
-		Quaternion* setFromMatrix(bool, Matrix4*);
-		Quaternion* setFromMatrix(Matrix4*);
-
-		Quaternion* setFromAxes(float, float, float, float, float, float, float, float, float);
-		Quaternion* setFromAxes(bool, float, float, float, float, float, float, float, float, float);
-
-		Quaternion* setFromCross(const sf::Vector3f&, const sf::Vector3f&);
-		Quaternion* setFromCross(float, float, float, float, float, float);
-
-		Quaternion* slerp(Quaternion*, float);
-		Quaternion* slerp(const std::vector<Quaternion*>&);
-		Quaternion* slerp(const std::vector<std::tuple<Quaternion*, float>>&);
-
-		Quaternion* exp(float);
-		Quaternion* mul(float);
-		Quaternion* mul(Quaternion*);
-
-		Quaternion* operator*(float);
-
-		float dot(Quaternion*);
-		float dot(float, float, float, float);
-
-		float getAxisAngle(sf::Vector3f&);
-		float getAxisAngleRad(sf::Vector3f&);
-
-		float getAngleRad();
-		float getAngle();
-
-		Quaternion* getSwingTwist(const sf::Vector3f&, Quaternion*, Quaternion*);
-		Quaternion* getSwingTwist(float, float, float, Quaternion*, Quaternion*);
-
-		float getAngleAroundRad(const sf::Vector3f&);
-		float getAngleAroundRad(float, float, float);
-
-		float getAngleAround(const sf::Vector3f&);
-		float getAngleAround(float, float, float);
-	};
-
-	class BoundingBox2f {
-
-	public:
-		sf::Vector2f min;
-		sf::Vector2f max;
-		sf::Vector2f cnt;
-		sf::Vector2f dim;
-
-		void set(const sf::Vector2f&, const sf::Vector2f&);
-		void set(const BoundingBox2f&);
-		void inf();
-		void ext(const sf::Vector2f&);
-		void clr();
-		bool isValid();
-		void ext(const BoundingBox2f&);
-		bool contains(const BoundingBox2f&);
-		bool intersects(const BoundingBox2f&);
-		bool contains(const sf::Vector2f&);
-		void ext(float, float);
-		BoundingBox2f();
-		BoundingBox2f(sf::Vector2f, sf::Vector2f);
-
-		bool operator==(const BoundingBox2f& _b) {
-			return contains(_b);
-		};
-
-		bool operator==(const sf::Vector2f _v) {
-			return contains(_v);
-		};
-
-		bool operator==(const sf::Vector2i _v) {
-			return contains(sf::Vector2f(_v));
-		};
-
-		BoundingBox2f& operator+(const BoundingBox2f& _b) {
-			ext(_b);
-			return *this;
-		}
-
-		BoundingBox2f& operator+=(const BoundingBox2f& _b) {
-			ext(_b);
-			return *this;
-		}
-
-	};
-
 	class VAO {
 	protected:
 		GLuint vao, vbo;
@@ -492,7 +100,6 @@ namespace Heerbann {
 			Text::StaticTextBlock* block;
 		};
 
-
 		//used in work thread
 		std::vector<DrawJob*> renderCache;
 		std::queue<DrawJob*> renderQueue;
@@ -558,14 +165,6 @@ namespace Heerbann {
 		void draw(Text::TextBlock*);
 		void draw(Text::StaticTextBlock*);
 
-		inline void enableBlending() {
-			isBlending = true;
-		};
-
-		inline void disableBlending() {
-			isBlending = false;
-		};
-
 		inline bool isDrawing() {
 			return locked;
 		}
@@ -581,7 +180,7 @@ namespace Heerbann {
 		enum Status {
 			success, failed, missing
 		};
-		GLuint program, compute, vertex, geom, frag;
+		GLuint program = -1, compute = -1, vertex = -1, geom = -1, frag = -1;
 		void print(std::string, Status, Status, Status, Status, Status, std::string);
 		bool compile(const std::string&, const char*, const char*, const char*, const char*);
 	public:
@@ -590,6 +189,49 @@ namespace Heerbann {
 		bool loadFromMemory(const std::string&, const std::string&, const std::string&, const std::string&, const std::string&);
 		void bind();
 		void unbind();
+	};
+
+	class ShapeRenderer {
+
+		sf::Color color = sf::Color::Black;
+		Camera* cam = nullptr;
+
+	public:
+
+		float defaultRectLineWidth = 0.75f;
+
+		//sphere
+		unsigned int sectorCount = 24u;
+		unsigned int stackCount = 10u;
+
+		//circle
+		unsigned int segments = 24u;
+
+		void begin(Camera*);
+		void end();
+		void setColor(sf::Color);
+		
+		void x(const Vec3&, const Vec3&, float = 25.f);
+		void arrow(const Vec3&, const Vec3&, float);
+		void vertex(const Vec3&);
+		void vertex(const std::vector<Vec3>&);
+		void triangle(const Vec3&, const Vec3&, const Vec3&);
+		void triangle(const std::vector<std::tuple<Vec3, Vec3, Vec3>>&);
+		void line(const Vec3&, const Vec3&);
+		void chain(const std::vector<Vec3>&);
+		void loop(const std::vector<Vec3>&);
+		void circle(const Vec3&, const Vec3&, float);
+		void sphere(const Vec3&, float);
+		void aabb(const Vec3&, float);
+		void aabb(const Vec3&, const Vec3&);
+		void polygon(const std::vector<Vec3>&);
+
+		void draw(Ray*);
+		void draw(BoundingBox*);
+		void draw(Plane*);
+		void draw(Frustum*);
+		void draw(Camera*);
+
 	};
 
 }

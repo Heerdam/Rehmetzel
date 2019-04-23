@@ -229,7 +229,7 @@ void TestWorldLevel::postLoad(AssetManager* _asset) {
 	camera = new PerspectiveCamera();
 	camera->nearPlane = 0.1f;
 	camera->farPlane = 10000.f;	
-	camera->arcball(sf::Vector3f(0.f, 0.f, 0.f), azimuth, altitude, 250.f);
+	camera->arcball(Vec3(0.f, 0.f, 0.f), azimuth, altitude, 250.f);
 	//camera->update();
 
 	wCam = new AxisWidgetCamera(camera);
@@ -241,9 +241,9 @@ void TestWorldLevel::postLoad(AssetManager* _asset) {
 			azimuth -= static_cast<float>(_x - oldPos.x);
 			altitude += static_cast<float>(_y - oldPos.y);
 			altitude = std::clamp(altitude, 1.f, 179.f);
-			camera->arcball(sf::Vector3f(0.f, 0.f, 0.f), azimuth, altitude, 250.f);
+			camera->arcball(Vec3(0.f, 0.f, 0.f), azimuth, altitude, 250.f);
 			std::cout << azimuth << "  "<< altitude << std::endl;
-			//camera->arcball(sf::Vector3f(0.f, 0.f, 0.f), azimuth, altitude, 500.f);
+			//camera->arcball(Vec3(0.f, 0.f, 0.f), azimuth, altitude, 500.f);
 			oldPos = sf::Vector2i(_x, _y);
 			
 		}		
@@ -285,7 +285,7 @@ void TestWorldLevel::draw(float _delta, SpriteBatch* _batch) {
 	//azimuth++;
 
 	
-	Matrix4 mat;
+	Mat4 mat;
 	mat.val[0] = 0.6009309f;
 	mat.val[1] = 0.7283804f;
 	mat.val[2] = -0.51728725f;
@@ -308,7 +308,7 @@ void TestWorldLevel::draw(float _delta, SpriteBatch* _batch) {
 	
 	
 	modelShader->bind();
-	glUniformMatrix4fv(camPos, 1, false, mat.val);
+	glUniformMat4fv(camPos, 1, false, mat.val);
 	glBindVertexArray(model->vao);
 	glDrawElements(GL_TRIANGLES, model->indexBufferSize, GL_UNSIGNED_INT, nullptr);
 	modelShader->unbind();

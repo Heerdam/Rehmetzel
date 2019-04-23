@@ -6,9 +6,6 @@ namespace Heerbann {
 
 	using namespace Heerbann;
 
-	struct WorldObject;
-	class ShaderProgram;
-
     class Viewport{
 	public:
 		int posX = 0, posY = 0, width = 640, height = 480;
@@ -103,28 +100,23 @@ namespace Heerbann {
 		bool ReportFixture(b2Fixture*) override;
 	};
 
-	struct Frustum;
-	struct Ray;
-	struct Quaternion;
-
 	class Camera {
 
 		Ray* ray;
-		Matrix4* tmpMat;
 	
 	public:
 
-		Camera(float, float);
+		Camera(const float, const float);
 
-		sf::Vector3f position;
-		sf::Vector3f direction;
-		sf::Vector3f up;
-		sf::Vector3f right;
+		Vec3 position;
+		Vec3 direction;
+		Vec3 up;
+		Vec3 right;
 
-		Matrix4* projection;
-		Matrix4* view;
-		Matrix4* combined;
-		Matrix4* invProjectionView;
+		Mat4 projection;
+		Mat4 view;
+		Mat4 combined;
+		Mat4 invProjectionView;
 
 		float nearPlane = 1.0f;
 		float farPlane = 100.f;
@@ -134,36 +126,37 @@ namespace Heerbann {
 		Frustum* frustum;
 
 		virtual void update() = 0;
-		virtual void update(bool) = 0;
+		virtual void update(const bool) = 0;
 
-		void lookAt(float, float, float);
-		void lookAt(const sf::Vector3f&);
+		void lookAt(const float, const float, const float);
+		void lookAt(const Vec3&);
 		void normalizeUp();
 		void normalizeUpYLocked();
 
-		Quaternion* getRotation(Quaternion*);
+		Quat getRotation(const Quat&);
+		Mat4 getAsMat();
 		
-		void rotate(float, float, float, float);
-		void rotate(const sf::Vector3f&, float);
-		void rotate(Matrix4*);
-		void rotate(Quaternion*);
+		void rotate(const float, const float, const float, const float);
+		void rotate(const Vec3&, const float);
+		void rotate(const Mat4&);
+		void rotate(const Quat&);
 		
-		void rotateAround(const sf::Vector3f&, const sf::Vector3f&, float);
-		void arcball(const sf::Vector3f&, float, float, float);
+		void rotateAround(const Vec3&, const Vec3&, float);
+		void arcball(const Vec3&, const float, const float, const float);
 
-		void transform(Matrix4*);
+		void transform(const Mat4&);
 
-		void translate(float, float, float);
-		void translate(const sf::Vector3f&);
+		void translate(const float, const float, const float);
+		void translate(const Vec3&);
 
-		sf::Vector3f unproject(sf::Vector3f&, float, float, float, float);
-		sf::Vector3f unproject(sf::Vector3f&);
+		Vec3 unproject(const Vec3&, const float, const float, const float, const float);
+		Vec3 unproject(const Vec3&);
 
-		sf::Vector3f project(sf::Vector3f&, float, float, float, float);
-		sf::Vector3f project(sf::Vector3f&);
+		Vec3 project(const Vec3&, const float, const float, const float, const float);
+		Vec3 project(const Vec3&);
 
-		const Ray* getPickRay(float, float, float, float, float, float);
-		const Ray* getPickRay(float, float);
+		const Ray* getPickRay(const float, const float, const float, const float, const float, const float);
+		const Ray* getPickRay(const float, const float);
 	};
 
 	class OrthographicCamera : public Camera {
@@ -172,16 +165,16 @@ namespace Heerbann {
 		float zoom = 1.f;
 
 		OrthographicCamera();
-		OrthographicCamera(float, float);
+		OrthographicCamera(const float, const float);
 
 		void update() override;
-		void update(bool) override;
+		void update(const bool) override;
 
-		void setToOrtho(bool);
-		void setToOrtho(bool, float, float);
-		void rotate(float);
-		void translate(float, float);
-		void translate(sf::Vector2f);
+		void setToOrtho(const bool);
+		void setToOrtho(const bool, const float, const float);
+		void rotate(const float);
+		void translate(const float, const float);
+		void translate(const Vec2&);
 	};
 
 	class PerspectiveCamera : public Camera {
@@ -189,10 +182,10 @@ namespace Heerbann {
 		float fieldOfView = 67.f;
 
 		PerspectiveCamera();
-		PerspectiveCamera(float, float, float);
+		PerspectiveCamera(const float, const float, const float);
 
 		void update () override;
-		void update (bool) override;
+		void update (const bool) override;
 	};
 
 	class AxisWidgetCamera : public Camera {
@@ -206,12 +199,12 @@ namespace Heerbann {
 		GLuint vao;
 
 		Camera* cam;
-		Matrix4* transform;
+		Mat4 transform;
 
 	public:
 		AxisWidgetCamera(Camera*);
 
 		void update() override;
-		void update(bool) override;
+		void update(const bool) override;
 	};
 }

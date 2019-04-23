@@ -28,7 +28,7 @@ bool UI::StaticLabel::isLoaded() {
 	return block == nullptr || block->isLoaded;
 }
 
-void UI::StaticLabel::setPosition(sf::Vector2f _pos) {
+void UI::StaticLabel::setPosition(Vec2 _pos) {
 	if (!isLoaded()) return;
 	block->widgetPos = position = _pos;
 }
@@ -38,6 +38,6 @@ void UI::StaticLabel::draw(SpriteBatch* _batch) {
 	_batch->draw(block);
 }
 
-const sf::Vector2f & UI::Actor::getPosition() {
+const Vec2 & UI::Actor::getPosition() {
 	return position;
 }

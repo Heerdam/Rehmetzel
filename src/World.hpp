@@ -6,15 +6,6 @@ namespace Heerbann {
 
 	using namespace Heerbann;
 
-	class WorldBuilder;
-	class ShaderProgram;
-
-	namespace BehaviourTree {
-		struct Root;
-	}
-	
-	using namespace BehaviourTree;
-
 	enum EntityType {
 		red_deer, tree, hunter
 	};
@@ -40,8 +31,6 @@ namespace Heerbann {
 		std::function<void(WorldObject*)> finishedLoading;
 	};
 
-	class DebugDraw;
-
 	class World {
 
 		friend WorldBuilder;
@@ -62,9 +51,9 @@ namespace Heerbann {
 		WorldBuilder* builder;
 		void update(float);
 		void debugDraw();
-		long create(EntityType, sf::Vector2f);
-		void raycast(b2RayCastCallback*, const sf::Vector2f&, const sf::Vector2f&);
-		void AABB(b2QueryCallback*, const sf::Vector2f&, const sf::Vector2f&);
+		long create(EntityType, Vec2);
+		void raycast(b2RayCastCallback*, const Vec2&, const Vec2&);
+		void AABB(b2QueryCallback*, const Vec2&, const Vec2&);
 
 		WorldObject* operator[](long _id) {
 			std::lock_guard<std::mutex> guard(mapLock);
@@ -78,9 +67,6 @@ namespace Heerbann {
 		long seed = 0;
 	};
 
-	class BGVAO;
-	class IndexedVAO;
-
 	struct WorldOut {
 		std::vector<BGVAO*> bgVAOs;
 		std::vector<IndexedVAO*> indexVAOs;
@@ -90,8 +76,8 @@ namespace Heerbann {
 
 	class WorldBuilder : public b2QueryCallback {
 		
-		BGVAO* createBGVAO(sf::Vector2f, int);
-		IndexedVAO* createTrees(int, sf::Vector2f, sf::Vector2f);
+		BGVAO* createBGVAO(Vec2, int);
+		IndexedVAO* createTrees(int, Vec2, Vec2);
 
 	public:
 		//thread safe and stateless
