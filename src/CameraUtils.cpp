@@ -7,253 +7,205 @@
 
 using namespace Heerbann;
 
-void Viewport::setBounds(int _x, int _y, int _width, int _height) {
-	//float fx = 1.f / Main::width();
-	//float fy = 1.f / Main::height();
-	cam.setSize(Vec2((float)_width, (float)_height));
-	//cam.setViewport(sf::FloatRect(fx * _x, fy * _y, fx * _width, fy * _height));
+bool ViewportHandler::checkBounds(const Vec4ui& _bounds) {
+	if (currentGLBounds == _bounds) return true;
+	currentGLBounds[0] = _bounds[0];
+	currentGLBounds[1] = _bounds[1];
+	currentGLBounds[2] = _bounds[2];
+	currentGLBounds[3] = _bounds[3];
+	return false;
 }
 
-void Viewport::setSize(int _width, int _height) {
-	int maxWidth = Main::width() - posX;
-	int maxHeight = Main::height() - posY;
-	width = std::clamp(_width, 2 * border, maxWidth);
-	height = std::clamp(_height, border + topBorder, maxHeight);
+View* ViewportHandler::create(std::string _id, ViewType _type) {
+	View* out = new View(_id, _type, this);
+	views[_id] = out;
+	return out;
+}
 
-	setBounds(posX, posY, width, height);
-};
+void ViewportHandler::remove(std::string _id) {
+	View* out = views[_id];
+	delete out;
+	views[_id] = nullptr;
+}
 
-void Viewport::setPosition(int _x, int _y) {
-	posX = std::clamp(_x, 0, (int)Main::width());
-	posY = std::clamp(_y, 0, (int)Main::height());
-	setSize(width, height);
-	setBounds(posX, posY, width, height);
-};
+View* ViewportHandler::operator[](std::string _id) {
+	return views[_id];
+}
 
-Viewport::Viewport(std::string _id, int _prio) {
-	cam.setSize(Vec2((float)width, (float)height));
-	cam.setCenter(Vec2(0.f, 0.f));
-	InputEntry* entry = new InputEntry();
-	entry->priority = _prio;
+void View::setViewportBounds(uint _x, uint _y, uint _width, uint _height) {
+	GLBounds[0] = _x;
+	GLBounds[1] = _y;
+	GLBounds[2] = _width;
+	GLBounds[3] = _height;
+	camera->viewportWidth = _width;
+	camera->viewportHeight = _height;
+}
 
-	entry->mouseMoveEvent = [&](int _x, int _y)->bool {
-		int bounds = interactive ? inBounds(_x, _y) : 0;
-		//std::cout << bounds << std::endl;
-		if (mouseRightPressed) { //touch dragged
-			sf::Vector2i delta(_x, _y);
-			delta -= last;
-			delta.x = (int)((float)delta.x * -1 * zoom);
-			delta.y = (int)((float)delta.y * zoom);
-			cam.move(Vec2(delta));
-			last.x = _x;
-			last.y = _y;
+void View::clear(const sf::Color _color) {
+	glClearColor(colF(_color.r), colF(_color.g), colF(_color.b), colF(_color.a));
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+void View::drawDebug() {
+	//TODO
+}
+
+void View::setViewportSize(uint _width, uint _height) {
+	setViewportBounds(GLBounds[0], GLBounds[1], _width, _height);
+}
+
+void View::setViewportPosition(uint _x, uint _y) {
+	setViewportBounds(_x, _y, GLBounds[2], GLBounds[3]);
+}
+
+void View::setInteractive(bool _setActive) {
+	if (_setActive && !inputsActive) {
+		inputsActive = true;
+		InputEntry* entry = new InputEntry();
+		entry->mouseMoveEvent = [&](int _x, int _y)->bool {
+			switch (type) {
+				case ViewType::pers:
+				{
+					ArcballCamera* cam = reinterpret_cast<ArcballCamera*>(camera);
+					cam->azimuth += (_x - lastPos.x) * panXModifier;
+					cam->height += (_y - lastPos.y) * panYModifier;
+					camera->arcball(cam->target, cam->azimuth, cam->height, cam->distance);
+				}
+				return true;
+				case ViewType::ortho:
+				{
+				}
+				return true;
+				case ViewType::ortho2d:
+				{
+					OrthographicCamera* cam = reinterpret_cast<OrthographicCamera*>(camera);
+					cam->translate(static_cast<float>(_x - lastPos.x), static_cast<float>(_y - lastPos.y));
+				}
+				return true;
+			}		
 			return false;
-		} else if (resizing || (mouseLeftPressed && bounds > 0)) {
-			if (resizing == false) {
-				borderRes = bounds;
-				resizing = true;
-			}
-			sf::Vector2i delta(_x, _y);
-			delta -= last;
-			//std::cout << delta.x << " " << delta.y << std::endl;
-			//delta.x = (int)((float)delta.x * - 1 * zoom);
-			//delta.y = (int)((float)delta.y * zoom);
-			switch (borderRes) {
-			case 1://left
-			{
-				int newPosX = posX + (int)delta.x;
+		};
 
-				int newWidth = width - (int)delta.x;
-				if (newPosX <= 0)
-					newWidth = width + posX;
+		entry->mouseButtonPressEvent = [&](sf::Mouse::Button _button, int _x, int _y)->bool {
+			buttonPressed = _button == panButton ? true : buttonPressed;
+			lastPos = Vec2i(_x, _y);
+			return false;
+		};
 
-				int leftC = posX + width;
-				if (leftC - newPosX <= 2 * border)
-					newPosX = leftC - 2 * border;
-
-				setSize(newWidth, height);
-				setPosition(newPosX, posY);
-			}
-			break;
-			case 2: //right
-				setSize(width + (int)delta.x, height);
-				break;
-			case 3: //top (move whole window)
-				setPosition(posX + (int)delta.x, posY + (int)delta.y);
-				break;
-			case 4: //bottom
-			{
-				int newPosY = posY + (int)delta.y;
-				int newHeight = height - (int)delta.y;
-
-				if (newPosY <= 0)
-					newHeight = height + posY;
-
-				int topC = posY + height;
-				if (topC - newPosY <= border + topBorder) {
-					newPosY = topC - (border + topBorder);
-					newHeight = border + topBorder;
+		entry->mouseButtonReleaseEvent = [&](sf::Mouse::Button _button, int _x, int _y)->bool {
+			buttonPressed = _button == panButton ? false : buttonPressed;		
+			switch (type) {
+				case ViewType::ortho2d:
+				{
+					OrthoPanJob* job = new OrthoPanJob();
+					job->cam = reinterpret_cast<OrthographicCamera*>(camera);
+					Vec2 delta = Vec2i(_x, _y) - lastPos;
+					job->dir = NOR(delta);
+					job->speed = LEN(delta);
+					job->func = [&](void* _entry) {
+						if (buttonPressed) {
+							delete _entry;
+							return;
+						}
+						auto job = reinterpret_cast<OrthoPanJob*>(_entry);
+						job->cam->translate(INTERPOLATE((job->dir*job->speed), Vec2(0.f, 0.f), (job->t += M_Delta)));
+						if (!(job->t > 1.f || EQUAL(job->t, 1.f)))
+							M_Main->addJob(job->func, job);
+						else delete _entry;
+					};
+					M_Main->addJob(job->func, job);
 				}
-
-				setSize(width, newHeight);
-				setPosition(posX, newPosY);
-			}
-			break;
-			case 5: //left top corner
-				//setPosition(posX + (int)delta.x, posY);
-				//setSize(width, height + (int)delta.y);
 				break;
-			case 6: //left bottom corner
-				//setPosition(posX + (int)delta.x, posY);
-				//setPosition(posX, posY + (int)delta.y);
-				break;
-			case 7: //right top corner
-			{
-				if (exitClick != nullptr) {
-					exitClick(_x, _y);
-					resizing = false;
-					mouseLeftPressed = false;
-					borderRes = 0;
+			}
+			lastPos = Vec2i(_x, _y);
+			return false;
+		};
+
+		entry->mouseWheelScrollEvent = [&](sf::Mouse::Wheel, float _delta, int, int)->bool {
+			switch (type) {
+				case ViewType::pers:
+				{
+					ArcballCamera* cam = reinterpret_cast<ArcballCamera*>(camera);
+					cam->distance = CLAMP(cam->distance += _delta * zoomModifier, zoomBounds[0], zoomBounds[1]);
+					camera->arcball(cam->target, cam->azimuth, cam->height, cam->distance);
 				}
-			}
-			break;
-			case 8: //right bottom corner
-			{
-				int newPosY = posY + (int)delta.y;
-				int newHeight = height - (int)delta.y;
+				return true;
+				case ViewType::ortho:
+				{
 
-				if (newPosY <= 0)
-					newHeight = height + posY;
 
-				int topC = posY + height;
-				if (topC - newPosY <= border + topBorder) {
-					newPosY = topC - (border + topBorder);
-					newHeight = border + topBorder;
+
 				}
+				return true;
+				case ViewType::ortho2d:
+				{
+					OrthographicCamera* cam = reinterpret_cast<OrthographicCamera*>(camera);
+					cam->zoom = CLAMP(cam->zoom += (_delta * zoomModifier), zoomBounds[0], zoomBounds[1]);
+					//TODO zoom to mousepointer
+				}
+				return true;
+			}
+			return false;
+		};
 
-				setSize(width + (int)delta.x, newHeight);
-				setPosition(posX, newPosY);
-			}
-			break;
-			}
-			last.x = _x;
-			last.y = _y;
-			return true;
+		M_Input->add(id, entry);
+
+	} else if(inputsActive){
+		inputsActive = false;
+		M_Input->remove(id);
+	}
+	
+}
+
+View::View(std::string _id, ViewType _type, ViewportHandler* _parent) : parent(_parent), id(_id), type(_type) {
+	switch (type) {
+		case ViewType::pers:
+		{
+			ArcballCamera* cam = new ArcballCamera();
+			setViewportBounds(0, 0, M_WIDTH, M_HEIGHT);
+			camera = cam;
+			zoomBounds = Vec2(1.f, 100.f);
+			cam->distance = 50.f;
+			camera->arcball(cam->target, cam->azimuth, cam->height, cam->distance);
 		}
-		//std::cout << last.x << " " << last.y << std::endl;
-		last.x = _x;
-		last.y = _y;
-		return false;
-	};
-
-	entry->mouseButtonPressEvent = [&](sf::Mouse::Button _button, int _x, int _y)->bool {
-		mouseRightPressed = _button == sf::Mouse::Button::Right ? true : mouseRightPressed;
-		mouseLeftPressed = _button == sf::Mouse::Button::Left ? true : mouseLeftPressed;
-		last.x = _x;
-		last.y = _y;
-		return false;
-	};
-
-	entry->mouseButtonReleaseEvent = [&](sf::Mouse::Button _button, int _x, int _y)->bool {
-		mouseRightPressed = _button == sf::Mouse::Button::Right ? false : mouseRightPressed;
-
-		if (_button == sf::Mouse::Button::Left) {
-			resizing = false;
-			mouseLeftPressed = false;
-			borderRes = 0;
+		break;
+		case ViewType::ortho:
+		{
 		}
-
-		last.x = _x;
-		last.y = _y;
-		return false;
-	};
-
-	entry->mouseWheelScrollEvent = [&](sf::Mouse::Wheel, float _delta, int, int)->bool {	
-		zoom += zoomSpeed * (_delta < 0 ? 1 : -1);
-		if(zoom > 0.1f && zoom < 100) cam.zoom(1 + zoomSpeed * (_delta < 0 ? 1 : -1));
-		else zoom = std::clamp(zoom, 0.1f, 100.f);		
-		return false;
-	};
-
-	Main::getInput()->add(_id, entry);
- };
-
- void Viewport::apply(sf::RenderWindow& _window, float _deltaTime) {
-	 
-	 glEnable(GL_SCISSOR_TEST);
-	 glScissor(posX, posY, width, height);
-	 if (clear) {
-		 glClearColor(1.f / 255.f * clearColor.r, 1.f / 255.f * clearColor.g, 1.f / 255.f * clearColor.b, 1.f / 255.f * clearColor.a);
-		 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	 }
-	 _window.setView(cam);
-	 
-	 glViewport(posX, posY, width, height);
-
-	 if (update != nullptr) update(_window, _deltaTime);
-	 if (draw != nullptr) draw(_window, _deltaTime);
-	 if (debugDraw) {
-		 int mh = Main::height();
-		 sf::RectangleShape rec;
-		 rec.setFillColor(sf::Color::Blue);
-		 //left
-		 rec.setPosition(Vec2((float)posX, (float)(mh - posY - height)));
-		 rec.setSize(Vec2((float)border, (float)height));
-		 _window.draw(rec);
-		 //right
-		 rec.setPosition(Vec2((float)(posX + width - border), (float)(mh - posY - height)));
-		 rec.setSize(Vec2((float)border, (float)height));
-		 _window.draw(rec);
-		 //bottom
-		 rec.setPosition(Vec2((float)posX, (float)(mh - posY - border)));
-		 rec.setSize(Vec2((float)width, (float)border));
-		 _window.draw(rec);
-		 //top
-		 rec.setFillColor(sf::Color::Red);
-		 rec.setPosition(Vec2((float)posX, (float)(mh - posY - height)));
-		 rec.setSize(Vec2((float)width, (float)topBorder));
-		 _window.draw(rec);
-	 }
-	 glDisable(GL_SCISSOR_TEST);
- };
-
- void Box2dRenderer::draw(float _deltaTime, sf::RenderWindow& _window) {
-
-	 auto cam = Main::getViewport()->cam;
-	 auto world = Main::getWorld();
-
-	 auto centre = cam.getCenter();
-
-	 float hw = (Main::width() * 0.5f * 1.1f) * Main::getViewport()->zoom;
-	 float hh = (Main::height() * 0.5f * 1.1f) * Main::getViewport()->zoom;
-
-	 float p1x = cam.getCenter().x - hw;
-	 float p1y = cam.getCenter().y - hh;
-
-	 float p2x = cam.getCenter().x + hw;
-	 float p2y = cam.getCenter().y + hh;
-
-	 world->AABB((b2QueryCallback*)this, Vec2(p1x * UNRATIO, p1y * UNRATIO), Vec2(p2x * UNRATIO, p2y * UNRATIO));
-	 
-	 //_window.pushGLStates();
-	 for (auto o : objects)
-		 if (o->draw != nullptr)
-			 o->draw(o, _deltaTime, _window);
-	 //_window.popGLStates();
-
-	 objects.clear();
+		break;
+		case ViewType::ortho2d:
+		{
+			OrthographicCamera* cam = new OrthographicCamera();
+			setViewportBounds(0, 0, M_WIDTH, M_HEIGHT);
+			camera = cam;
+			zoomBounds = Vec2(0.1f, 100.f);
+			cam->setToOrtho(false);
+		}
+		break;
+	}	
  }
 
- bool Box2dRenderer::ReportFixture(b2Fixture* _fixture) {
-	 auto data = (WorldObject*)_fixture->GetBody()->GetUserData();
+View::~View() {
+	setInteractive(false);
+}
 
-	 if (data->lastSeen == Main::getFrameId()) return true;
-	 if (!data->isLoaded) return true;
-	 if (data->isVAO) return true;
-	 data->lastSeen = Main::getFrameId();
-	 objects.emplace_back(data);
+ void View::apply() {
+	 	 
+	 if(!parent->checkBounds(GLBounds))
+		 glViewport(GLBounds[0], GLBounds[1], GLBounds[2], GLBounds[3]);
 
-	 return true;
+	 camera->viewportWidth = GLBounds[2];
+	 camera->viewportHeight = GLBounds[3];
+
+	 camera->update();
+
+ }
+ Camera* View::getCamera() {
+	 return camera;
+ }
+
+ float* View::combined() {
+	 return ToArray(camera->combined);
  }
 
  Camera::Camera(const float _viewportWidth, const float _viewportHeight) :viewportWidth(_viewportWidth), viewportHeight(_viewportHeight),
@@ -385,7 +337,7 @@ Viewport::Viewport(std::string _id, int _prio) {
 
  PerspectiveCamera::PerspectiveCamera() : PerspectiveCamera(67.f, static_cast<float>(M_WIDTH), static_cast<float>(M_HEIGHT)){}
 
- Heerbann::PerspectiveCamera::PerspectiveCamera(const float _fieldOfViewY, const float _viewportWidth, const float _viewportHeight) :
+ PerspectiveCamera::PerspectiveCamera(const float _fieldOfViewY, const float _viewportWidth, const float _viewportHeight) :
 	 fieldOfView(_fieldOfViewY), Camera(_viewportWidth, _viewportHeight){
  }
 
@@ -399,10 +351,7 @@ Viewport::Viewport(std::string _id, int _prio) {
 	 view = LOOKAT(position, position + direction, up);
 	 combined = projection * view;
 
-	 if (_updateFrustum) {
-		 invProjectionView = INV(combined);
-		 frustum->update(invProjectionView);
-	 }
+	 if (_updateFrustum) frustum->update(combined);
  }
 
  OrthographicCamera::OrthographicCamera() : OrthographicCamera (static_cast<float>(M_WIDTH), static_cast<float>(M_HEIGHT)){}
@@ -419,10 +368,7 @@ Viewport::Viewport(std::string _id, int _prio) {
 	 view = LOOKAT(position, position + direction, up);
 	 combined = projection * view;
 
-	 if (_updateFrustum) {
-		 invProjectionView = INV(combined);
-		 frustum->update(invProjectionView);
-	 }
+	 if (_updateFrustum) frustum->update(combined);
  }
 
  void OrthographicCamera::setToOrtho(const bool _yDown) {
@@ -585,10 +531,15 @@ Viewport::Viewport(std::string _id, int _prio) {
 	// transform->setToRotation(cam->direction, cam->up);
 
 	 shader->bind();
-	 glUniformMat4fv(camLocation, 1, false, cam->combined->val);
+	// glUniformMat4fv(camLocation, 1, false, cam->combined->val); //TODO
 	 glBindVertexArray(vao);
 	 glDrawElements(GL_LINES, 6, GL_UNSIGNED_INT, 0);
 	 shader->unbind();
 
 	 glViewport(0, 0, static_cast<GLuint>(cam->viewportWidth), static_cast<GLuint>(cam->viewportHeight));
  }
+
+ ArcballCamera::ArcballCamera() : PerspectiveCamera() {}
+
+ ArcballCamera::ArcballCamera(const float _fieldOfViewY, const float _viewportWidth, const float _viewportHeight) :
+	PerspectiveCamera(_fieldOfViewY, _viewportWidth, _viewportHeight) {}

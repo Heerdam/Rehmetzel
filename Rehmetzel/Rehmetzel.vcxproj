@@ -98,7 +98,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\lib\assimp\include;..\lib\glew-2.1.0\include;..\lib\Box2D-2.3.1\Box2D;C:\Users\Heerbann\Dropbox\Coding\Projects\Rehmetzel\lib\glm-0.9.9.5;..\lib\SFML-2.5.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\lib\assimp\include;..\lib\glew-2.1.0\include;..\lib\Box2D-2.3.1\Box2D;..\lib\glm-0.9.9.5;..\lib\SFML-2.5.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>SFML_STATIC;GLEW_STATIC;ASSIMP_STATIC;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -141,6 +141,7 @@
     <ClInclude Include="..\src\Assets.hpp" />
     <ClInclude Include="..\src\CameraUtils.hpp" />
     <ClInclude Include="..\src\G3D.hpp" />
+    <ClInclude Include="..\src\Gdx.hpp" />
     <ClInclude Include="..\src\InputMultiplexer.hpp" />
     <ClInclude Include="..\src\Level.h" />
     <ClInclude Include="..\src\MainStruct.hpp" />
@@ -157,6 +158,7 @@
     <ClCompile Include="..\src\Assets.cpp" />
     <ClCompile Include="..\src\CameraUtils.cpp" />
     <ClCompile Include="..\src\G3D.cpp" />
+    <ClCompile Include="..\src\Gdx.cpp" />
     <ClCompile Include="..\src\InputMultiplexer.cpp" />
     <ClCompile Include="..\src\Level.cpp" />
     <ClCompile Include="..\src\main.cpp" />

@@ -44,7 +44,7 @@ void Main::intialize(MainConfig* _config) {
 	stage = new UI::Stage();
 	level = new LevelManager();
 	
-	mainCam = new Viewport("main", -100);
+	viewports = new ViewportHandler();
 
 	indexBuffer = new GLuint[_config->MAXSPRITES * 6];
 	for (int i = 0; i < _config->MAXSPRITES; ++i) {
@@ -72,6 +72,7 @@ void Main::intialize(MainConfig* _config) {
 	glDepthFunc(GL_LESS);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
+	glEnable(GL_SCISSOR_TEST);
 
 	getAssetManager()->addAsset("assets/fonts/default.ttf", Type::font);
 	getAssetManager()->load("assets/fonts/default.ttf");
@@ -169,8 +170,8 @@ World* Main::getWorld() {
 
 //---------------------- Viewport ----------------------\\
 
-Viewport* Main::getViewport() {
-	return instance->mainCam;
+ViewportHandler* Main::getViewports() {
+	return instance->viewports;
 }
 
 //---------------------- AI ----------------------\\

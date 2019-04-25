@@ -40,6 +40,8 @@
 
 #include <Box2D/Box2D.h>
 
+#include <AABB.hpp>
+
 namespace Heerbann {
 
 	using namespace Heerbann;
@@ -64,19 +66,26 @@ namespace Heerbann {
 #define TYP_BOX 3.f
 #define TYP_FONT_STATIC 4.f
 
-#define Veci2 glm::ivec2
-#define Veci3 glm::ivec3
+typedef unsigned int uint;
 
-#define Vec2 glm::vec2
-#define Vec3 glm::vec3
-#define Vec4 glm::vec4
+typedef glm::ivec2 Vec2i;
+typedef glm::ivec3 Vec3i;
+typedef glm::ivec4 Vec4i;
+
+typedef glm::uvec2 Vec2ui;
+typedef glm::uvec3 Vec3ui;
+typedef glm::uvec4 Vec4ui;
+
+typedef glm::vec2 Vec2;
+typedef glm::vec3 Vec3;
+typedef glm::vec4 Vec4;
 
 #define UVX Vec3(1.f, 0.f, 0.f)
 #define UVY Vec3(0.f, 1.f, 0.f)
 #define UVZ Vec3(0.f, 0.f, 1.f)
 
-#define Mat3 glm::mat3 
-#define Mat4 glm::mat4 
+typedef glm::mat3 Mat3;
+typedef glm::mat4 Mat4;
 
 #define M00(X) (X[0][0])
 #define M01(X) (X[0][1])
@@ -98,17 +107,18 @@ namespace Heerbann {
 #define M32(X) (X[3][2])
 #define M33(X) (X[3][3])
 
-#define Quat glm::quat
+typedef glm::quat Quat;
 
 #define CRS(X, Y) (glm::cross((X), (Y)))
 #define DOT(X, Y) (glm::dot((X), (Y)))
 #define DIS(X, Y) (glm::distance((X), (Y)))
-#define LEN(X) (glm::length((X))
+#define LEN(X) (glm::length((X)))
 #define NOR(X) (glm::normalize((X)))
 
 #define DET(X) (glm::determinant((X)))
 #define INV(X) (glm::inverse((X)))
 #define TR(X) (glm::transpose((X)))
+#define ToArray(X) (glm::value_ptr((X)))
 
 /*returns an identity 4x4 matrix*/
 #define IDENTITY glm::identity<Mat4>()
@@ -211,9 +221,13 @@ namespace Heerbann {
 #define M_Font Heerbann::App::Get()->getFontCache()
 #define M_Stage Heerbann::App::Get()->getStage()
 #define M_Random Heerbann::App::Get()->getRandom()
-#define M_View Heerbann::App::Get()->getViewport()
+#define M_Views Heerbann::App::Get()->getViewports()
 #define M_World Heerbann::App::Get()->getWorld()
 #define M_Level Heerbann::App::Get()->getLevel()
+#define M_Context Heerbann::App::Get()->getContext()
+#define M_Delta Heerbann::App::Get()->deltaTime()
+
+#define INTERPOLATE(START, END, T) ((START) + ((END) - (START)) * (T))
 
 
 	namespace App {
@@ -294,12 +308,21 @@ namespace Heerbann {
 	class WorldBuilder;
 
 	//CameraUtils
-	class Viewport;
-	class Box2dRenderer;
+	enum ViewType : int;
+	class ViewportHandler;
+	class View;
 	class Camera;
 	class OrthographicCamera;
 	class PerspectiveCamera;
 	class AxisWidgetCamera;
+
+	//Gdx
+	class Environment;
+	struct PointLight;
+	struct SpotLight;
+	struct DirectionalLight;
+	struct Material;
+	struct Drawable;
 
 	struct MainConfig {
 		unsigned int MAXSPRITES = 1000;
@@ -317,7 +340,7 @@ namespace Heerbann {
 			sf::RenderWindow* context;
 			InputMultiplexer* inputListener;
 			World* world;
-			Viewport* mainCam;
+			ViewportHandler* viewports;
 			AssetManager* assets;
 			UI::Stage* stage;
 			LevelManager* level;
@@ -348,6 +371,8 @@ namespace Heerbann {
 			static Main* getInstance();
 
 			static GLuint* getIndexBuffer();
+
+			float deltaTime();
 
 			//---------------------- AI ----------------------\\
 
@@ -398,7 +423,7 @@ namespace Heerbann {
 
 			//---------------------- Viewport ----------------------\\
 
-			static Viewport* getViewport();
+			static ViewportHandler* getViewports();
 
 			//---------------------- Assets ----------------------\\
 

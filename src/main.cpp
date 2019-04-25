@@ -1,6 +1,5 @@
 
 #include "MainStruct.hpp"
-#include <iostream>
 
 #include "InputMultiplexer.hpp"
 #include "CameraUtils.hpp"
@@ -12,59 +11,60 @@
 
 using namespace Heerbann;
 
-Main* Main::instance = new Main();
+App::Main* App::Main::instance = new App::Main();
 
 int main() {
+	
+
+	MainConfig* config = new MainConfig();
+	config->name = "Rehmetzel a0.3";
+	config->windowWidth = 1980u;
+	config->windowHeight = 1080u;
+
+	M_Main->intialize(config);
+
 	bool close = false;
-
-	Main::get()->intialize();
-
-	Main::setSize(1920, 1080);
-	Main::getViewport()->clearColor = sf::Color::Black;
-	Main::getViewport()->setSize(1920, 1080);
-
 	InputEntry* entry = new InputEntry();
 	entry->closeEvent = [&]()->bool {
 		close = true;
 		return true;
 	};
 	entry->resizeEvent = [&](int _width, int _height)->bool {
-		Main::getViewport()->setSize(_width, _height);
+		//TODO Main::getViewport()->setSize(_width, _height);
 		return false;
 	};
-	Main::getInput()->add("closeListener", entry);
+	M_Input->add("closeListener", entry);
 
-	Main::getViewport()->apply(*Main::getContext(), 1);
-	Main::getContext()->display();
+	//Main::getViewport()->apply(*Main::getContext(), 1);
+	M_Context->display();
 
-	Box2dRenderer boxRenderer;
 	sf::Event event;
-	while (Main::getContext()->isOpen()) {
+	while (M_Context->isOpen()) {
 		if (close) {
-			Main::getContext()->close();
-			delete Main::get();
+			M_Context->close();
+			delete M_Main;
 			return 0;
 		}
 		try {
 			auto start = std::chrono::system_clock::now();
-			Main::get()->update();
-			while (Main::getContext()->pollEvent(event))
-				Main::getInput()->fire(event);
+			M_Main->update();
+			while (M_Context->pollEvent(event))
+				M_Input->fire(event);
 
 			const float delta = 1.f / 60.f;
 
-			Main::getWorld()->update(delta);
+			M_World->update(delta);
 			//update & apply
-			Main::getViewport()->apply(*Main::getContext(), delta);
+			Main::getViewport()->apply(*M_Context, delta);
 
-			Main::getLevel()->update(delta);
-			Main::getLevel()->draw(delta, Main::getBatch());
+			M_Level->update(delta);
+			M_Level->draw(delta, M_Batch);
 
-			Main::getStage()->act();
-			Main::getStage()->draw(Main::getBatch());
+			M_Stage->act();
+			M_Stage->draw(M_Batch);
 
-			Main::getBatch()->build();
-			Main::getBatch()->drawToScreen(Main::getViewport()->cam.getTransform());
+			M_Context->build();
+			M_Context->drawToScreen(Main::getViewport()->cam.getTransform());
 
 			//boxRenderer.draw(delta, *Main::getContext());
 			//Main::getWorld()->debugDraw();
@@ -79,7 +79,7 @@ int main() {
 		} catch (...) {
 			std::cerr << "Unknown failure occurred. Possible memory corruption" << std::endl;
 		}
-		Main::getContext()->display();
+		M_Context->display();
 	}
 	return 0;
 }
