@@ -25,12 +25,14 @@
 #include <random>
 #include <sstream>
 #include <tuple>
+#include <ctime>
 #include <chrono>
 #include <stdexcept>
 #include <exception>
 #include <typeinfo>
 #include <regex>
 #include <windows.h>
+#include <stack>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -39,8 +41,6 @@
 #include <assimp/DefaultLogger.hpp>
 
 #include <Box2D/Box2D.h>
-
-#include <AABB.hpp>
 
 namespace Heerbann {
 
@@ -212,7 +212,7 @@ typedef glm::quat Quat;
 #define M_WIDTH Heerbann::App::Get()->width()
 #define M_HEIGHT Heerbann::App::Get()->height()
 #define M_ID Heerbann::App::Util::getId()
-#define M_FloatBits(X) Heerbann::App::Util::toFloatBits((X))
+#define M_FloatBits(X) (Heerbann::App::Util::toFloatBits((X)))
 
 #define M_Main Heerbann::App::Get()
 #define M_Asset Heerbann::App::Get()->getAssetManager()
@@ -221,13 +221,22 @@ typedef glm::quat Quat;
 #define M_Font Heerbann::App::Get()->getFontCache()
 #define M_Stage Heerbann::App::Get()->getStage()
 #define M_Random Heerbann::App::Get()->getRandom()
-#define M_Views Heerbann::App::Get()->getViewports()
+#define M_View Heerbann::App::Get()->getViewport()
 #define M_World Heerbann::App::Get()->getWorld()
 #define M_Level Heerbann::App::Get()->getLevel()
 #define M_Context Heerbann::App::Get()->getContext()
-#define M_Delta Heerbann::App::Get()->deltaTime()
+#define M_Timer Heerbann::App::Get()->getTimer()
+#define M_Logger Heerbann::App::Get()->getLogger()
 
-#define INTERPOLATE(START, END, T) ((START) + ((END) - (START)) * (T))
+#define DeltaTime Heerbann::App::Get()->deltaTime()
+
+#define TIMESTAMP Heerbann::App::Get()->getTimer()->timeStamp()
+#define TIME_START Heerbann::App::Get()->getTimer()->start()
+#define TIME_END Heerbann::App::Get()->getTimer()->end()
+
+#define LOG(X) (Heerbann::App::Get()->getLogger((X)));
+
+#define LERP(START, END, T) ((START) + ((END) - (START)) * (T))
 
 
 	namespace App {
@@ -248,6 +257,8 @@ typedef glm::quat Quat;
 	struct Plane;
 	struct BoundingBox;
 	struct Frustum;
+	struct AABBTreeNode;
+	class AABBTree;
 
 	//UI
 	namespace UI {
@@ -318,11 +329,18 @@ typedef glm::quat Quat;
 
 	//Gdx
 	class Environment;
+	struct Light;
 	struct PointLight;
 	struct SpotLight;
 	struct DirectionalLight;
 	struct Material;
+	enum DrawableType : int;
 	struct Drawable;
+
+	//TimeLog
+	class Logger;
+	struct TimeStamp;
+	class Timer;
 
 	struct MainConfig {
 		unsigned int MAXSPRITES = 1000;
@@ -340,13 +358,16 @@ typedef glm::quat Quat;
 			sf::RenderWindow* context;
 			InputMultiplexer* inputListener;
 			World* world;
-			ViewportHandler* viewports;
+			//ViewportHandler* viewports;
 			AssetManager* assets;
 			UI::Stage* stage;
 			LevelManager* level;
 			SpriteBatch* batch;
 			Text::FontCache* cache;
 			sf::Font* defaultFont;
+			ViewportHandler* viewport;
+			Logger* logger;
+			Timer* timer;
 
 			Main();
 
@@ -409,6 +430,11 @@ typedef glm::quat Quat;
 				return getInstance()->getContext()->getSize().y;
 			};
 
+			//---------------------- TIME & Logger ----------------------\\
+
+			static Timer* getTimer();
+			static Logger* getLogger();
+
 			//---------------------- Batch ----------------------\\
 
 			static SpriteBatch* getBatch();
@@ -421,9 +447,10 @@ typedef glm::quat Quat;
 
 			static World* getWorld();
 
+		
 			//---------------------- Viewport ----------------------\\
 
-			static ViewportHandler* getViewports();
+			static ViewportHandler * getViewport();
 
 			//---------------------- Assets ----------------------\\
 

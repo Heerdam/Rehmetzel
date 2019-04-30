@@ -108,7 +108,7 @@ void View::setInteractive(bool _setActive) {
 							return;
 						}
 						auto job = reinterpret_cast<OrthoPanJob*>(_entry);
-						job->cam->translate(INTERPOLATE((job->dir*job->speed), Vec2(0.f, 0.f), (job->t += M_Delta)));
+						job->cam->translate(LERP((job->dir*job->speed), Vec2(0.f, 0.f), (job->t += DeltaTime)));
 						if (!(job->t > 1.f || EQUAL(job->t, 1.f)))
 							M_Main->addJob(job->func, job);
 						else delete _entry;

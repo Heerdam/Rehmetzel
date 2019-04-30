@@ -10,6 +10,7 @@
 #include "Utils.hpp"
 #include "TextUtil.hpp"
 #include "AI.hpp"
+#include "TimeLog.hpp"
 
 using namespace Heerbann;
 using namespace App;
@@ -43,8 +44,10 @@ void Main::intialize(MainConfig* _config) {
 	assets = new AssetManager();
 	stage = new UI::Stage();
 	level = new LevelManager();
+	timer = new Timer();
+	logger = new Logger();
 	
-	viewports = new ViewportHandler();
+	viewport = new ViewportHandler();
 
 	indexBuffer = new GLuint[_config->MAXSPRITES * 6];
 	for (int i = 0; i < _config->MAXSPRITES; ++i) {
@@ -154,6 +157,14 @@ void Main::setSize(unsigned int _width, unsigned int _height) {
 
 //---------------------- Inputs ----------------------\\
 
+Timer* App::Main::getTimer() {
+	return getInstance()->timer;
+}
+
+Logger* App::Main::getLogger() {
+	return getInstance()->logger;
+}
+
 SpriteBatch* Main::getBatch() {
 	return getInstance()->batch;
 }
@@ -170,8 +181,8 @@ World* Main::getWorld() {
 
 //---------------------- Viewport ----------------------\\
 
-ViewportHandler* Main::getViewports() {
-	return instance->viewports;
+ViewportHandler* Main::getViewport() {
+	return instance->viewport;
 }
 
 //---------------------- AI ----------------------\\
@@ -186,6 +197,10 @@ GLuint* Main::getIndexBuffer() {
 	return getInstance()->indexBuffer;
 }
 
+float App::Main::deltaTime() {
+	return 0.0f;
+}
+
 
 Text::FontCache* Main::getFontCache() {
 	return getInstance()->cache;
@@ -196,6 +211,7 @@ sf::Font* Main::getDefaultFont() {
 }
 
 void Main::intializeFont(sf::Font* _font) {
+	/*
 	//basic latins
 	for (uint32 i = 32; i <= 126; ++i) {
 		_font->getGlyph(i, SMALLFONTSIZE, false);
@@ -216,6 +232,7 @@ void Main::intializeFont(sf::Font* _font) {
 		_font->getGlyph(i, MEDIUMFONTSIZE, true);
 		_font->getGlyph(i, BIGFONTSIZE, true);
 	}
+	*/
 }
 
 //---------------------- Stage ----------------------\\

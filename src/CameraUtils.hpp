@@ -34,7 +34,7 @@ namespace Heerbann {
 	// no camera without viewport
 	// all viewport held in some handler
 
-    struct View{
+    struct View {
 
 		sf::Mouse::Button panButton = sf::Mouse::Button::Right;
 		float panXModifier = 0.1f;

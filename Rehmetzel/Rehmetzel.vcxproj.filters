@@ -57,6 +57,9 @@
     <ClInclude Include="..\src\Gdx.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\TimeLog.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\InputMultiplexer.cpp">
@@ -104,6 +107,9 @@
     <ClCompile Include="..\src\Gdx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\TimeLog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\bin\assets\shader\bg_shader.frag">
@@ -143,6 +149,18 @@
       <Filter>Resource Files</Filter>
     </None>
     <None Include="..\bin\assets\shader\model_shader.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\lightgrid_shader.comp">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\LightCullShader.comp">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\forwardplus_shader.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\forwardplus_shader.frag">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

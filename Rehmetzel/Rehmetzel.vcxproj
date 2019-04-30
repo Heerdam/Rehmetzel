@@ -148,6 +148,7 @@
     <ClInclude Include="..\src\MapGenerator.h" />
     <ClInclude Include="..\src\Math.hpp" />
     <ClInclude Include="..\src\TextUtil.hpp" />
+    <ClInclude Include="..\src\TimeLog.hpp" />
     <ClInclude Include="..\src\UI.hpp" />
     <ClInclude Include="..\src\Utils.hpp" />
     <ClInclude Include="..\src\World.hpp" />
@@ -165,6 +166,7 @@
     <ClCompile Include="..\src\MainStruct.cpp" />
     <ClCompile Include="..\src\Math.cpp" />
     <ClCompile Include="..\src\TextUtil.cpp" />
+    <ClCompile Include="..\src\TimeLog.cpp" />
     <ClCompile Include="..\src\UI.cpp" />
     <ClCompile Include="..\src\Utils.cpp" />
     <ClCompile Include="..\src\World.cpp" />
@@ -178,6 +180,10 @@
     <None Include="..\bin\assets\shader\bg_shader.frag" />
     <None Include="..\bin\assets\shader\bg_shader.geom" />
     <None Include="..\bin\assets\shader\bg_shader.vert" />
+    <None Include="..\bin\assets\shader\forwardplus_shader.frag" />
+    <None Include="..\bin\assets\shader\forwardplus_shader.vert" />
+    <None Include="..\bin\assets\shader\LightCullShader.comp" />
+    <None Include="..\bin\assets\shader\lightgrid_shader.comp" />
     <None Include="..\bin\assets\shader\model_shader.frag" />
     <None Include="..\bin\assets\shader\model_shader.vert" />
     <None Include="..\bin\assets\shader\tree_shader.frag" />
