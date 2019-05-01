@@ -46,26 +46,6 @@ namespace Heerbann {
 
 	using namespace Heerbann;
 
-//diameter of a cell of the background
-//#define BG_CELLDIAMETER 100
-
-//how many cells a background VAO holds
-//#define BG_CELLCOUNT 50
-
-//#define SMALLFONTSIZE 18
-//#define MEDIUMFONTSIZE 24
-//#define BIGFONTSIZE 50
-
-//how many sprites the spritebatch holds
-//#define TEXTURECOUNT 15
-
-#define VERTEXSIZE 8 //pos + index + typ + uv + color1 + color2
-#define TYP_SPRITE 0.f
-#define TYP_FONT 1.f
-#define TYP_LINE 2.f
-#define TYP_BOX 3.f
-#define TYP_FONT_STATIC 4.f
-
 typedef unsigned int uint;
 
 typedef glm::ivec2 Vec2i;
@@ -227,8 +207,10 @@ typedef glm::quat Quat;
 #define M_Context Heerbann::App::Get()->getContext()
 #define M_Timer Heerbann::App::Get()->getTimer()
 #define M_Logger Heerbann::App::Get()->getLogger()
+#define M_Shape Heerbann::App::Get()->getShape()
 
 #define DeltaTime Heerbann::App::Get()->deltaTime()
+#define UniformBuffer Heerbann::App::Get()->uniformBuffer()
 
 #define TIMESTAMP Heerbann::App::Get()->getTimer()->timeStamp()
 #define TIME_START Heerbann::App::Get()->getTimer()->start()
@@ -368,6 +350,7 @@ typedef glm::quat Quat;
 			ViewportHandler* viewport;
 			Logger* logger;
 			Timer* timer;
+			ShapeRenderer* shape;
 
 			Main();
 
@@ -394,6 +377,7 @@ typedef glm::quat Quat;
 			static GLuint* getIndexBuffer();
 
 			float deltaTime();
+			GLuint uniformBuffer();
 
 			//---------------------- AI ----------------------\\
 
@@ -429,6 +413,8 @@ typedef glm::quat Quat;
 			inline static unsigned int height() {
 				return getInstance()->getContext()->getSize().y;
 			};
+
+			static ShapeRenderer* getShape();
 
 			//---------------------- TIME & Logger ----------------------\\
 

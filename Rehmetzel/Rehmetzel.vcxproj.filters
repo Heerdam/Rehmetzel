@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Resource Files\SpriteBatch">
+      <UniqueIdentifier>{1cfb012a-ffc3-48f9-a7a4-3390e65b17a0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\CameraUtils.hpp">
@@ -162,6 +165,18 @@
     </None>
     <None Include="..\bin\assets\shader\forwardplus_shader.frag">
       <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\spritebatch\sb_sprite.vert">
+      <Filter>Resource Files\SpriteBatch</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\spritebatch\sb_sprite.frag">
+      <Filter>Resource Files\SpriteBatch</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\spritebatch\sb_font.vert">
+      <Filter>Resource Files\SpriteBatch</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\spritebatch\sb_font.frag">
+      <Filter>Resource Files\SpriteBatch</Filter>
     </None>
   </ItemGroup>
 </Project>

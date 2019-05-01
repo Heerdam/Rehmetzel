@@ -186,6 +186,10 @@
     <None Include="..\bin\assets\shader\lightgrid_shader.comp" />
     <None Include="..\bin\assets\shader\model_shader.frag" />
     <None Include="..\bin\assets\shader\model_shader.vert" />
+    <None Include="..\bin\assets\shader\spritebatch\sb_font.frag" />
+    <None Include="..\bin\assets\shader\spritebatch\sb_font.vert" />
+    <None Include="..\bin\assets\shader\spritebatch\sb_sprite.frag" />
+    <None Include="..\bin\assets\shader\spritebatch\sb_sprite.vert" />
     <None Include="..\bin\assets\shader\tree_shader.frag" />
     <None Include="..\bin\assets\shader\tree_shader.vert" />
     <None Include="..\README.md" />

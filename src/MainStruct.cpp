@@ -157,6 +157,10 @@ void Main::setSize(unsigned int _width, unsigned int _height) {
 
 //---------------------- Inputs ----------------------\\
 
+ShapeRenderer* App::Main::getShape() {
+	return getInstance()->shape;
+}
+
 Timer* App::Main::getTimer() {
 	return getInstance()->timer;
 }

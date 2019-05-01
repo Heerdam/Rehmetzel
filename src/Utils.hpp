@@ -75,105 +75,61 @@ namespace Heerbann {
 		void DrawMouseJoint(b2Vec2&, b2Vec2&, const b2Color&, const b2Color&);
 	};
 
-	struct TextureAtlas;
-	class FontCache;
-
 	class SpriteBatch {
 
-		friend Text::FontCache;
-		friend Text::TextBlock;
-
 		enum Type {
-			sprite, font, static_font
+			sprite, font
 		};
 
 		struct Item {
-			Item(Type _type, void* _data) : type(_type), data(_data) {};
 			Type type;
+			uint texIndex;
+			sf::Color color;
+			Vec4 scissors;
 			void* data;
 		};
 
-		struct DrawJob {
-			Type type = Type::sprite;
-			unsigned int count = 0;
-			unsigned int offset = 0;
-			Text::StaticTextBlock* block;
-		};
+		const uint VERTEXSIZE = 2 + 3 + 1 + 4; //pos, uv, col, scissor
 
-		//used in work thread
-		std::vector<DrawJob*> renderCache;
-		std::queue<DrawJob*> renderQueue;
+		std::vector<std::tuple<GLuint, float*>> buffers;
+		uint currentIndex = 0;
+		std::atomic<uint> spriteCount = 0;
+		uint maxSpritesInBatch = 0;
 
-		std::condition_variable workThreadCv;
-		std::condition_variable mainThreadCv;
-
-		const std::string fragment;
+		std::vector<GLuint> textures;
+		std::unordered_map<uint, GLuint> textureMap;
 
 		ShaderProgram* shader;
 
-		int renderCalls = 0;
-		int totalRenderCalls = 0;
-		int maxSpritesInBatch = 0;
+		std::vector<std::thread*> workthreads;
 
-		std::atomic<int> spriteCount = 0;
+		void addSprite(const sf::FloatRect&, const sf::FloatRect&, const Vec2&, uint, const sf::Color& = sf::Color::White, const Vec4& = Vec4(0.f, 0.f, M_WIDTH, M_HEIGHT));
 
-		std::atomic<bool> terminate = false;
-		std::atomic<bool> locked = false;
-		bool isBlending = true;
-		bool isDirty = true;
-
-		sf::Color color = sf::Color::White;
-
-		std::atomic_bool threadStatus[4]{ true, true, true, true };
-		std::thread* workthread[4];
-		std::vector<std::vector<Item*>> workCache = std::vector<std::vector<Item*>>(4);
-
-		std::vector<GLuint> texLoc;
-		std::vector<const sf::Texture*> texCache;
-		std::unordered_map<GLuint, int> textures;
-
-		void buildData(int);
-
-		GLuint vao, vbo, index;
-		float* data;
-		int vertexCount;
-
-		GLuint camLocation;
-		GLuint widgetPositionLocation;
-
-		void recompile(int);
-		void compressDrawJobs(std::vector<DrawJob*>&);
 
 		void draw(Item*);
+		void draw(void*, GLuint, sf::Color, const Vec4&);
+
+		bool locked = false;
 
 	public:
-		SpriteBatch(int, int);
+		SpriteBatch(uint);
 		~SpriteBatch();
 
 		//builds the buffer asynchronous
 		void build();
 
 		//draws the batch 
-		void drawToScreen(const sf::Transform&);
+		void drawToScreen(GLuint);
 
-		inline void setColor(sf::Color _color) {
-			color = _color;
-		};
-
-		//add to renderqueue
+		//add to renderqueue		
+		void draw(sf::Sprite*, const Vec4&);
+		void draw(sf::Sprite*, sf::Color);
+		void draw(sf::Sprite*, sf::Color, const Vec4&);
 		void draw(sf::Sprite*);
+
 		void draw(Text::TextBlock*);
-		void draw(Text::StaticTextBlock*);
 
-		inline bool isDrawing() {
-			return locked;
-		}
-
-		void addTexture(TextureAtlas*);
-		void addTexture(const sf::Texture*);
-		//for fonts textures needs to be pre initialized or manually added later
-		void addTexture(sf::Font*);
-		void addTexture(sf::Sprite*);
+		uint addTexture(GLuint);
 	};
 
 	class ShaderProgram {
@@ -193,44 +149,62 @@ namespace Heerbann {
 
 	class ShapeRenderer {
 
-		sf::Color color = sf::Color::Black;
+		const uint vertexSize = 3 + 1;
+
+		ShaderProgram* shader;
+
 		Camera* cam = nullptr;
+
+		GLuint vao, vbo;
+		uint vertexCount = 0;
+
+		float* dataCache;
+
+		void ver(const Vec3&, const sf::Color& = sf::Color::Black);
+		void ver(float, float, float, float);
 
 	public:
 
 		float defaultRectLineWidth = 0.75f;
 
-		//sphere
-		unsigned int sectorCount = 24u;
-		unsigned int stackCount = 10u;
-
-		//circle
-		unsigned int segments = 24u;
-
 		void begin(Camera*);
 		void end();
-		void setColor(sf::Color);
+		void flush();
 		
-		void x(const Vec3&, const Vec3&, float = 25.f);
-		void arrow(const Vec3&, const Vec3&, float);
-		void vertex(const Vec3&);
-		void vertex(const std::vector<Vec3>&);
-		void triangle(const Vec3&, const Vec3&, const Vec3&);
-		void triangle(const std::vector<std::tuple<Vec3, Vec3, Vec3>>&);
-		void line(const Vec3&, const Vec3&);
-		void chain(const std::vector<Vec3>&);
-		void loop(const std::vector<Vec3>&);
-		void circle(const Vec3&, const Vec3&, float);
-		void sphere(const Vec3&, float);
-		void aabb(const Vec3&, float);
-		void aabb(const Vec3&, const Vec3&);
-		void polygon(const std::vector<Vec3>&);
+		void line(const Vec3&, const Vec3&, const sf::Color&);
+		void line(const Vec3&, const sf::Color&, const Vec3&, const sf::Color&);
 
-		void draw(Ray*);
-		void draw(BoundingBox*);
-		void draw(Plane*);
-		void draw(Frustum*);
-		void draw(Camera*);
+		void chain(const std::vector<Vec3>&, const sf::Color&);
+		void chain(const std::vector<std::tuple<Vec3, sf::Color>>&);
+
+		void loop(const std::vector<Vec3>&, const sf::Color&);
+		void loop(const std::vector<std::tuple<Vec3, sf::Color>>&);
+
+		void vertex(const Vec3&, const sf::Color&);
+		void vertex(const std::vector<std::tuple<Vec3, sf::Color>>&);
+
+		void triangle(const Vec3&, const Vec3&, const Vec3&, const sf::Color&);
+		void triangle(const Vec3&, const sf::Color&, const Vec3&, const sf::Color&, const Vec3&, const sf::Color&);
+		void triangle(const std::vector<std::tuple<Vec3, Vec3, Vec3>>&, const sf::Color&);
+		void triangle(const std::vector<std::tuple<Vec3, Vec3, Vec3, sf::Color>>&);
+		void triangle(const std::vector<std::tuple<Vec3, sf::Color, Vec3, sf::Color, Vec3, sf::Color >>&);
+
+		void aabb(const Vec3&, float, const sf::Color&);
+		void aabb(const Vec3&, const Vec3&, const sf::Color&);
+
+		void circleXY(const Vec2&, float, const sf::Color&, uint = 24u);
+
+		void sphere(const Vec3&, float, const sf::Color&, uint = 24u, uint = 10u);
+		
+		void polygon(const std::vector<Vec3>&, const sf::Color&);
+
+		void draw(Ray*, const sf::Color& = sf::Color::Black);
+		void draw(BoundingBox*, const sf::Color& = sf::Color::Black);
+		void draw(Plane*, const sf::Color& = sf::Color::Black);
+		void draw(Frustum*, Camera*, const sf::Color& = sf::Color::Black);
+		void draw(Camera*, const sf::Color& = sf::Color::Black);
+
+		void string(const std::string&, int, int, const sf::Color&);
 
 	};
 
