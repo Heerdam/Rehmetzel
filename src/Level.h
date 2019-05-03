@@ -91,8 +91,6 @@ namespace Heerbann {
 
 		Text::TextBlock* testblock;
 
-		StaticLabel* label;
-
 		void preLoad(AssetManager*) override;
 		void load(AssetManager*) override;
 		void postLoad(AssetManager*) override;

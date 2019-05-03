@@ -31,18 +31,7 @@ namespace Heerbann {
 
 		class Label : public Actor {
 
-		};
-
-		class StaticLabel : public Actor {
-
-			Text::StaticTextBlock* block;
-
-		public:
-			StaticLabel(std::string, std::wstring, float, Text::Align);
-			bool isLoaded();
-			void setPosition(Vec2);
-			void draw(SpriteBatch*) override;
-		};
+		};	
 
 	}
 }

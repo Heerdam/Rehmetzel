@@ -18,49 +18,46 @@ Level::Level(std::string _id) : id(_id) {
 }
 
 void LevelManager::initialize() {
-	auto assets = Main::getAssetManager();
-	assets->addLevel("PreLoadLevel", new PreLoadLevel());
-	assets->addLevel("LoadingScreenLevel", new LoadingScreenLevel());
-	assets->addLevel("MainMenuLevel", new MainMenuLevel());
-	assets->addLevel("TestWorldLevel", new TestWorldLevel());
+	M_Asset->addLevel("PreLoadLevel", new PreLoadLevel());
+	M_Asset->addLevel("LoadingScreenLevel", new LoadingScreenLevel());
+	M_Asset->addLevel("MainMenuLevel", new MainMenuLevel());
+	M_Asset->addLevel("TestWorldLevel", new TestWorldLevel());
 
 	queueLevelToLoad("PreLoadLevel");
 };
 
 void LevelManager::loadLevel(Level* _level) {
-	auto assets = Main::getAssetManager();
-	_level->preLoad(assets);
+	_level->preLoad(M_Asset);
 	for (auto a : _level->assetToLoad) {
-		if (!assets->exists(a->id))
-			assets->addAsset(a);
-		assets->load(a->id);
+		if (!M_Asset->exists(a->id))
+			M_Asset->addAsset(a);
+		M_Asset->load(a->id);
 	}		
 	for (auto a : _level->assetToUnload) {
-		if (assets->exists(a->id))
-			assets->unload(a->id);
+		if (M_Asset->exists(a->id))
+			M_Asset->unload(a->id);
 	}
-	assets->loadLevel(_level->id);
+	M_Asset->loadLevel(_level->id);
 	if (_level->neededLoadingState == State::discrete && _level->lockIfDiscrete)
-		assets->finish();	
+		M_Asset->finish();
 	_level->assetToLoad.clear();
 	_level->assetToUnload.clear();
 	activeLevels.emplace_back(_level);
-	_level->postLoad(assets);
+	_level->postLoad(M_Asset);
 }
 
 void LevelManager::unloadLevel(Level* _level) {
-	auto assets = Main::getAssetManager();
-	_level->preUnload(assets);
+	_level->preUnload(M_Asset);
 	for (auto a : _level->assetToLoad) {
-		if (!assets->exists(a->id))
-			assets->addAsset(a);
-		assets->load(a->id);
+		if (!M_Asset->exists(a->id))
+			M_Asset->addAsset(a);
+		M_Asset->load(a->id);
 	}
 	for (auto a : _level->assetToUnload) {
-		if (assets->exists(a->id))
-			assets->unload(a->id);
+		if (M_Asset->exists(a->id))
+			M_Asset->unload(a->id);
 	}
-	assets->unloadLevel(_level->id);
+	M_Asset->unloadLevel(_level->id);
 	_level->assetToLoad.clear();
 	_level->assetToUnload.clear();
 	for (auto it = activeLevels.begin(); it != activeLevels.end(); ++it)
@@ -106,14 +103,12 @@ void LevelManager::draw(float _deltaTime, SpriteBatch* _batch) {
 }
 
 void LevelManager::queueLevelToLoad(std::string _id) {
-	auto assets = Main::getAssetManager();
-	Level* level = assets->getLevel(_id);
+	Level* level = M_Asset->getLevel(_id);
 	queueLevelToLoad(level);
 }
 
 void LevelManager::queueLevelToUnLoad(std::string _id) {
-	auto assets = Main::getAssetManager();
-	Level* level = assets->getLevel(_id);
+	Level* level = M_Asset->getLevel(_id);
 	queueLevelToUnLoad(level);
 }
 
@@ -129,32 +124,36 @@ void LevelManager::queueLevelToUnLoad(Level* _level) {
 
 void PreLoadLevel::preLoad(AssetManager* _asset) {
 	//assetToLoad.emplace_back(new LoadItem("assets/fonts/black.ttf", Type::font));
-	assetToLoad.emplace_back(new LoadItem("assets/tex/Forest_soil_diffuse.png", Type::texture_png));
-	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestCliff_basecolor.png", Type::texture_png));
-	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestDirt_diffuse.png", Type::texture_png));
+	//assetToLoad.emplace_back(new LoadItem("assets/tex/Forest_soil_diffuse.png", Type::texture_png));
+	//assetToLoad.emplace_back(new LoadItem("assets/tex/ForestCliff_basecolor.png", Type::texture_png));
+	//assetToLoad.emplace_back(new LoadItem("assets/tex/ForestDirt_diffuse.png", Type::texture_png));
 
-	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestGrass_basecolor.png", Type::texture_png));
-	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestMoss_basecolor.png", Type::texture_png));
-	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestMud_baseColor.png", Type::texture_png));
+	//assetToLoad.emplace_back(new LoadItem("assets/tex/ForestGrass_basecolor.png", Type::texture_png));
+	//assetToLoad.emplace_back(new LoadItem("assets/tex/ForestMoss_basecolor.png", Type::texture_png));
+	//assetToLoad.emplace_back(new LoadItem("assets/tex/ForestMud_baseColor.png", Type::texture_png));
 
-	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestRoad_diffuse.png", Type::texture_png));
-	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestRock_basecolor.png", Type::texture_png));
-	assetToLoad.emplace_back(new LoadItem("assets/tex/ForestWetMud_baseColor.png", Type::texture_png));
+	//assetToLoad.emplace_back(new LoadItem("assets/tex/ForestRoad_diffuse.png", Type::texture_png));
+	//assetToLoad.emplace_back(new LoadItem("assets/tex/ForestRock_basecolor.png", Type::texture_png));
+	//assetToLoad.emplace_back(new LoadItem("assets/tex/ForestWetMud_baseColor.png", Type::texture_png));
 
-	assetToLoad.emplace_back(new LoadItem("assets/shader/bg_shader", Type::shader));
-	assetToLoad.emplace_back(new LoadItem("assets/shader/tree_shader", Type::shader));
-	assetToLoad.emplace_back(new LoadItem("assets/shader/model_shader", Type::shader));
+	//assetToLoad.emplace_back(new LoadItem("assets/shader/bg_shader", Type::shader));
+
+	//assetToLoad.emplace_back(new LoadItem("assets/shader/bg_shader", Type::shader));
+	//assetToLoad.emplace_back(new LoadItem("assets/shader/tree_shader", Type::shader));
+	//assetToLoad.emplace_back(new LoadItem("assets/shader/model_shader", Type::shader));
 	//assetToLoad.emplace_back(new LoadItem("assets/shader/AiTest", Type::shader));
 	//assetToLoad.emplace_back(new LoadItem("assets/shader/AiTestComp", Type::shader));
 
 	//assetToLoad.emplace_back(new LoadItem("assets/trees/trees", Type::atlas));
 
 	assetToLoad.emplace_back(new LoadItem("assets/3d/deer/Model/Deer_old.dae", Type::model));
+	assetToLoad.emplace_back(new LoadItem("assets/shader/simple forward/sb_sf", Type::shader));
+	assetToLoad.emplace_back(new LoadItem("assets/shader/spritebatch/sf_font", Type::shader));
 }
 
 void PreLoadLevel::postLoad(AssetManager* _assets) {
-	Main::getLevel()->queueLevelToUnLoad(this);
-	Main::getLevel()->queueLevelToLoad("LoadingScreenLevel");
+	M_Level->queueLevelToUnLoad(this);
+	M_Level->queueLevelToLoad("LoadingScreenLevel");
 }
 
 //---------------------- LoadingScreenLevel ----------------------\\
@@ -175,8 +174,8 @@ void LoadingScreenLevel::preUnload(AssetManager* _manager) {
 }
 
 void LoadingScreenLevel::postLoad(AssetManager* _asset) {
-	Main::getLevel()->queueLevelToUnLoad(this);
-	Main::getLevel()->queueLevelToLoad("TestWorldLevel");
+	M_Level->queueLevelToUnLoad(this);
+	M_Level->queueLevelToLoad("TestWorldLevel");
 }
 
 void LoadingScreenLevel::unload(AssetManager* _manager) {
@@ -218,57 +217,7 @@ void TestWorldLevel::postLoad(AssetManager* _asset) {
 	//Main::getAI()->create();
 	//bgShader = reinterpret_cast<ShaderProgram*>(Main::getAssetManager()->getAsset("assets/shader/bg_shader")->data);
 	//treeShader = reinterpret_cast<ShaderProgram*>(Main::getAssetManager()->getAsset("assets/shader/tree_shader")->data);
-
-	modelShader = reinterpret_cast<ShaderProgram*>(Main::getAssetManager()->getAsset("assets/shader/model_shader")->data);
-	camPos = glGetUniformLocation(modelShader->getHandle(), "camera");
-	model = static_cast<G3D::Model*>(Main::getAssetManager()->getAsset("assets/3d/deer/Model/Deer_old.dae")->data);
-
-	azimuth = 315.f;
-	altitude = 47.f;
-
-	camera = new PerspectiveCamera();
-	camera->nearPlane = 0.1f;
-	camera->farPlane = 10000.f;	
-	camera->arcball(Vec3(0.f, 0.f, 0.f), azimuth, altitude, 250.f);
-	//camera->update();
-
-	wCam = new AxisWidgetCamera(camera);
-
-	InputEntry* entry = new InputEntry();
-
-	entry->mouseMoveEvent = [&](int _x, int _y)->bool{
-		if (buttonPressed) {
-			azimuth -= static_cast<float>(_x - oldPos.x);
-			altitude += static_cast<float>(_y - oldPos.y);
-			altitude = std::clamp(altitude, 1.f, 179.f);
-			camera->arcball(Vec3(0.f, 0.f, 0.f), azimuth, altitude, 250.f);
-			std::cout << azimuth << "  "<< altitude << std::endl;
-			//camera->arcball(Vec3(0.f, 0.f, 0.f), azimuth, altitude, 500.f);
-			oldPos = sf::Vector2i(_x, _y);
-			
-		}		
-		return false;
-	};
-
-	entry->mouseButtonPressEvent = [&](sf::Mouse::Button _button, int _x, int _y)->bool {
-		if (_button == sf::Mouse::Button::Right) {
-			buttonPressed = true;
-			oldPos = sf::Vector2i(_x, _y);
-		}
-		return false;
-	};
-
-	entry->mouseButtonReleaseEvent = [&](sf::Mouse::Button _button, int _x, int _y)->bool {
-		if (_button == sf::Mouse::Button::Right) {
-			buttonPressed = false;
-			oldPos = sf::Vector2i(_x, _y);
-		}
-		return false;
-	};
-
-	Main::getInput()->add("test", entry);
-
-
+	//TODO
 }
 
 void TestWorldLevel::update(float _delta) {
@@ -281,38 +230,5 @@ void TestWorldLevel::draw(float _delta, SpriteBatch* _batch) {
 	//for (auto v : world->indexVAOs)
 		//v->draw(treeShader);
 	//Main::getAI()->draw(Main::getViewport()->cam.getTransform());
-
-	//azimuth++;
-
-	
-	Mat4 mat;
-	mat.val[0] = 0.6009309f;
-	mat.val[1] = 0.7283804f;
-	mat.val[2] = -0.51728725f;
-	mat.val[3] = -0.51727694f;
-
-	mat.val[4] = 1.01309375E-7f;
-	mat.val[5] = -1.1052365f;
-	mat.val[6] = -0.6818121f;
-	mat.val[7] = -0.6817985f;
-
-	mat.val[8] = 0.6009311f;
-	mat.val[9] = -0.72838f;
-	mat.val[10] = 0.51728725f;
-	mat.val[11] = 0.51727694f;
-
-	mat.val[12] = -3.2419004E-5f;
-	mat.val[13] = -0.0021093967f;
-	mat.val[14] = 249.83058f;
-	mat.val[15] = 250.0256f;
-	
-	
-	modelShader->bind();
-	glUniformMat4fv(camPos, 1, false, mat.val);
-	glBindVertexArray(model->vao);
-	glDrawElements(GL_TRIANGLES, model->indexBufferSize, GL_UNSIGNED_INT, nullptr);
-	modelShader->unbind();
-
-	wCam->update();
 }
 

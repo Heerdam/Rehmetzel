@@ -20,24 +20,6 @@ void UI::Stage::draw(SpriteBatch* _batch) {
 		c->draw(_batch);
 }
 
-UI::StaticLabel::StaticLabel(std::string _id, std::wstring _text, float _size = 500.f, Text::Align _align = Text::Align::right) {
-	block = Main::getFontCache()->addStatic(_id, _text, _size, _align);
-}
-
-bool UI::StaticLabel::isLoaded() {
-	return block == nullptr || block->isLoaded;
-}
-
-void UI::StaticLabel::setPosition(Vec2 _pos) {
-	if (!isLoaded()) return;
-	block->widgetPos = position = _pos;
-}
-
-void UI::StaticLabel::draw(SpriteBatch* _batch) {
-	if (!isLoaded()) return;
-	_batch->draw(block);
-}
-
 const Vec2 & UI::Actor::getPosition() {
 	return position;
 }

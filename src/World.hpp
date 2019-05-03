@@ -18,13 +18,10 @@ namespace Heerbann {
 		bool isLoaded = false;
 		bool isVAO = false;
 
-		const long long id = Main::getId();
+		const long long id = ID;
 		unsigned long lastSeen;
 
 		EntityType type;
-		b2Body* body;
-
-		Root* root; //behaviour
 
 		std::function<void(WorldObject*, float, sf::RenderWindow&)> draw;
 		//finalize loading called on main thread
@@ -37,8 +34,7 @@ namespace Heerbann {
 
 		DebugDraw* debug;
 
-		b2World* bworld = new b2World(b2Vec2(0, -9.8f));
-		std::unordered_map<long, WorldObject*> objects;
+		std::unordered_map<long long, WorldObject*> objects;
 
 		std::queue<WorldObject*> finishQueue;
 
@@ -51,9 +47,7 @@ namespace Heerbann {
 		WorldBuilder* builder;
 		void update(float);
 		void debugDraw();
-		long create(EntityType, Vec2);
-		void raycast(b2RayCastCallback*, const Vec2&, const Vec2&);
-		void AABB(b2QueryCallback*, const Vec2&, const Vec2&);
+		long long create(EntityType, Vec2);
 
 		WorldObject* operator[](long _id) {
 			std::lock_guard<std::mutex> guard(mapLock);
@@ -71,17 +65,7 @@ namespace Heerbann {
 		std::vector<BGVAO*> bgVAOs;
 		std::vector<IndexedVAO*> indexVAOs;
 
-		void finalize(ShaderProgram*, ShaderProgram*);
-	};
-
-	class WorldBuilder : public b2QueryCallback {
-		
-		BGVAO* createBGVAO(Vec2, int);
-		IndexedVAO* createTrees(int, Vec2, Vec2);
-
-	public:
-		//thread safe and stateless
-		WorldOut* build(const WorldBuilderDefinition&);
+		//void finalize(ShaderProgram*, ShaderProgram*);
 	};
 
 }

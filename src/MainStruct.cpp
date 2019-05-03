@@ -50,7 +50,7 @@ void Main::intialize(MainConfig* _config) {
 	viewport = new ViewportHandler();
 
 	indexBuffer = new GLuint[_config->MAXSPRITES * 6];
-	for (int i = 0; i < _config->MAXSPRITES; ++i) {
+	for (uint i = 0; i < _config->MAXSPRITES; ++i) {
 		int k = 0;
 		indexBuffer[i * 6] = 4 * i;
 		indexBuffer[i * 6 + ++k] = 4 * i + 1;
@@ -91,8 +91,6 @@ void Main::intialize(MainConfig* _config) {
 	
 	batch = new SpriteBatch(_config->MAXSPRITES);
 	
-	batch->addTexture(getDefaultFont());
-	
 	level->initialize();
 
 	//aiHandler = new AI::AIHandler();
@@ -111,7 +109,7 @@ std::wstring Util::s2ws(const char* _in) {
  float Util::toFloatBits(int _r, int _g, int _b, int _a) {
 	int color = (((int)(_a) << 24) | ((int)(_b) << 16) | ((int)(_g) << 8) | ((int)(_r)))&0xfeffffff;
 	return *reinterpret_cast<float*>(&color);
-};
+}
 
 std::wstring Util::s2ws(const std::string& _str) {
 	int size_needed = MultiByteToWideChar(CP_UTF8, 0, &_str[0], (int)_str.size(), NULL, 0);

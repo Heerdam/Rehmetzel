@@ -7,7 +7,7 @@ namespace Heerbann {
 	using namespace Heerbann;
 
 	enum Type {
-		texture_png, texture_dds, font, level, atlas, shader, static_text, model
+		texture_png, texture_dds, font, level, atlas, shader, model
 	};
 
 	enum State {
@@ -15,7 +15,7 @@ namespace Heerbann {
 	};
 
 	struct LoadItem {
-		const long long uniqueId = Main::getId();
+		const long long uniqueId = ID;
 		std::atomic<bool> isLocked = false;
 
 		bool isLoaded = false;
@@ -85,9 +85,6 @@ namespace Heerbann {
 
 		void levelLoader(Level* _level);
 		void levelUnloader(Level* _level);
-
-		//creates a static text entry in the fontcache (thread safe)
-		Text::StaticTextBlock* loadStaticText(std::string, std::wstring, float, Text::Align);
 		
 	public:
 

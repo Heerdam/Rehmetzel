@@ -7,7 +7,7 @@
 
 using namespace Heerbann;
 
-bool ViewportHandler::checkBounds(const Vec4ui& _bounds) {
+bool ViewportHandler::checkBounds(const Vec4u& _bounds) {
 	if (currentGLBounds == _bounds) return true;
 	currentGLBounds[0] = _bounds[0];
 	currentGLBounds[1] = _bounds[1];
@@ -16,8 +16,8 @@ bool ViewportHandler::checkBounds(const Vec4ui& _bounds) {
 	return false;
 }
 
-View* ViewportHandler::create(std::string _id, ViewType _type) {
-	View* out = new View(_id, _type, this);
+View* ViewportHandler::create(std::string _id, ViewType _type, bool _uniform) {
+	View* out = new View(_id, _type, this, _uniform);
 	views[_id] = out;
 	return out;
 }
@@ -37,8 +37,8 @@ void View::setViewportBounds(uint _x, uint _y, uint _width, uint _height) {
 	GLBounds[1] = _y;
 	GLBounds[2] = _width;
 	GLBounds[3] = _height;
-	camera->viewportWidth = _width;
-	camera->viewportHeight = _height;
+	camera->viewportWidth = static_cast<float>(_width);
+	camera->viewportHeight = static_cast<float>(_height);
 }
 
 void View::clear(const sf::Color _color) {
@@ -47,7 +47,13 @@ void View::clear(const sf::Color _color) {
 }
 
 void View::drawDebug() {
-	//TODO
+	std::vector<Vec4> corners(4);
+	corners[0] = Vec4(GLBounds.x, GLBounds.y, 0.f, 1.f);
+	corners[1] = Vec4(GLBounds.x + GLBounds.z, GLBounds.y, 0.f, 1.f);
+	corners[2] = Vec4(GLBounds.x + GLBounds.z, GLBounds.y + GLBounds.w, 0.f, 1.f);
+	corners[3] = Vec4(GLBounds.x, GLBounds.y + GLBounds.w, 0.f, 1.f);
+	M_Shape->loop(corners, sf::Color::Green);
+	M_Shape->draw();
 }
 
 void View::setViewportSize(uint _width, uint _height) {
@@ -157,7 +163,7 @@ void View::setInteractive(bool _setActive) {
 	
 }
 
-View::View(std::string _id, ViewType _type, ViewportHandler* _parent) : parent(_parent), id(_id), type(_type) {
+View::View(std::string _id, ViewType _type, ViewportHandler* _parent, bool _uniform) : parent(_parent), id(_id), type(_type) {
 	switch (type) {
 		case ViewType::pers:
 		{
@@ -183,7 +189,34 @@ View::View(std::string _id, ViewType _type, ViewportHandler* _parent) : parent(_
 		}
 		break;
 	}	
+	if (_uniform) {
+		uniform = _uniform;
+		glCreateBuffers(1, &uniformBuffer);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, uniformBuffer);
+
+		uint bufferSize = sizeof(float) * (16 + 2);
+		glBufferStorage(GL_SHADER_STORAGE_BUFFER, bufferSize * 3, nullptr,
+			GL_MAP_PERSISTENT_BIT | GL_MAP_WRITE_BIT | GL_CLIENT_STORAGE_BIT);
+
+		buffer[0] = reinterpret_cast<float*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, bufferSize,
+			GL_MAP_READ_BIT | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_PERSISTENT_BIT));
+		buffer[1] = reinterpret_cast<float*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, bufferSize, 2*bufferSize,
+			GL_MAP_READ_BIT | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_PERSISTENT_BIT));
+		buffer[2] = reinterpret_cast<float*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 2* bufferSize, 3*bufferSize,
+			GL_MAP_READ_BIT | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_PERSISTENT_BIT));
+
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+	}
  }
+
+void View::updateUniforms() {
+	bufferIndex = (bufferIndex + 1) % 3;
+	float* comb = combined();
+	std::memcpy(buffer[bufferIndex], comb, sizeof(float) * 16);
+	buffer[bufferIndex][16] = static_cast<float>(GLBounds.z);
+	buffer[bufferIndex][17] = static_cast<float>(GLBounds.w);
+	delete comb;
+}
 
 View::~View() {
 	setInteractive(false);
@@ -192,13 +225,13 @@ View::~View() {
  void View::apply() {
 	 	 
 	 if(!parent->checkBounds(GLBounds))
-		 glViewport(GLBounds[0], GLBounds[1], GLBounds[2], GLBounds[3]);
+		 glViewport(GLBounds.x, GLBounds.y, GLBounds.z, GLBounds.w);
 
-	 camera->viewportWidth = GLBounds[2];
-	 camera->viewportHeight = GLBounds[3];
+	 camera->viewportWidth = static_cast<float>(GLBounds.z);
+	 camera->viewportHeight = static_cast<float>(GLBounds.w);
 
 	 camera->update();
-
+	 if (uniform) updateUniforms();
  }
  Camera* View::getCamera() {
 	 return camera;
@@ -208,30 +241,34 @@ View::~View() {
 	 return ToArray(camera->combined);
  }
 
+ GLuint View::getUniformBuffer() {
+	 return uniformBuffer;
+ }
+
  Camera::Camera(const float _viewportWidth, const float _viewportHeight) :viewportWidth(_viewportWidth), viewportHeight(_viewportHeight),
 	 frustum(new Frustum()), ray(new Ray()){
-	 direction = Vec3(0.f, 0.f, -1.f);
+	 direction = Vec4(0.f, 0.f, -1.f, 1.f);
 	 up = UVY;
  }
 
  void Camera::lookAt(const float _x, const float _y, const float _z) {
-	 direction = NOR(Vec3(_x, _y, _z) - position);
-	 view = LOOKAT(position, Vec3(_x, _y, _z), up);
+	 direction = NOR(Vec4(_x, _y, _z, 1.f) - position);
+	 view = LOOKAT(Vec3(position), Vec3(_x, _y, _z), Vec3(up));
 	 normalizeUp();
  }
 
- void Camera::lookAt(const Vec3& _pos) {
+ void Camera::lookAt(const Vec4& _pos) {
 	 lookAt(_pos.x, _pos.y, _pos.z);
  }
 
  void Camera::normalizeUp() {
-	 right = NOR(CRS(direction, up));
-	 up = NOR(CRS(right, direction));
+	 right = Vec4(NOR(CRS(Vec3(direction), Vec3(up))), 1.f);
+	 up = Vec4(NOR(CRS(Vec3(right), Vec3(direction))), 1.f);
  }
 
  void Camera::normalizeUpYLocked() {
-	 right = NOR(CRS(UVY, direction));
-	 up = NOR(CRS(right, direction));
+	 right = Vec4(NOR(CRS(Vec3(UVY), Vec3(direction))), 1.f);
+	 up = Vec4(NOR(CRS(Vec3(right), Vec3(direction))), 1.f);
  }
 
  Quat Camera::getRotation(const Quat& _quat) {	
@@ -244,38 +281,38 @@ View::~View() {
 
  void Camera::rotate(const float _axisX, const float _axisY, const float _axisZ, const float _angle) {
 	 Mat4 rot = ROTATEMATRIX(Mat4(), _angle, Vec3(_axisX, _axisY, _axisZ));
-	 direction *= rot;
-	 up *= rot;
-	 right *= rot;
+	 direction = rot * direction;
+	 up = rot * up;
+	 right = rot * right;
  }
 
- void Camera::rotate(const Vec3& _axis, const float _angle) {
+ void Camera::rotate(const Vec4& _axis, const float _angle) {
 	 rotate(_axis.x, _axis.y, _axis.z, _angle);
  }
 
  void Camera::rotate(const Mat4& _transform) {	 
-	 direction *= _transform;
-	 up *= transform;
-	 right *= _transform;
+	 direction = _transform * direction;
+	 up = _transform * up;
+	 right = _transform * right;
  }
 
  void Camera::rotate(const Quat& _quat) {
 	 Mat4 rot = TOMAT4(_quat);
-	 direction *= rot;
-	 up *= rot;
-	 right *= rot;
+	 direction = rot * direction;
+	 up = rot * up;
+	 right = rot * right;
  }
 
- void Camera::rotateAround(const Vec3& _point, const Vec3& _axis, const float _angle) {
-	 Vec3 tmpVec = _point - position;
+ void Camera::rotateAround(const Vec4& _point, const Vec4& _axis, const float _angle) {
+	 Vec4 tmpVec = _point - position;
 	 translate(tmpVec);
 	 rotate(_axis, _angle);
-	 Mat4 rot = ROTATEMATRIX(Mat4(), _angle, _axis);
-	 tmpVec *= rot;
+	 Mat4 rot = ROTATEMATRIX(Mat4(), _angle, Vec3(_axis));
+	 tmpVec = rot * tmpVec;
 	 translate(-tmpVec.x, -tmpVec.y, -tmpVec.z);
  }
 
- void Camera::arcball(const Vec3& _point, const float _azimuth, const float _altitude, const float _radius) {
+ void Camera::arcball(const Vec4& _point, const float _azimuth, const float _altitude, const float _radius) {
 	
 	 float ahh = TORAD(_altitude);
 	 float azz = TORAD(_azimuth);
@@ -297,37 +334,37 @@ View::~View() {
  }
 
  void Camera::transform(const Mat4& _transform) {
-	 position *= _transform;
+	 position = _transform * position;
 	 rotate(_transform);
  }
 
  void Camera::translate(const float _dx, const float _dy, const float _dz) {
-	 translate(Vec3(_dx, _dy, _dz));
+	 translate(Vec4(_dx, _dy, _dz, 1.f));
  }
 
- void Camera::translate(const Vec3& _delta) {
+ void Camera::translate(const Vec4& _delta) {
 	 position += _delta;
  }
 
- Vec3 Camera::unproject(const Vec3& _screenCoords, const float _viewportX, const float _viewportY, const float _viewportWidth, const float _viewportHeight) {	 
-	 return UNPROJECT(_screenCoords, getAsMat(), projection, Vec4(_viewportX, _viewportY, _viewportWidth, _viewportHeight));
+ Vec4 Camera::unproject(const Vec2& _screenCoords, const float _viewportX, const float _viewportY, const float _viewportWidth, const float _viewportHeight) {	 
+	 return Vec4(UNPROJECT(Vec3(_screenCoords, 1.f), getAsMat(), projection, Vec4(_viewportX, _viewportY, _viewportWidth, _viewportHeight)), 1.f);
  }
 
- Vec3 Camera::unproject(const Vec3& _screenCoords) {
+ Vec4 Camera::unproject(const Vec2& _screenCoords) {
 	 return unproject(_screenCoords, 0.f, 0.f, static_cast<float>(M_WIDTH), static_cast<float>(M_HEIGHT));
  }
 
- Vec3 Camera::project(const Vec3& _worldCoords, const float _viewportX, const float _viewportY, const float _viewportWidth, const float _viewportHeight) {
-	 return PROJECT(_worldCoords, getAsMat(), projection, Vec4(_viewportX, _viewportY, _viewportWidth, _viewportHeight));
+ Vec4 Camera::project(const Vec2& _worldCoords, const float _viewportX, const float _viewportY, const float _viewportWidth, const float _viewportHeight) {
+	 return Vec4(PROJECT(Vec3(_worldCoords, 1.f), getAsMat(), projection, Vec4(_viewportX, _viewportY, _viewportWidth, _viewportHeight)), 1.f);
  }
 
- Vec3 Camera::project(const Vec3& _worldCoords) {
+ Vec4 Camera::project(const Vec2& _worldCoords) {
 	 return project(_worldCoords, 0.f, 0.f, static_cast<float>(M_WIDTH), static_cast<float>(M_HEIGHT));
  }
 
  const Ray* Camera::getPickRay(const float _screenX, const float _screenY, const float _viewportX, const float _viewportY, const float _viewportWidth, const float _viewportHeight) {
-	 ray->origin = unproject(Vec3(_screenX, _screenY, 0.f), _viewportX, _viewportY, _viewportWidth, _viewportHeight);
-	 ray->direction = NOR(unproject(Vec3(_screenX, _screenY, 1.f), _viewportX, _viewportY, _viewportWidth, _viewportHeight) - ray->origin);
+	 ray->origin = unproject(Vec4(_screenX, _screenY, 0.f, 1.f), _viewportX, _viewportY, _viewportWidth, _viewportHeight);
+	 ray->direction = NOR(unproject(Vec4(_screenX, _screenY, 1.f, 1.f), _viewportX, _viewportY, _viewportWidth, _viewportHeight) - ray->origin);
 	 return ray;
  }
 
@@ -348,7 +385,7 @@ View::~View() {
  void PerspectiveCamera::update(const bool _updateFrustum) {
 	 float aspect = viewportWidth / viewportHeight;
 	 projection = PERSPECTIVE(fieldOfView, aspect, ABS(nearPlane), ABS(farPlane));
-	 view = LOOKAT(position, position + direction, up);
+	 view = LOOKAT(Vec3(position), Vec3(position + direction), Vec3(up));
 	 combined = projection * view;
 
 	 if (_updateFrustum) frustum->update(combined);
@@ -365,7 +402,7 @@ View::~View() {
  void OrthographicCamera::update(const bool _updateFrustum) {
 	 projection = ORTHO(zoom * -viewportWidth * 0.5f, zoom * (viewportWidth * 0.5f),
 		 zoom * -(viewportHeight * 0.5f), zoom * viewportHeight * 0.5f, nearPlane, farPlane);
-	 view = LOOKAT(position, position + direction, up);
+	 view = LOOKAT(Vec3(position), Vec3(position + direction), Vec3(up));
 	 combined = projection * view;
 
 	 if (_updateFrustum) frustum->update(combined);
@@ -377,13 +414,13 @@ View::~View() {
 
  void OrthographicCamera::setToOrtho(const bool _yDown, const float _viewportWidth, const float _viewportHeight) {
 	 if (_yDown) {
-		 up = Vec3(0.f, -1.f, 0.f);
-		 direction = Vec3(0.f, 0.f, 1.f);
+		 up = Vec4(0.f, -1.f, 0.f, 1.f);
+		 direction = Vec4(0.f, 0.f, 1.f, 1.f);
 	 } else {
-		 up = Vec3(0.f, 1.f, 0.f);
-		 direction = Vec3(0.f, 0.f, -1.f);
+		 up = Vec4(0.f, 1.f, 0.f, 1.f);
+		 direction = Vec4(0.f, 0.f, -1.f, 1.f);
 	 }
-	 position = Vec3(zoom * _viewportWidth * 0.5f, zoom * _viewportHeight * 0.5f, 0.f);
+	 position = Vec4(zoom * _viewportWidth * 0.5f, zoom * _viewportHeight * 0.5f, 0.f, 1.f);
 	 viewportWidth = _viewportWidth;
 	 viewportHeight = _viewportHeight;
 	 update();
@@ -408,14 +445,14 @@ View::~View() {
 	 nearPlane = 0.1f;
 	 farPlane = 50.f;
 
-	 direction = Vec3(0.f, 0.f, -1.f);
-	 up = Vec3(0.f, 1.f, 0.f);
-	 right = Vec3(1.f, 0.f, 0.f);
-	 position = Vec3(0.f, 0.f, 100.f);
+	 direction = Vec4(0.f, 0.f, -1.f, 1.f);
+	 up = Vec4(0.f, 1.f, 0.f, 1.f);
+	 right = Vec4(1.f, 0.f, 0.f, 1.f);
+	 position = Vec4(0.f, 0.f, 100.f, 1.f);
 
 	 projection = ORTHO(-viewportWidth * 0.5f, (viewportWidth * 0.5f),
 		 -(viewportHeight * 0.5f), viewportHeight * 0.5f, nearPlane, farPlane);
-	 view = LOOKAT(position, position + direction, up);
+	 view = LOOKAT(Vec3(position), Vec3(position + direction), Vec3(up));
 	 combined = projection * view;
 
 	 const std::string vertex =

@@ -14,13 +14,13 @@ namespace Heerbann {
 
 		std::unordered_map<std::string, View*> views;
 
-		Vec4ui currentGLBounds;
+		Vec4u currentGLBounds;
 
 	public:
 
-		bool checkBounds(const Vec4ui&);
+		bool checkBounds(const Vec4u&);
 
-		View* create(std::string, ViewType);
+		View* create(std::string, ViewType, bool);
 		void remove(std::string);
 
 		View* operator[](std::string);
@@ -42,14 +42,14 @@ namespace Heerbann {
 		float zoomModifier = 0.1f;
 		Vec2 zoomBounds; 
 
-		Vec4ui GLBounds;
+		Vec4u GLBounds;
 
 		void setInteractive(bool);		
 
 		const std::string id;
 		const ViewType type;
 
-		View(std::string, ViewType, ViewportHandler*);
+		View(std::string, ViewType, ViewportHandler*, bool);
 		~View();
 
 		void setViewportSize(uint, uint);
@@ -64,10 +64,19 @@ namespace Heerbann {
 
 		float* combined();
 
+		GLuint getUniformBuffer();
+
 	private:		
 		bool buttonPressed = false;
 		bool inputsActive = false;
 		Vec2i lastPos;
+
+		bool uniform = false;
+		GLuint uniformBuffer;
+		float* buffer[3];
+		uint bufferIndex = 0;
+
+		void updateUniforms();
 
 		ViewportHandler* parent;
 		Camera* camera;
@@ -81,10 +90,10 @@ namespace Heerbann {
 
 		Camera(const float, const float);
 
-		Vec3 position;
-		Vec3 direction;
-		Vec3 up;
-		Vec3 right;
+		Vec4 position;
+		Vec4 direction;
+		Vec4 up;
+		Vec4 right;
 
 		Mat4 projection;
 		Mat4 view;
@@ -101,7 +110,7 @@ namespace Heerbann {
 		virtual void update(const bool) = 0;
 
 		void lookAt(const float, const float, const float);
-		void lookAt(const Vec3&);
+		void lookAt(const Vec4&);
 		void normalizeUp();
 		void normalizeUpYLocked();
 
@@ -109,23 +118,23 @@ namespace Heerbann {
 		Mat4 getAsMat();
 		
 		void rotate(const float, const float, const float, const float);
-		void rotate(const Vec3&, const float);
+		void rotate(const Vec4&, const float);
 		void rotate(const Mat4&);
 		void rotate(const Quat&);
 		
-		void rotateAround(const Vec3&, const Vec3&, float);
-		void arcball(const Vec3&, const float, const float, const float);
+		void rotateAround(const Vec4&, const Vec4&, float);
+		void arcball(const Vec4&, const float, const float, const float);
 
 		void transform(const Mat4&);
 
 		void translate(const float, const float, const float);
-		void translate(const Vec3&);
+		void translate(const Vec4&);
 
-		Vec3 unproject(const Vec3&, const float, const float, const float, const float);
-		Vec3 unproject(const Vec3&);
+		Vec4 unproject(const Vec2&, const float, const float, const float, const float);
+		Vec4 unproject(const Vec2&);
 
-		Vec3 project(const Vec3&, const float, const float, const float, const float);
-		Vec3 project(const Vec3&);
+		Vec4 project(const Vec2&, const float, const float, const float, const float);
+		Vec4 project(const Vec2&);
 
 		const Ray* getPickRay(const float, const float, const float, const float, const float, const float);
 		const Ray* getPickRay(const float, const float);
@@ -172,7 +181,7 @@ namespace Heerbann {
 		
 	public:
 
-		Vec3 target;
+		Vec4 target;
 		float azimuth, height, distance;
 
 		ArcballCamera();

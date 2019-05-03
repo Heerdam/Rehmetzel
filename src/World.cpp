@@ -7,21 +7,8 @@
 
 using namespace Heerbann;
 
-void World::raycast(b2RayCastCallback* callback, const Vec2& _p1, const Vec2& _p2) {
-	std::lock_guard<std::mutex> guard(worldLock);
-	bworld->RayCast(callback, b2Vec2(_p1.x, _p1.y), b2Vec2(_p2.x, _p2.y));
-};
-
-void World::AABB(b2QueryCallback* callback, const Vec2& _p1, const Vec2& _p2) {
-	std::lock_guard<std::mutex> guard(worldLock);
-	b2AABB aabb;
-	aabb.lowerBound.Set(_p1.x, _p1.y);
-	aabb.upperBound.Set(_p2.x, _p2.y);
-	bworld->QueryAABB(callback, aabb);
-}
-
 World::World() {
-	bworld->SetDebugDraw(debug = new DebugDraw());
+
 }
 
 void World::update(float _deltaTime) {
@@ -34,86 +21,30 @@ void World::update(float _deltaTime) {
 			object->finishedLoading(object);
 	}
 	std::lock_guard<std::mutex> g2(worldLock);
-	bworld->Step(_deltaTime, 8, 3);
+
 }
 
 void World::debugDraw() {
-	bworld->DrawDebugData();
+	
 }
 
-long World::create(EntityType _type, Vec2 _pos) {
-	WorldObject *ob = new WorldObject();
-
-	switch (_type) {
-	case red_deer:
-	{
-
-	}
-	break;
-	case tree:
-	{
-		std::lock_guard<std::mutex> g1(worldLock);
-		b2BodyDef* bodyDef = new b2BodyDef();
-		bodyDef->userData = ob;
-		bodyDef->type = b2BodyType::b2_staticBody;
-		bodyDef->position = b2Vec2(_pos.x * UNRATIO, _pos.y * UNRATIO);
-		ob->body = bworld->CreateBody(bodyDef);
-
-		b2CircleShape circle;
-		circle.m_p.Set(0.f, 0.f);
-		circle.m_radius = 1;
-
-		b2FixtureDef def;
-		def.userData = ob;
-		def.shape = &circle;
-
-		ob->body->CreateFixture(&def);
-
-		/**
-		ob->finishedLoading = [](WorldObject* _object)->void {
-			sf::Texture* tex = new sf::Texture();
-			tex->loadFromImage(*(sf::Image*)(Main::asset_getAsset("assets/trees/poplar_07_top.png")->data)); //TODO
-			_object->sprite = new sf::Sprite(*tex);
-			_object->sprite->setOrigin(_object->sprite->getGlobalBounds().width * 0.5f, _object->sprite->getGlobalBounds().height * 0.5f);
-			
-			b2PolygonShape shape;
-			shape.SetAsBox(_object->sprite->getGlobalBounds().width * 0.5f * UNRATIO, _object->sprite->getGlobalBounds().height * 0.5f * UNRATIO);
-
-			b2FixtureDef def;
-			def.isSensor = true;
-			def.shape = &shape;
-			
-			_object->body->CreateFixture(&def);
-		};
-
-		ob->draw = [](WorldObject* _object, float, sf::RenderWindow& _window)->void {	
-			_window.resetGLStates();
-			auto pos = _object->body->GetPosition();
-			_object->sprite->setPosition(Vec2(pos.x * RATIO, pos.y * RATIO));
-			_window.draw(*_object->sprite);
-		};
-		*/
-		std::lock_guard<std::mutex> g2(mapLock);
-		finishQueue.emplace(ob);
-		objects[ob->id] = ob;
-	}
-	break;
-	}
-	return ob->id;
+long long World::create(EntityType _type, Vec2 _pos) {
+	return 0l;
 }
+/*
 //pos: lower left corner
 BGVAO* WorldBuilder::createBGVAO(Vec2 _pos, int _tex) {
-	int cellvertex = BG_CELLCOUNT * BG_CELLCOUNT;
+	int cellvertex = 50 * 50;
 
 	float* data = new float[3 * cellvertex];
 
-	float xw = cosf(DEGTORAD * 30.f) * BG_CELLDIAMETER;
-	float yw = 1.5f * BG_CELLDIAMETER;
+	float xw = cosf(DEGTORAD * 30.f) * 50.f;
+	float yw = 1.5f * 50.f;
 
-	for (int y = 0; y < BG_CELLCOUNT; ++y) {
-		for (int x = 0; x < BG_CELLCOUNT; ++x) {
+	for (int y = 0; y < 50; ++y) {
+		for (int x = 0; x < 50; ++x) {
 
-			int index = 3 * (y * BG_CELLCOUNT + x);
+			int index = 3 * (y * 50 + x);
 
 			data[index] = x * 2 * xw - ((y % 2 == 0) ? xw : 0);
 			data[index + 1] = y * yw;
@@ -129,23 +60,21 @@ BGVAO* WorldBuilder::createBGVAO(Vec2 _pos, int _tex) {
 
 IndexedVAO* WorldBuilder::createTrees(int _treeCount, Vec2 _low, Vec2 _high) {
 
-	TextureAtlas* atlas = (TextureAtlas*)Main::getAssetManager()->getAsset("assets/trees/trees")->data;
+	TextureAtlas* atlas = (TextureAtlas*)M_Asset->getAsset("assets/trees/trees")->data;
 
-	int treeSpriteCount = atlas->regions.size();
+	uint treeSpriteCount = static_cast<uint>(atlas->regions.size());
 
 	float* vertex = new float[_treeCount * 4 * (2 + 2 + 1)]; //#trees * 4 vertices/tree * (position + uv + index)
 	GLuint* index = new GLuint[_treeCount * 2 * 3]; //#trees * triangles/tree * vertex/triangle
 
-	float xw = cosf(DEGTORAD * 30.f) * BG_CELLDIAMETER;
-	float yw = 1.5f * BG_CELLDIAMETER;
-
-	auto world = Main::getWorld();	
+	float xw = cosf(DEGTORAD * 30.f) * 50.f;
+	float yw = 1.5f * 50.f;
 
 	for (int i = 0; i < _treeCount; ++i) {
 
-		Vec2 pos(Main::getRandom(_low.x, _high.x), Main::getRandom(_low.y, _high.y));
+		Vec2 pos(M_Main->getRandom(_low.x, _high.x), M_Main->getRandom(_low.y, _high.y));
 		//Vec2 pos(0, 0);
-		AtlasRegion* region = (*atlas)[(int)(Main::getRandom(0.f, (float)treeSpriteCount))];
+		AtlasRegion* region = (*atlas)[(int)(M_Main->getRandom(0.f, (float)treeSpriteCount))];
 
 		//AtlasRegion* region = (*atlas)["strees_05_top"];
 		Vec2 u = region->getU();
@@ -189,7 +118,7 @@ IndexedVAO* WorldBuilder::createTrees(int _treeCount, Vec2 _low, Vec2 _high) {
 		index[6 * i + 5] = 4 * i;
 
 		WorldObject *ob = new WorldObject();
-		world->objects[ob->id] = ob;
+		M_World->objects[ob->id] = ob;
 		ob->isLoaded = true;
 		ob->isVAO = true;
 
@@ -197,7 +126,7 @@ IndexedVAO* WorldBuilder::createTrees(int _treeCount, Vec2 _low, Vec2 _high) {
 		bodyDef->userData = ob;
 		bodyDef->type = b2BodyType::b2_staticBody;
 		bodyDef->position = b2Vec2(pos.x * UNRATIO, pos.y * UNRATIO);
-		ob->body = world->bworld->CreateBody(bodyDef);
+		ob->body = M_World->bworld->CreateBody(bodyDef);
 
 		b2CircleShape circle;
 		circle.m_p.Set(0.f, 0.f);
@@ -226,7 +155,7 @@ IndexedVAO* WorldBuilder::createTrees(int _treeCount, Vec2 _low, Vec2 _high) {
 
 WorldOut * WorldBuilder::build(const WorldBuilderDefinition& _def) {
 	WorldOut* out = new WorldOut();
-	Main::setSeed(_def.seed);
+	M_Main->setSeed(_def.seed);
 
 	out->bgVAOs.emplace_back(createBGVAO(Vec2(0, 0), 4));
 	//out->indexVAOs.emplace_back(createTrees(50, Vec2(0, 0), Vec2(cosf(DEGTORAD * 30.f) * BG_CELLDIAMETER * BG_CELLCOUNT, 1.5f * BG_CELLDIAMETER * BG_CELLCOUNT)));
@@ -240,3 +169,4 @@ void WorldOut::finalize(ShaderProgram* _bg, ShaderProgram* _tree) {
 	//for (auto v : indexVAOs)
 		//v->build(_tree);
 }
+*/

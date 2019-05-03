@@ -1,9 +1,6 @@
 #pragma once
 
-#include <functional>
-
 #include "MainStruct.hpp"
-#include "World.hpp"
 
 namespace Heerbann {
 

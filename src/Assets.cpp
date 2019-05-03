@@ -99,29 +99,9 @@ void AssetManager::addAsset(LoadItem* _item) {
 	assets[_item->id] = _item;
 }
 
-Text::StaticTextBlock* AssetManager::loadStaticText(std::string _id, std::wstring _text, float _width, Text::Align _align) {
-	std::lock_guard<std::mutex> guard(assetLock);
-	if (assets.count(_id) != 0) std::exception(std::string("Asset already exists [").append(_id).append("]").c_str());
-	auto item = new LoadItem(_id, static_text);
-	assets[_id] = item;
-	auto text = Main::getFontCache()->createStatic(_id);
-	text->block->setText(_text);
-	text->block->setWidth(_width);
-	text->block->setAlign(_align);
-	item->data = text;
-	if (item == nullptr || item->isLoaded) std::exception(std::string("Asset does not exist or is already loaded [").append(_id).append("]").c_str());
-	//if (state == continuous) queueLoad(item);
-	else discreteLoadQueue.emplace(item);
-	return text;
-}
+AssetManager::AssetManager() {}
 
-AssetManager::AssetManager() {
-	
-}
-
-AssetManager::~AssetManager() {
-
-}
+AssetManager::~AssetManager() {}
 
 LoadItem* AssetManager::getAsset(std::string _id) {
 	std::lock_guard<std::mutex> guard(assetLock);
@@ -391,7 +371,7 @@ void AssetManager::asyncDiscreteLoad() {
 					tex->loadFromMemory(_data, _size);
 					_item->data = tex;
 									
-					Main::addJob([](void* _entry)->void {						
+					M_Main->addJob([](void* _entry)->void {						
 						LoadItem* item = (LoadItem*)_entry;
 						std::cout << "Loading: [png] " << item->id << std::endl;
 						
@@ -449,7 +429,7 @@ void AssetManager::asyncDiscreteLoad() {
 				geom.close();
 				frag.close();
 
-				Main::addJob([](void* _entry)->void {
+				M_Main->addJob([](void* _entry)->void {
 					std::tuple<std::string, std::string, std::string, std::string, LoadItem*>* tuple = reinterpret_cast<std::tuple<std::string, std::string, std::string, std::string, LoadItem*>*>(_entry);
 
 					std::string comp = std::get<0>(*tuple);
@@ -458,7 +438,6 @@ void AssetManager::asyncDiscreteLoad() {
 					std::string frag = std::get<3>(*tuple);
 					LoadItem* item = std::get<4>(*tuple);
 					
-					auto asset = Main::getAssetManager();
 					ShaderProgram* shader = new ShaderProgram();
 					shader->loadFromMemory(item->id, comp, vert, geom, frag);
 
@@ -487,7 +466,7 @@ void AssetManager::asyncDiscreteLoad() {
 
 				std::tuple<LoadItem*, int>* tuple = new std::tuple<LoadItem*, int>(next, length);
 
-				Main::addJob([](void* _entry)->void {
+				M_Main->addJob([](void* _entry)->void {
 					//std::cout << "started finishing font" << std::endl;
 					std::tuple<LoadItem*, int>* tuple = (std::tuple<LoadItem*, int>*)_entry;
 					sf::Font* font = new sf::Font();
@@ -535,7 +514,7 @@ void AssetManager::asyncDiscreteLoad() {
 
 						std::tuple<LoadItem*, int>* tuple = new std::tuple<LoadItem*, int>(_item, _index);
 
-						Main::addJob([](void* _entry)->void {
+						M_Main->addJob([](void* _entry)->void {
 							//std::cout << "started finishing atlas" << std::endl;
 							std::tuple<LoadItem*, int>* tuple = (std::tuple<LoadItem*, int>*)_entry;
 							int index = std::get<1>(*tuple);
@@ -565,20 +544,6 @@ void AssetManager::asyncDiscreteLoad() {
 					orders.emplace(order);
 					lock.unlock();
 				}
-			}
-			break;
-			case static_text:
-			{
-				Text::StaticTextBlock* block = reinterpret_cast<Text::StaticTextBlock*>(next->data);
-				block->block->layoutAndRebuild(TYP_FONT_STATIC);
-				next->data = block;
-				Main::addJob([](void* _entry)->void {
-					LoadItem* item = reinterpret_cast<LoadItem*>(_entry);
-					Main::getFontCache()->sendToGPU(reinterpret_cast<Text::StaticTextBlock*>(item->data));
-					item->isLoaded = true;
-					item->isLocked = false;
-				}, next);
-				
 			}
 			break;
 			case model:
@@ -686,15 +651,15 @@ void AssetManager::asyncDiscreteLoad() {
 
 				}
 
-				modelOut->vertexBufferSize = vertexBuffer.size();
+				modelOut->vertexBufferSize = static_cast<uint>(vertexBuffer.size());
 				modelOut->vertexBuffer = new float[vertexBuffer.size()];
 				std::memcpy(modelOut->vertexBuffer, vertexBuffer.data(), vertexBuffer.size() * sizeof(float));
 
-				modelOut->indexBufferSize = indexBuffer.size();
+				modelOut->indexBufferSize = static_cast<uint>(indexBuffer.size());
 				modelOut->indexBuffer = new unsigned int[indexBuffer.size()];
 				std::memcpy(modelOut->indexBuffer, indexBuffer.data(), indexBuffer.size() * sizeof(unsigned int));
 
-				Main::addJob([](void* _entry)->void {
+				M_Main->addJob([](void* _entry)->void {
 					LoadItem* item = reinterpret_cast<LoadItem*>(_entry);
 					G3D::Model* model = reinterpret_cast<G3D::Model*>(item->data);
 					std::cout << "Loading: [Model] " << item->id << std::endl;
@@ -849,7 +814,7 @@ void AssetManager::finish() {
 	loadingThread = new std::thread(&AssetManager::asyncDiscreteLoad, this);
 	if (loadingThread->joinable())
 		loadingThread->join();
-	Main::get()->update();
+	M_Main->update();
 	progress = 1;
 }
 
@@ -946,9 +911,9 @@ TextureAtlas* TextureAtlasLoader::operator()(std::string _id) {
 			case 3: //xy
 			{
 				++regionNr;
-				int pos1 = line.find_first_of(":") + 2;
-				int pos2 = line.find_first_of(",");
-				int pos3 = line.length() - (pos2 + 1);
+				int pos1 = static_cast<int>(line.find_first_of(":") + 2);
+				int pos2 = static_cast<uint>(line.find_first_of(","));
+				int pos3 = static_cast<uint>(line.length() - (pos2 + 1));
 
 				auto x = line.substr(pos1, pos2 - pos1);
 				auto y = line.substr(pos2 + 2, pos3 + 1);
@@ -960,9 +925,9 @@ TextureAtlas* TextureAtlasLoader::operator()(std::string _id) {
 			case 4: //size
 			{
 				++regionNr;
-				int pos1 = line.find_first_of(":") + 2;
-				int pos2 = line.find_first_of(",");
-				int pos3 = line.length() - (pos2 + 1);
+				int pos1 = static_cast<uint>(line.find_first_of(":") + 2);
+				int pos2 = static_cast<uint>(line.find_first_of(","));
+				int pos3 = static_cast<uint>(line.length() - (pos2 + 1));
 
 				auto w = line.substr(pos1, pos2 - pos1);
 				auto h = line.substr(pos2 + 2, pos3 + 1);

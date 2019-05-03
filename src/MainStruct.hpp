@@ -40,8 +40,6 @@
 #include <assimp/Logger.hpp>
 #include <assimp/DefaultLogger.hpp>
 
-#include <Box2D/Box2D.h>
-
 namespace Heerbann {
 
 	using namespace Heerbann;
@@ -52,17 +50,17 @@ typedef glm::ivec2 Vec2i;
 typedef glm::ivec3 Vec3i;
 typedef glm::ivec4 Vec4i;
 
-typedef glm::uvec2 Vec2ui;
-typedef glm::uvec3 Vec3ui;
-typedef glm::uvec4 Vec4ui;
+typedef glm::uvec2 Vec2u;
+typedef glm::uvec3 Vec3u;
+typedef glm::uvec4 Vec4u;
 
 typedef glm::vec2 Vec2;
 typedef glm::vec3 Vec3;
 typedef glm::vec4 Vec4;
 
-#define UVX Vec3(1.f, 0.f, 0.f)
-#define UVY Vec3(0.f, 1.f, 0.f)
-#define UVZ Vec3(0.f, 0.f, 1.f)
+#define UVX Vec4(1.f, 0.f, 0.f, 1.f)
+#define UVY Vec4(0.f, 1.f, 0.f, 1.f)
+#define UVZ Vec4(0.f, 0.f, 1.f, 1.f)
 
 typedef glm::mat3 Mat3;
 typedef glm::mat4 Mat4;
@@ -162,7 +160,7 @@ typedef glm::quat Quat;
 #define YAW(X) (glm::yaw((X))))
 #define PITCH(X) (glm::pitch((X)))
 
-#define PI b2_pi
+#define PI 3.14159265358979323846f
 #define DEGTORAD static_cast<float>(PI / 180.0)
 #define TORAD(X) ((X) * DEGTORAD)
 #define RADTODEG static_cast<float>(180.0 / PI)
@@ -193,6 +191,7 @@ typedef glm::quat Quat;
 #define M_HEIGHT Heerbann::App::Get()->height()
 #define M_ID Heerbann::App::Util::getId()
 #define M_FloatBits(X) (Heerbann::App::Util::toFloatBits((X)))
+#define M_s2ws(X) (Heerbann::App::Util::s2ws((X)))
 
 #define M_Main Heerbann::App::Get()
 #define M_Asset Heerbann::App::Get()->getAssetManager()
@@ -209,17 +208,17 @@ typedef glm::quat Quat;
 #define M_Logger Heerbann::App::Get()->getLogger()
 #define M_Shape Heerbann::App::Get()->getShape()
 
+#define ID Heerbann::App::Util::getId()
 #define DeltaTime Heerbann::App::Get()->deltaTime()
-#define UniformBuffer Heerbann::App::Get()->uniformBuffer()
+#define DefaultFont Heerbann::App::Get()->getDefaultFont()
 
 #define TIMESTAMP Heerbann::App::Get()->getTimer()->timeStamp()
 #define TIME_START Heerbann::App::Get()->getTimer()->start()
 #define TIME_END Heerbann::App::Get()->getTimer()->end()
 
-#define LOG(X) (Heerbann::App::Get()->getLogger((X)));
+#define LOG(X) (Heerbann::App::Get()->getLogger()->log(X));
 
 #define LERP(START, END, T) ((START) + ((END) - (START)) * (T))
-
 
 	namespace App {
 		class Main;
@@ -246,15 +245,13 @@ typedef glm::quat Quat;
 	namespace UI {
 		class Stage;
 		class Actor;
-		class Label;
-		class StaticLabel;		
+		class Label;	
 	}
 
 	//TextUtil
 	namespace Text {
 		class TextBlock;
 		class FontCache;
-		struct StaticTextBlock;
 		struct Line;
 		struct Letter;
 		enum Align : int;
@@ -303,7 +300,7 @@ typedef glm::quat Quat;
 	//CameraUtils
 	enum ViewType : int;
 	class ViewportHandler;
-	class View;
+	struct View;
 	class Camera;
 	class OrthographicCamera;
 	class PerspectiveCamera;
@@ -346,7 +343,7 @@ typedef glm::quat Quat;
 			LevelManager* level;
 			SpriteBatch* batch;
 			Text::FontCache* cache;
-			sf::Font* defaultFont;
+			sf::Font* defaultFont; 
 			ViewportHandler* viewport;
 			Logger* logger;
 			Timer* timer;
@@ -377,7 +374,6 @@ typedef glm::quat Quat;
 			static GLuint* getIndexBuffer();
 
 			float deltaTime();
-			GLuint uniformBuffer();
 
 			//---------------------- AI ----------------------\\
 
@@ -432,7 +428,6 @@ typedef glm::quat Quat;
 			//---------------------- World ----------------------\\
 
 			static World* getWorld();
-
 		
 			//---------------------- Viewport ----------------------\\
 
@@ -470,7 +465,7 @@ typedef glm::quat Quat;
 				if (hasError) std::cout << "---- Finished ----" << std::endl;
 			};
 
-			inline unsigned long getFrameId() {
+			inline unsigned long long getFrameId() {
 				return App::Get()->frameId;
 			};
 
@@ -493,7 +488,7 @@ typedef glm::quat Quat;
 				return toFloatBits(_color.r, _color.g, _color.b, _color.a);
 			};
 
-			constexpr bool almost_equal(float _x, float _y) {
+			inline bool almost_equal(float _x, float _y) {
 				return std::abs(_x - _y) <= std::numeric_limits<float>::epsilon() * (std::abs(_x) + (std::abs(_y) + 1.0f));
 			};
 

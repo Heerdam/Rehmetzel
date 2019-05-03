@@ -59,22 +59,6 @@ namespace Heerbann {
 		void draw(ShaderProgram*);
 	};
 
-	class DebugDraw : public b2Draw {
-	public:
-		DebugDraw();
-		void DrawPolygon(const b2Vec2*, int32, const b2Color&);
-		void DrawSolidPolygon(const b2Vec2*, int32, const b2Color&);
-		void DrawCircle(const b2Vec2&, float32, const b2Color&);
-		void DrawSolidCircle(const b2Vec2&, float32, const b2Vec2&, const b2Color&);
-		void DrawSegment(const b2Vec2&, const b2Vec2&, const b2Color&);
-		void DrawTransform(const b2Transform&);
-		void DrawPoint(const b2Vec2&, float32, const b2Color&);
-		void DrawString(int, int, const char*);
-		void DrawAABB(b2AABB*, const b2Color&);
-		sf::Color B2SFColor(const b2Color&, int);
-		void DrawMouseJoint(b2Vec2&, b2Vec2&, const b2Color&, const b2Color&);
-	};
-
 	class SpriteBatch {
 
 		enum Type {
@@ -89,8 +73,6 @@ namespace Heerbann {
 			void* data;
 		};
 
-		const uint VERTEXSIZE = 2 + 3 + 1 + 4; //pos, uv, col, scissor
-
 		std::vector<std::tuple<GLuint, float*>> buffers;
 		uint currentIndex = 0;
 		std::atomic<uint> spriteCount = 0;
@@ -101,11 +83,9 @@ namespace Heerbann {
 
 		ShaderProgram* shader;
 
-		std::vector<std::thread*> workthreads;
+		void addSprite(const sf::FloatRect&, const sf::IntRect&, uint, const Vec2u&, const sf::Color&, const Vec4&);
 
-		void addSprite(const sf::FloatRect&, const sf::FloatRect&, const Vec2&, uint, const sf::Color& = sf::Color::White, const Vec4& = Vec4(0.f, 0.f, M_WIDTH, M_HEIGHT));
-
-
+		std::queue<Item*> drawJobs;
 		void draw(Item*);
 		void draw(void*, GLuint, sf::Color, const Vec4&);
 
@@ -115,11 +95,13 @@ namespace Heerbann {
 		SpriteBatch(uint);
 		~SpriteBatch();
 
+		const static uint VERTEXSIZE = 2 + 3 + 1 + 4; //pos, uv, col, scissor
+
 		//builds the buffer asynchronous
 		void build();
 
 		//draws the batch 
-		void drawToScreen(GLuint);
+		void drawToScreen();
 
 		//add to renderqueue		
 		void draw(sf::Sprite*, const Vec4&);
@@ -128,8 +110,11 @@ namespace Heerbann {
 		void draw(sf::Sprite*);
 
 		void draw(Text::TextBlock*);
+		void draw(Text::TextBlock*, Vec4);
 
 		uint addTexture(GLuint);
+		uint getIndex(GLuint);
+		bool textureExists(GLuint);
 	};
 
 	class ShaderProgram {
@@ -153,50 +138,51 @@ namespace Heerbann {
 
 		ShaderProgram* shader;
 
-		Camera* cam = nullptr;
+		//Camera* cam = nullptr;
 
 		GLuint vao, vbo;
 		uint vertexCount = 0;
+		const uint maxVertex;
 
 		float* dataCache;
 
-		void ver(const Vec3&, const sf::Color& = sf::Color::Black);
+		void ver(const Vec4&, const sf::Color& = sf::Color::Black);
 		void ver(float, float, float, float);
 
 	public:
 
+		ShapeRenderer(uint);
+
 		float defaultRectLineWidth = 0.75f;
 
-		void begin(Camera*);
-		void end();
-		void flush();
+		void draw();
 		
-		void line(const Vec3&, const Vec3&, const sf::Color&);
-		void line(const Vec3&, const sf::Color&, const Vec3&, const sf::Color&);
+		void line(const Vec4&, const Vec4&, const sf::Color&);
+		void line(const Vec4&, const sf::Color&, const Vec4&, const sf::Color&);
 
-		void chain(const std::vector<Vec3>&, const sf::Color&);
-		void chain(const std::vector<std::tuple<Vec3, sf::Color>>&);
+		void chain(const std::vector<Vec4>&, const sf::Color&);
+		void chain(const std::vector<std::tuple<Vec4, sf::Color>>&);
 
-		void loop(const std::vector<Vec3>&, const sf::Color&);
-		void loop(const std::vector<std::tuple<Vec3, sf::Color>>&);
+		void loop(const std::vector<Vec4>&, const sf::Color&);
+		void loop(const std::vector<std::tuple<Vec4, sf::Color>>&);
 
-		void vertex(const Vec3&, const sf::Color&);
-		void vertex(const std::vector<std::tuple<Vec3, sf::Color>>&);
+		void vertex(const Vec4&, const sf::Color&);
+		void vertex(const std::vector<std::tuple<Vec4, sf::Color>>&);
 
-		void triangle(const Vec3&, const Vec3&, const Vec3&, const sf::Color&);
-		void triangle(const Vec3&, const sf::Color&, const Vec3&, const sf::Color&, const Vec3&, const sf::Color&);
-		void triangle(const std::vector<std::tuple<Vec3, Vec3, Vec3>>&, const sf::Color&);
-		void triangle(const std::vector<std::tuple<Vec3, Vec3, Vec3, sf::Color>>&);
-		void triangle(const std::vector<std::tuple<Vec3, sf::Color, Vec3, sf::Color, Vec3, sf::Color >>&);
+		void triangle(const Vec4&, const Vec4&, const Vec4&, const sf::Color&);
+		void triangle(const Vec4&, const sf::Color&, const Vec4&, const sf::Color&, const Vec4&, const sf::Color&);
+		void triangle(const std::vector<std::tuple<Vec4, Vec4, Vec4>>&, const sf::Color&);
+		void triangle(const std::vector<std::tuple<Vec4, Vec4, Vec4, sf::Color>>&);
+		void triangle(const std::vector<std::tuple<Vec4, sf::Color, Vec4, sf::Color, Vec4, sf::Color >>&);
 
-		void aabb(const Vec3&, float, const sf::Color&);
-		void aabb(const Vec3&, const Vec3&, const sf::Color&);
+		void aabb(const Vec4&, float, const sf::Color&);
+		void aabb(const Vec4&, const Vec4&, const sf::Color&);
 
 		void circleXY(const Vec2&, float, const sf::Color&, uint = 24u);
 
-		void sphere(const Vec3&, float, const sf::Color&, uint = 24u, uint = 10u);
+		void sphere(const Vec4&, float, const sf::Color&, uint = 24u, uint = 10u);
 		
-		void polygon(const std::vector<Vec3>&, const sf::Color&);
+		void polygon(const std::vector<Vec4>&, const sf::Color&);
 
 		void draw(Ray*, const sf::Color& = sf::Color::Black);
 		void draw(BoundingBox*, const sf::Color& = sf::Color::Black);

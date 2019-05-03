@@ -4,6 +4,7 @@
 #include "CameraUtils.hpp"
 #include "TextUtil.hpp"
 #include "Math.hpp"
+#include "TimeLog.hpp"
 
 using namespace Heerbann;
 
@@ -55,7 +56,7 @@ void BGVAO::build(ShaderProgram* _shader) {
 
 void BGVAO::draw(ShaderProgram* _shader) {
 	_shader->bind();
-	glUniformMatrix4fv(cameraUniformHandle, 1, false, Main::getViewport()->cam.getTransform().getMatrix());
+	//TODO glUniformMatrix4fv(cameraUniformHandle, 1, false, Main::getViewport()->cam.getTransform().getMatrix());
 
 	for (int i = 0; i < 9; ++i) {
 		glActiveTexture(GL_TEXTURE0 + i);
@@ -124,7 +125,7 @@ void IndexedVAO::build(ShaderProgram* _shader) {
 
 void IndexedVAO::draw(ShaderProgram* _shader) {
 	_shader->bind();
-	glUniformMatrix4fv(cameraUniformHandle, 1, false, Main::getViewport()->cam.getTransform().getMatrix());
+	//TODO glUniformMatrix4fv(cameraUniformHandle, 1, false, Main::getViewport()->cam.getTransform().getMatrix());
 	glUniform1f(radiusUniformHandle, viewRadius);
 	glUniform2f(viewportSizeUniformHandle, (float)M_WIDTH, (float)M_HEIGHT);
 
@@ -152,176 +153,6 @@ void IndexedVAO::draw(ShaderProgram* _shader) {
 	_shader->unbind();
 }
 
-//convert a Box2D (float 0.0f - 1.0f range) color to a SFML color (uint8 0 - 255 range)
-sf::Color DebugDraw::B2SFColor(const b2Color& _color, int _alpha = 255) {
-	return sf::Color((sf::Uint8)(_color.r * 255), (sf::Uint8)(_color.g * 255), (sf::Uint8)(_color.b * 255), (sf::Uint8) _alpha);
-}
-
-void DebugDraw::DrawAABB(b2AABB* _aabb, const b2Color& _color) {
-	float lx = _aabb->lowerBound.x * RATIO;
-	float ly = _aabb->lowerBound.y * RATIO;
-	float ux = _aabb->upperBound.x * RATIO;
-	float uy = _aabb->upperBound.y * RATIO;
-	M_Shape->aabb(Vec3(lx, ly, 0.f), Vec3(ux, uy, 0.f), B2SFColor(_color));
-}
-
-void DebugDraw::DrawString(int _x, int _y, const char* _string) {
-	M_Shape->string(_string, _x * RATIO, _y * RATIO, sf::Color::White);
-}
-
-void DebugDraw::DrawPoint(const b2Vec2& _p, float32 _size, const b2Color& _color) {
-	M_Shape->circleXY(Vec2(_p.x, _p.y) * RATIO, _size * RATIO, sf::Color::White);
-}
-
-void DebugDraw::DrawTransform(const b2Transform& _xf) {
-	float x, y, lineProportion;
-	x = _xf.p.x * RATIO;
-	y = _xf.p.y * RATIO;
-	lineProportion = 0.15f; // 0.15 ~ 10 pixels
-	b2Vec2 p1 = _xf.p, p2;
-
-	//red (X axis)
-	p2 = p1 + (lineProportion * _xf.q.GetXAxis());
-	sf::Vertex redLine[] =
-	{
-		sf::Vertex(sf::Vector2f(p1.x * RATIO, p1.y * RATIO)),
-		sf::Vertex(sf::Vector2f(p2.x * RATIO, p2.y * RATIO))
-	};
-
-	//green (Y axis)
-	p2 = p1 - (lineProportion * _xf.q.GetYAxis());
-	sf::Vertex greenLine[] =
-	{
-		sf::Vertex(sf::Vector2f(p1.x * RATIO, p1.y * RATIO)),
-		sf::Vertex(sf::Vector2f(p2.x  *RATIO, p2.y * RATIO))
-	};
-
-	redLine[0].color = sf::Color::Red;
-	redLine[1].color = sf::Color::Red;
-
-	greenLine[0].color = sf::Color::Green;
-	greenLine[1].color = sf::Color::Green;
-
-	//Main::getContext()->draw(redLine, 2, sf::Lines);
-	//Main::getContext()->draw(greenLine, 2, sf::Lines);
-}
-
-void DebugDraw::DrawSegment(const b2Vec2& _p1, const b2Vec2& _p2, const b2Color& _color) {
-	M_Shape->line(Vec3(_p1.x * RATIO, _p1.y * RATIO, 0.f), Vec3(_p2.x * RATIO, _p2.y * RATIO, 0.f), B2SFColor(_color));
-}
-
-void DebugDraw::DrawSolidCircle(const b2Vec2& _center, float32 _radius, const b2Vec2& _axis, const b2Color& _color) {
-	sf::CircleShape shape;
-	auto color = B2SFColor(_color);
-	float radius = _radius * RATIO;
-	shape.setOrigin(sf::Vector2f(radius, radius));
-	shape.setPosition(sf::Vector2f(_center.x * RATIO, _center.y * RATIO));
-	shape.setRadius(radius);
-	shape.setOutlineColor(color);
-	shape.setOutlineThickness(1.f);
-	shape.setFillColor(sf::Color::Transparent);
-
-	// line of the circle wich shows the angle
-	b2Vec2 p = _center + (_radius * _axis);
-	sf::Vertex line[] =
-	{
-		sf::Vertex(sf::Vector2f(_center.x * RATIO, _center.y * RATIO)),
-		sf::Vertex(sf::Vector2f(p.x * RATIO, p.y * RATIO))
-	};
-
-	line[0].color = color;
-	line[1].color = color;
-
-	//Main::getContext()->draw(shape);
-	//Main::getContext()->draw(line, 2, sf::Lines);
-}
-
-void DebugDraw::DrawCircle(const b2Vec2& _center, float32 _radius, const b2Color& _color) {
-	sf::CircleShape shape;
-	shape.setPosition(sf::Vector2f(_center.x * RATIO, _center.y * RATIO));
-	shape.setRadius(_radius * RATIO);
-	shape.setOutlineColor(B2SFColor(_color));
-
-	//Main::getContext()->draw(shape);
-}
-
-void DebugDraw::DrawSolidPolygon(const b2Vec2* _vertices, int32 _vertexCount, const b2Color& _color) {
-
-	sf::ConvexShape polygon;
-	polygon.setPointCount(_vertexCount);
-	for (int32 i = 0; i < _vertexCount; i++) {
-		b2Vec2 vertex = _vertices[i];
-		polygon.setPoint(i, sf::Vector2f(vertex.x * RATIO, vertex.y * RATIO));
-	}
-	polygon.setOutlineColor(B2SFColor(_color));
-	polygon.setOutlineThickness(1.f);
-	polygon.setFillColor(sf::Color::Transparent);
-	//Main::getContext()->draw(polygon);
-}
-
-DebugDraw::DebugDraw() {
-	SetFlags(e_shapeBit);
-}
-
-void DebugDraw::DrawPolygon(const b2Vec2* _vertices, int32 _vertexCount, const b2Color& _color) {
-	sf::ConvexShape polygon;
-	polygon.setPointCount(_vertexCount);
-	for (int32 i = 0; i < _vertexCount; i++) {
-		b2Vec2 vertex = _vertices[i];
-		polygon.setPoint(i, sf::Vector2f(vertex.x * RATIO, vertex.y * RATIO));
-	}
-	polygon.setOutlineThickness(1.f);
-	polygon.setOutlineColor(B2SFColor(_color));
-	polygon.setFillColor(sf::Color::Transparent);
-	//Main::getContext()->draw(polygon);
-}
-
-void DebugDraw::DrawMouseJoint(b2Vec2& p1, b2Vec2& p2, const b2Color &boxColor, const b2Color &lineColor) {
-	sf::ConvexShape polygon;
-	sf::ConvexShape polygon2;
-	float p1x = p1.x * RATIO;
-	float p1y = p1.y * RATIO;
-	float p2x = p2.x * RATIO;
-	float p2y = p2.y * RATIO;
-	float size = 4.0f;
-
-	sf::Color boxClr = B2SFColor(boxColor);
-	sf::Color lineClr = B2SFColor(lineColor);
-
-	polygon.setOutlineColor(boxClr);
-	polygon2.setOutlineColor(boxClr);
-
-	//first green box for the joint
-	polygon.setPointCount(4);
-	polygon.setPoint(0, sf::Vector2f(p1x - size * 0.5f, p1y - size * 0.5f));
-	polygon.setPoint(1, sf::Vector2f(p1x + size * 0.5f, p1y - size * 0.5f));
-	polygon.setPoint(2, sf::Vector2f(p1x + size * 0.5f, p1y + size * 0.5f));
-	polygon.setPoint(3, sf::Vector2f(p1x - size * 0.5f, p1y + size * 0.5f));
-
-	//second green box for the joint
-	polygon2.setPointCount(4);
-	polygon2.setPoint(0, sf::Vector2f(p2x - size * 0.5f, p2y - size * 0.5f));
-	polygon2.setPoint(1, sf::Vector2f(p2x + size * 0.5f, p2y - size * 0.5f));
-	polygon2.setPoint(2, sf::Vector2f(p2x + size * 0.5f, p2y + size * 0.5f));
-	polygon2.setPoint(3, sf::Vector2f(p2x - size * 0.5f, p2y + size * 0.5f));
-
-	sf::Vertex line[] =
-	{
-		sf::Vertex(sf::Vector2f(p1x, p1y)),
-		sf::Vertex(sf::Vector2f(p2x, p2y))
-	};
-
-	line[0].color = lineClr;
-	line[1].color = lineClr;
-
-	//Main::getContext()->draw(polygon);
-	//Main::getContext()->draw(polygon2);
-
-	//Main::getContext()->draw(line, 2, sf::Lines);
-}
-
-
-
 SpriteBatch::SpriteBatch(uint _maxSprites) {
 	
 	buffers.resize(3);
@@ -347,15 +178,9 @@ SpriteBatch::SpriteBatch(uint _maxSprites) {
 
 }
 
-Heerbann::SpriteBatch::~SpriteBatch() {
-	terminate = true;
-	for (int i = 0; i < 4; ++i) {
-		if (workthread[i] != nullptr && workthread[i]->joinable())
-			workthread[i]->join();
-	}
-}
+Heerbann::SpriteBatch::~SpriteBatch() {}
 
-void SpriteBatch::addSprite(const sf::FloatRect& _bounds, const sf::FloatRect& _uv, uint _index, const Vec2& _texBounds, const sf::Color& _tint, const Vec4& _scissors) {
+void SpriteBatch::addSprite(const sf::FloatRect& _bounds, const sf::IntRect& _uv, uint _index, const Vec2u& _texBounds, const sf::Color& _tint, const Vec4& _scissors) {
 	if (spriteCount >= maxSpritesInBatch) return;
 
 	float color = M_FloatBits(_tint);
@@ -364,7 +189,6 @@ void SpriteBatch::addSprite(const sf::FloatRect& _bounds, const sf::FloatRect& _
 	float fracH = 1.f / _texBounds.y;
 
 	uint count = spriteCount.fetch_add(1);
-
 	int index = (currentIndex + 1) % 3;
 	float* data = std::get<1>(buffers[index]) + count * 4 * VERTEXSIZE;
 
@@ -375,7 +199,7 @@ void SpriteBatch::addSprite(const sf::FloatRect& _bounds, const sf::FloatRect& _
 
 	data[k++] = static_cast<float>(_uv.left) * fracW; //u
 	data[k++] = static_cast<float>(_uv.top) * fracH; //v
-	data[k++] = _index; //i
+	data[k++] = static_cast<float>(_index); //i
 
 	data[k++] = color; //col
 
@@ -390,7 +214,7 @@ void SpriteBatch::addSprite(const sf::FloatRect& _bounds, const sf::FloatRect& _
 
 	data[k++] = static_cast<float>(_uv.left + _uv.width) * fracW; //u
 	data[k++] = static_cast<float>(_uv.top) * fracH; //v
-	data[k++] = _index; //i
+	data[k++] = static_cast<float>(_index); //i
 
 	data[k++] = color; //col
 
@@ -405,7 +229,7 @@ void SpriteBatch::addSprite(const sf::FloatRect& _bounds, const sf::FloatRect& _
 
 	data[k++] = static_cast<float>(_uv.left) * fracW; //u
 	data[k++] = static_cast<float>(_uv.top + _uv.height) * fracH; //v
-	data[k++] = _index; //i
+	data[k++] = static_cast<float>(_index); //i
 
 	data[k++] = color; //col
 
@@ -420,7 +244,7 @@ void SpriteBatch::addSprite(const sf::FloatRect& _bounds, const sf::FloatRect& _
 
 	data[k++] = static_cast<float>(_uv.left + _uv.width) * fracW; //u
 	data[k++] = static_cast<float>(_uv.top + _uv.height) * fracH; //v
-	data[k++] = _index; //i
+	data[k++] = static_cast<float>(_index); //i
 
 	data[k++] = color; //col
 
@@ -433,11 +257,33 @@ void SpriteBatch::addSprite(const sf::FloatRect& _bounds, const sf::FloatRect& _
 void SpriteBatch::build() {
 	spriteCount = 0;
 	locked = true;
-	for (int i = 0; i < 4; ++i)
-		threadStatus[i] = workCache[i].empty();
+	while(!drawJobs.empty()) {
+		Item* job = drawJobs.front();
+		drawJobs.pop();
+		switch (job->type) {
+			case Type::sprite:
+			{
+				sf::Sprite* sprite = reinterpret_cast<sf::Sprite*>(job->data);
+				auto tex = sprite->getTexture();
+				addSprite(sprite->getGlobalBounds(), sprite->getTextureRect(), job->texIndex,
+					Vec2u(tex->getSize().x, tex->getSize().y), job->color, job->scissors);
+			}
+			break;
+			case Type::font:
+			{
+				int index = (currentIndex + 1) % 3;
+				float* data = std::get<1>(buffers[index]) + spriteCount * 4 * VERTEXSIZE;
+				Text::TextBlock* text = reinterpret_cast<Text::TextBlock*>(job->data);
+				int count = 0;
+				text->draw(count, data, job->scissors);
+				spriteCount += count;
+			}
+			break;
+		}
+	}
 }
 
-void SpriteBatch::drawToScreen(GLuint _uniforms) {
+void SpriteBatch::drawToScreen() {
 
 	//thread kagge
 
@@ -447,10 +293,6 @@ void SpriteBatch::drawToScreen(GLuint _uniforms) {
 	glActiveTexture(GL_TEXTURE0);
 	for(uint i = 0; i < textures.size(); ++i)
 		glBindTexture(GL_TEXTURE + i, textures[i]);
-
-	//bind uniforms
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, _uniforms);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, _uniforms);
 
 	//bind current vbo
 	glBindBuffer(GL_ARRAY_BUFFER, std::get<0>(buffers[currentIndex]));
@@ -464,7 +306,7 @@ void SpriteBatch::drawToScreen(GLuint _uniforms) {
 	glEnableVertexAttribArray(2); //a_Col
 	glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, VERTEXSIZE * sizeof(float), (void*)(5 * sizeof(float)));
 
-	glEnableVertexAttribArray(3); //a_Pos
+	glEnableVertexAttribArray(3); //a_sci
 	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, VERTEXSIZE * sizeof(float), (void*)(6 * sizeof(float)));
 
 	//draw
@@ -479,15 +321,7 @@ void SpriteBatch::drawToScreen(GLuint _uniforms) {
 }
 
 void SpriteBatch::draw(Item* _item) {
-	if (workCache[0].size() < 250u)
-		workCache[0].emplace_back(_item);
-	else if (workCache[1].size() < 250u)
-		workCache[0].emplace_back(_item);
-	else if (workCache[2].size() < 250u)
-		workCache[0].emplace_back(_item);
-	else if (workCache[3].size() < 250u)
-		workCache[0].emplace_back(_item);
-	else std::cout << "Sprite Limit reached!!" << std::endl;
+	drawJobs.push(_item);
 }
 
 void SpriteBatch::draw(sf::Sprite* _sprite) {
@@ -511,9 +345,13 @@ void SpriteBatch::draw(sf::Sprite* _sprite, sf::Color _color, const Vec4& _sciss
 	draw(_sprite, textureMap[_sprite->getTexture()->getNativeHandle()], _color, _scissors);
 }
 
-void SpriteBatch::draw(Text::TextBlock* _drawable) {
+void SpriteBatch::draw(Text::TextBlock* _text) {
+	draw(_text, Vec4(0.f, 0.f, M_WIDTH, M_HEIGHT));
+}
+
+void Heerbann::SpriteBatch::draw(Text::TextBlock* _text, Vec4 _scissors) {
 	assert(!locked);
-	draw(new Item(Type::font, _drawable));
+	draw(new Item{ Type::font, 0, sf::Color::White, _scissors, _text });
 }
 
 uint SpriteBatch::addTexture(GLuint _tex) {
@@ -529,26 +367,33 @@ uint SpriteBatch::addTexture(GLuint _tex) {
 	return index;
 }
 
+uint SpriteBatch::getIndex(GLuint _handle) {
+	if(textureExists(_handle)) return textureMap[_handle];
+	else return addTexture(_handle);
+}
 
-
-
-
+bool SpriteBatch::textureExists(GLuint _handle) {
+	return textureMap.count(_handle) > 0;
+}
 
 void ShaderProgram::print(std::string _id, ShaderProgram::Status _compComp, ShaderProgram::Status _compVert, 
 	ShaderProgram::Status _compGeom, ShaderProgram::Status _compFrag, ShaderProgram::Status _link, std::string _errorLog) {
 	if (!printDebug) return;
-	std::cout << "   Shader: " << _id << std::endl;
-	std::cout << "Compiling: " 
-		<< (_compComp == Status::failed ? " X |" : _compComp == Status::success ? " S |" : " - |")
-		<< (_compVert == Status::failed ? " X |" : _compVert == Status::success ? " S |" : " - |")
-		<< (_compGeom == Status::failed ? " X |" : _compGeom == Status::success ? " S |" : " - |")
-		<< (_compFrag == Status::failed ? " X |" : _compFrag == Status::success ? " S |" : " - |")
-		<< std::endl;
-	std::cout << "  Linking: " << (_link == Status::failed ? "Failed!" : _link == Status::success ? "Success!" : " - ") << std::endl;
+	LOG("   Shader: " + std::string(_id));
+	LOG("Compiling: "
+		+ std::string(_compComp == Status::failed ? " X |" : _compComp == Status::success ? " S |" : " - |")
+		+ std::string(_compVert == Status::failed ? " X |" : _compVert == Status::success ? " S |" : " - |")
+		+ std::string(_compGeom == Status::failed ? " X |" : _compGeom == Status::success ? " S |" : " - |")
+		+ std::string(_compFrag == Status::failed ? " X |" : _compFrag == Status::success ? " S |" : " - |")
+		+ "\n");
+	LOG("  Linking: " + std::string(_link == Status::failed ? "Failed!" : _link == Status::success ? "Success!" : " - ") + "\n");
 
-	if (_errorLog.empty())
-		std::cout << std::endl;
-	else std::cout << std::endl << _errorLog << std::endl;
+	if (_errorLog.empty()) {
+		LOG("\n");
+	} else {
+		LOG("\n" + std::string(_errorLog) + "\n");
+	}
+
 	App::Gdx::printOpenGlErrors(_id);
 	std::cout << std::endl;
 }
@@ -709,16 +554,12 @@ void ShaderProgram::unbind() {
 	glUseProgram(0);
 }
 
-
-
-
-
-
-void ShapeRenderer::ver(const Vec3& _vertex, const sf::Color& _color) {
+void ShapeRenderer::ver(const Vec4& _vertex, const sf::Color& _color) {
 	ver(_vertex.x, _vertex.y, _vertex.z, M_FloatBits(_color));
 }
 
 void ShapeRenderer::ver(float _x, float _y, float _z, float _col) {
+	if (vertexCount >= maxVertex)draw();
 	dataCache[vertexCount] = _x;
 	dataCache[vertexCount + 1] = _y;
 	dataCache[vertexCount + 2] = _z;
@@ -726,43 +567,35 @@ void ShapeRenderer::ver(float _x, float _y, float _z, float _col) {
 	++vertexCount;
 }
 
-void ShapeRenderer::begin(Camera* _cam) {
-	cam = _cam;
+ShapeRenderer::ShapeRenderer(uint _maxVertex) : maxVertex(_maxVertex){}
+
+void ShapeRenderer::draw() {
 	shader->bind();
-
-}
-
-void ShapeRenderer::end() {
-	
-	shader->bind();
-	cam = nullptr;
-}
-
-void ShapeRenderer::flush() {
 	glBufferSubData(GL_ARRAY_BUFFER, 0, vertexCount * vertexSize * sizeof(float), dataCache);
 	glBindVertexArray(vao);
 	glDrawArrays(GL_LINES, 0, vertexCount);
 	vertexCount = 0;
+	shader->unbind();
 }
 
-void ShapeRenderer::vertex(const Vec3& _pos, const sf::Color& _color) {
+void ShapeRenderer::vertex(const Vec4& _pos, const sf::Color& _color) {
 	float size = defaultRectLineWidth * 0.5f;
-	line(Vec3(_pos.x - size, _pos.y - size, _pos.z), Vec3(_pos.x + size, _pos.y + size, _pos.z), _color);
+	line(Vec4(_pos.x - size, _pos.y - size, _pos.z, 1.f), Vec4(_pos.x + size, _pos.y + size, _pos.z, 1.f), _color);
 }
 
-void ShapeRenderer::vertex(const std::vector<std::tuple<Vec3, sf::Color>>& _vertices) {
+void ShapeRenderer::vertex(const std::vector<std::tuple<Vec4, sf::Color>>& _vertices) {
 	float size = defaultRectLineWidth * 0.5f;
 	for(auto v : _vertices)
-		line(Vec3(std::get<0>(v).x - size, std::get<0>(v).y - size, std::get<0>(v).z), 
-			Vec3(std::get<0>(v).x + size, std::get<0>(v).y + size, std::get<0>(v).z), 
+		line(Vec4(std::get<0>(v).x - size, std::get<0>(v).y - size, std::get<0>(v).z, 1.f),
+			Vec4(std::get<0>(v).x + size, std::get<0>(v).y + size, std::get<0>(v).z, 1.f),
 			std::get<1>(v));
 }
 
-void ShapeRenderer::triangle(const Vec3& _p1, const Vec3& _p2, const Vec3& _p3, const sf::Color& _col) {
+void ShapeRenderer::triangle(const Vec4& _p1, const Vec4& _p2, const Vec4& _p3, const sf::Color& _col) {
 	triangle(_p1, _col, _p2, _col, _p3, _col);
 }
 
-void ShapeRenderer::triangle(const Vec3& _p1, const sf::Color& _col1, const Vec3& _p2, const sf::Color& _col2, const Vec3& _p3, const sf::Color& _col3) {
+void ShapeRenderer::triangle(const Vec4& _p1, const sf::Color& _col1, const Vec4& _p2, const sf::Color& _col2, const Vec4& _p3, const sf::Color& _col3) {
 	ver(_p1, _col1);
 	ver(_p2, _col2);
 
@@ -773,34 +606,34 @@ void ShapeRenderer::triangle(const Vec3& _p1, const sf::Color& _col1, const Vec3
 	ver(_p1, _col1);
 }
 
-void ShapeRenderer::triangle(const std::vector<std::tuple<Vec3, Vec3, Vec3>>& _triangles, const sf::Color& _col) {
+void ShapeRenderer::triangle(const std::vector<std::tuple<Vec4, Vec4, Vec4>>& _triangles, const sf::Color& _col) {
 	for (auto v : _triangles)
 		triangle(std::get<0>(v), std::get<1>(v), std::get<2>(v), _col);
 }
 
-void ShapeRenderer::triangle(const std::vector<std::tuple<Vec3, Vec3, Vec3, sf::Color>>& _triangles) {
+void ShapeRenderer::triangle(const std::vector<std::tuple<Vec4, Vec4, Vec4, sf::Color>>& _triangles) {
 	for (auto v : _triangles)
 		triangle(std::get<0>(v), std::get<1>(v), std::get<2>(v), std::get<3>(v));
 }
 
-void ShapeRenderer::line(const Vec3& _v1, const Vec3& _v2, const sf::Color& _col) {
+void ShapeRenderer::line(const Vec4& _v1, const Vec4& _v2, const sf::Color& _col) {
 	line(_v1, _col, _v2, _col);
 }
 
-void ShapeRenderer::line(const Vec3& _v1, const sf::Color& _col1, const Vec3& _v2, const sf::Color& _col2) {
+void ShapeRenderer::line(const Vec4& _v1, const sf::Color& _col1, const Vec4& _v2, const sf::Color& _col2) {
 	ver(_v1, _col1);
 	ver(_v2, _col2);
 }
 
-void ShapeRenderer::chain(const std::vector<Vec3>& _points, const sf::Color& _col) {
+void ShapeRenderer::chain(const std::vector<Vec4>& _points, const sf::Color& _col) {
 	if (_points.size() < 2) return;
 	for (unsigned int i = 0; i < _points.size() - 1; ++i)
 		line(_points[i], _points[i + 1], _col);
 }
 
-void ShapeRenderer::chain(const std::vector<std::tuple<Vec3, sf::Color>>& _points) {
+void ShapeRenderer::chain(const std::vector<std::tuple<Vec4, sf::Color>>& _points) {
 	if (_points.size() < 2) return;
-	Vec3 vec = std::get<0>(_points[1]);
+	Vec4 vec = std::get<0>(_points[1]);
 	sf::Color col = std::get<1>(_points[1]);
 	line(std::get<0>(_points[0]), std::get<1>(_points[1]), vec, col);
 	for (unsigned int i = 2; i < _points.size() - 1; ++i) {
@@ -810,45 +643,45 @@ void ShapeRenderer::chain(const std::vector<std::tuple<Vec3, sf::Color>>& _point
 	}
 }
 
-void ShapeRenderer::loop(const std::vector<Vec3>& _points, const sf::Color& _col) {
+void ShapeRenderer::loop(const std::vector<Vec4>& _points, const sf::Color& _col) {
 	if (_points.size() < 2) return;
 	chain(_points, _col);
 	line(_points[_points.size()-1], _points[0], _col);
 }
 
-void ShapeRenderer::loop(const std::vector<std::tuple<Vec3, sf::Color>>& _points) {
+void ShapeRenderer::loop(const std::vector<std::tuple<Vec4, sf::Color>>& _points) {
 	chain(_points);
 	line(std::get<0>(_points[_points.size() - 1]), std::get<1>(_points[_points.size() - 1]), std::get<0>(_points[0]), std::get<1>(_points[0]));
 }
 
 void ShapeRenderer::circleXY(const Vec2& _center, float _radius, const sf::Color& _color, uint _segments) {
-	std::vector<Vec3> vertices(_segments);
+	std::vector<Vec4> vertices(_segments);
 	float angle = 2.f * PI / static_cast<float>(_segments);
 	float cos = COS(angle);
 	float sin = SIN(angle);
 	float cx = _radius, cy = 0.f;
 
-	for (int i = 0; i < _segments; i++) {
-		vertices.push_back(Vec3(_center.x + cx, _center.y + cy, 0));
+	for (uint i = 0; i < _segments; i++) {
+		vertices.push_back(Vec4(_center.x + cx, _center.y + cy, 0, 1.f));
 		float temp = cx;
 		cx = cos * cx - sin * cy;
 		cy = sin * temp + cos * cy;
-		vertices.push_back(Vec3(_center.x + cx, _center.y + cy, 0));
+		vertices.push_back(Vec4(_center.x + cx, _center.y + cy, 0, 1.f));
 	}
 	// Ensure the last segment is identical to the first.
-	vertices.push_back(Vec3(_center.x + cx, _center.y + cy, 0));
+	vertices.push_back(Vec4(_center.x + cx, _center.y + cy, 0, 1.f));
 
 	float temp = cx;
 	cx = _radius;
 	cy = 0.f;
-	vertices.push_back(Vec3(_center.x + cx, _center.y + cy, 0));
+	vertices.push_back(Vec4(_center.x + cx, _center.y + cy, 0, 1.f));
 
 	loop(vertices, _color);
 }
 
-void ShapeRenderer::sphere(const Vec3& _center, float _radius, const sf::Color& _color, uint _sectorCount, uint _stackCount) {
+void ShapeRenderer::sphere(const Vec4& _center, float _radius, const sf::Color& _color, uint _sectorCount, uint _stackCount) {
 
-	std::vector<Vec3> vertices (_stackCount * _sectorCount);
+	std::vector<Vec4> vertices (_stackCount * _sectorCount);
 
 	float x, y, z, xy;                              // vertex position
 
@@ -856,31 +689,31 @@ void ShapeRenderer::sphere(const Vec3& _center, float _radius, const sf::Color& 
 	float stackStep = PI / _stackCount;
 	float sectorAngle, stackAngle;
 
-	for (int i = 0; i <= _stackCount; ++i) {
+	for (uint i = 0; i <= _stackCount; ++i) {
 		stackAngle = PI / 2 - i * stackStep;        // starting from pi/2 to -pi/2
 		xy = _radius * cosf(stackAngle);             // r * cos(u)
 		z = _radius * sinf(stackAngle);              // r * sin(u)
 
 		// add (sectorCount+1) vertices per stack
 		// the first and last vertices have same position and normal, but different tex coords
-		for (int j = 0; j <= _sectorCount; ++j) {
+		for (uint j = 0; j <= _sectorCount; ++j) {
 			sectorAngle = j * sectorStep;           // starting from 0 to 2pi
 
 			// vertex position (x, y, z)
 			x = xy * cosf(sectorAngle);             // r * cos(u) * cos(v)
 			y = xy * sinf(sectorAngle);             // r * cos(u) * sin(v)
 
-			vertices.push_back(Vec3(x, y, z));
+			vertices.push_back(Vec4(x, y, z, 1.f));
 
 		}
 	}
 
 	int k1, k2;
-	for (int i = 0; i < _stackCount; ++i) {
+	for (uint i = 0; i < _stackCount; ++i) {
 		k1 = i * (_sectorCount + 1);     // beginning of current stack
 		k2 = k1 + _sectorCount + 1;      // beginning of next stack
 
-		for (int j = 0; j < _sectorCount; ++j, ++k1, ++k2) {
+		for (uint j = 0; j < _sectorCount; ++j, ++k1, ++k2) {
 			// 2 triangles per sector excluding first and last stacks
 			// k1 => k2 => k1+1
 			if (i != 0)
@@ -894,12 +727,12 @@ void ShapeRenderer::sphere(const Vec3& _center, float _radius, const sf::Color& 
 
 }
 
-void ShapeRenderer::aabb(const Vec3& _center, float _side, const sf::Color& _color) {
-	Vec3 hs = Vec3(_side, _side, _side) * 0.5f;
+void ShapeRenderer::aabb(const Vec4& _center, float _side, const sf::Color& _color) {
+	Vec4 hs = Vec4(_side, _side, _side, 1.f) * 0.5f;
 	aabb(_center - hs, _center + hs, _color);
 }
 
-void ShapeRenderer::aabb(const Vec3& _min, const Vec3& _max, const sf::Color& _col) {
+void ShapeRenderer::aabb(const Vec4& _min, const Vec4& _max, const sf::Color& _col) {
 	//x
 	ver(_min.x, _min.y, _min.z, M_FloatBits(sf::Color::Red));
 	ver(_max.x, _min.y, _min.z, M_FloatBits(sf::Color::Red));
@@ -940,7 +773,7 @@ void ShapeRenderer::aabb(const Vec3& _min, const Vec3& _max, const sf::Color& _c
 	ver(_min.x, _max.y, _min.z, M_FloatBits(_col));
 }
 
-void ShapeRenderer::polygon(const std::vector<Vec3>& _points, const sf::Color& _col) {
+void ShapeRenderer::polygon(const std::vector<Vec4>& _points, const sf::Color& _col) {
 	loop(_points, _col);
 }
 
@@ -1005,5 +838,4 @@ void ShapeRenderer::draw(Camera* _cam, const sf::Color& _col) {
 	draw(_cam->frustum, _cam, _col);
 }
 
-void ShapeRenderer::string(const std::string &, int, int, const sf::Color &) {
-}
+void ShapeRenderer::string(const std::string &, int, int, const sf::Color&) {}

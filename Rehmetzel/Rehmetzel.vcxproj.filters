@@ -16,6 +16,9 @@
     <Filter Include="Resource Files\SpriteBatch">
       <UniqueIdentifier>{1cfb012a-ffc3-48f9-a7a4-3390e65b17a0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\Simple Forward Shadowless">
+      <UniqueIdentifier>{d5698c0b-95d7-4c2e-8ed8-afa46072f91f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\CameraUtils.hpp">
@@ -172,11 +175,11 @@
     <None Include="..\bin\assets\shader\spritebatch\sb_sprite.frag">
       <Filter>Resource Files\SpriteBatch</Filter>
     </None>
-    <None Include="..\bin\assets\shader\spritebatch\sb_font.vert">
-      <Filter>Resource Files\SpriteBatch</Filter>
+    <None Include="..\bin\assets\shader\simple forward\sb_sf.vert">
+      <Filter>Resource Files\Simple Forward Shadowless</Filter>
     </None>
-    <None Include="..\bin\assets\shader\spritebatch\sb_font.frag">
-      <Filter>Resource Files\SpriteBatch</Filter>
+    <None Include="..\bin\assets\shader\simple forward\sb_sf.frag">
+      <Filter>Resource Files\Simple Forward Shadowless</Filter>
     </None>
   </ItemGroup>
 </Project>
