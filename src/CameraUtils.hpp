@@ -20,10 +20,9 @@ namespace Heerbann {
 
 		bool checkBounds(const Vec4u&);
 
+		View* get(std::string);
 		View* create(std::string, ViewType, bool);
 		void remove(std::string);
-
-		View* operator[](std::string);
 
 	};
 
@@ -72,8 +71,8 @@ namespace Heerbann {
 		Vec2i lastPos;
 
 		bool uniform = false;
-		GLuint uniformBuffer;
-		float* buffer[3];
+		std::vector<std::tuple<GLuint, float*>> uniBuffers;
+
 		uint bufferIndex = 0;
 
 		void updateUniforms();
@@ -100,7 +99,7 @@ namespace Heerbann {
 		Mat4 combined;
 
 		float nearPlane = 1.0f;
-		float farPlane = 100.f;
+		float farPlane = 500.f;
 		float viewportWidth = 0.f;
 		float viewportHeight = 0.f;
 
@@ -182,10 +181,12 @@ namespace Heerbann {
 	public:
 
 		Vec4 target;
-		float azimuth, height, distance;
+		float azimuth = 0.f, height = 90.f, distance = 100.f;
 
 		ArcballCamera();
 		ArcballCamera(const float, const float, const float);
+
+		void update() override;
 	};
 
 	class AxisWidgetCamera : public Camera {

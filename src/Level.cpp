@@ -27,7 +27,7 @@ void LevelManager::initialize() {
 };
 
 void LevelManager::loadLevel(Level* _level) {
-	_level->preLoad(M_Asset);
+	_level->preLoad();
 	for (auto a : _level->assetToLoad) {
 		if (!M_Asset->exists(a->id))
 			M_Asset->addAsset(a);
@@ -43,11 +43,11 @@ void LevelManager::loadLevel(Level* _level) {
 	_level->assetToLoad.clear();
 	_level->assetToUnload.clear();
 	activeLevels.emplace_back(_level);
-	_level->postLoad(M_Asset);
+	_level->postLoad();
 }
 
 void LevelManager::unloadLevel(Level* _level) {
-	_level->preUnload(M_Asset);
+	_level->preUnload();
 	for (auto a : _level->assetToLoad) {
 		if (!M_Asset->exists(a->id))
 			M_Asset->addAsset(a);
@@ -67,7 +67,7 @@ void LevelManager::unloadLevel(Level* _level) {
 		}
 }
 
-void LevelManager::update(float _deltaTime) {
+void LevelManager::update() {
 	//this is used so that loading isnt caught in a loop
 	if (!loadCache.empty()) {
 		for (Level* l : loadCache)
@@ -91,14 +91,14 @@ void LevelManager::update(float _deltaTime) {
 	}
 	for (auto l : activeLevels) {
 		if (!l->isLocked && l->isLoaded)
-			l->update(_deltaTime);
+			l->update();
 	}
 }
 
-void LevelManager::draw(float _deltaTime, SpriteBatch* _batch) {
+void LevelManager::draw() {
 	for (auto l : activeLevels) {
 		if (!l->isLocked && l->isLoaded)
-			l->draw(_deltaTime, _batch);
+			l->draw();
 	}
 }
 
@@ -122,7 +122,7 @@ void LevelManager::queueLevelToUnLoad(Level* _level) {
 
 //---------------------- PreLoadLevel ----------------------\\
 
-void PreLoadLevel::preLoad(AssetManager* _asset) {
+void PreLoadLevel::preLoad() {
 	//assetToLoad.emplace_back(new LoadItem("assets/fonts/black.ttf", Type::font));
 	//assetToLoad.emplace_back(new LoadItem("assets/tex/Forest_soil_diffuse.png", Type::texture_png));
 	//assetToLoad.emplace_back(new LoadItem("assets/tex/ForestCliff_basecolor.png", Type::texture_png));
@@ -148,87 +148,120 @@ void PreLoadLevel::preLoad(AssetManager* _asset) {
 
 	assetToLoad.emplace_back(new LoadItem("assets/3d/deer/Model/Deer_old.dae", Type::model));
 	assetToLoad.emplace_back(new LoadItem("assets/shader/simple forward/sb_sf", Type::shader));
-	assetToLoad.emplace_back(new LoadItem("assets/shader/spritebatch/sf_font", Type::shader));
 }
 
-void PreLoadLevel::postLoad(AssetManager* _assets) {
+void PreLoadLevel::postLoad() {
 	M_Level->queueLevelToUnLoad(this);
 	M_Level->queueLevelToLoad("LoadingScreenLevel");
 }
 
 //---------------------- LoadingScreenLevel ----------------------\\
 
-void LoadingScreenLevel::preLoad(AssetManager *) {
+void LoadingScreenLevel::preLoad() {
 	
 }
 
-void LoadingScreenLevel::load(AssetManager* _manager) {
+void LoadingScreenLevel::load() {
 	//label = new Label("99%", (sf::Font*)((*_manager)["assets/fonts/black.ttf"]->data));
 	//label->position = sf::Vector2i(Main::width() / 2, Main::height() / 2);
 	//Main::getStage()->add(label);
 
 }
 
-void LoadingScreenLevel::preUnload(AssetManager* _manager) {
+void LoadingScreenLevel::preUnload() {
 
 }
 
-void LoadingScreenLevel::postLoad(AssetManager* _asset) {
+void LoadingScreenLevel::postLoad() {
 	M_Level->queueLevelToUnLoad(this);
 	M_Level->queueLevelToLoad("TestWorldLevel");
 }
 
-void LoadingScreenLevel::unload(AssetManager* _manager) {
+void LoadingScreenLevel::unload() {
 	
 }
 
-void LoadingScreenLevel::update(float _deltaTime) {
+void LoadingScreenLevel::update() {
 
 }
 
 //---------------------- MainMenuLevel ----------------------\\
 
-void MainMenuLevel::load(AssetManager* _manager) {
+void MainMenuLevel::load() {
 
 }
 
-void MainMenuLevel::unload(AssetManager* _manager) {
+void MainMenuLevel::unload() {
 
 }
 
-void MainMenuLevel::update(float _deltaTime) {
+void MainMenuLevel::update() {
 
 }
 
 //---------------------- TestWorldLevel ----------------------\\
 
-void TestWorldLevel::preLoad(AssetManager *) {
+void TestWorldLevel::preLoad() {
 	
 }
 
-void TestWorldLevel::load(AssetManager* _asset) {	
+void TestWorldLevel::load() {	
 	//WorldBuilderDefinition def;
 	//world = Main::getWorld()->builder->build(def);	
 
 }
 
-void TestWorldLevel::postLoad(AssetManager* _asset) {	
+void TestWorldLevel::postLoad() {	
 	//world->finalize(bgShader, treeShader);
 	//Main::getAI()->create();
 	//bgShader = reinterpret_cast<ShaderProgram*>(Main::getAssetManager()->getAsset("assets/shader/bg_shader")->data);
 	//treeShader = reinterpret_cast<ShaderProgram*>(Main::getAssetManager()->getAsset("assets/shader/tree_shader")->data);
-	//TODO
-}
-
-void TestWorldLevel::update(float _delta) {
 	
+	modelShader = reinterpret_cast<ShaderProgram*>(M_Asset->getAsset("assets/shader/simple forward/sb_sf")->data);
+	camPos = glGetUniformLocation(modelShader->getHandle(), "transform");
+	model = reinterpret_cast<G3D::Model*>(M_Asset->getAsset("assets/3d/deer/Model/Deer_old.dae")->data);
+	App::Gdx::printOpenGlErrors("test");
+	view = M_View->create("main", ViewType::pers, true);
+	view->setViewportBounds(0, 0, M_WIDTH, M_HEIGHT);
+	auto cam = reinterpret_cast<ArcballCamera*>(view->getCamera());
+	cam ->distance = 400.f;
+	cam->fieldOfView = 67.f;
+	cam->nearPlane = 0.1f;
+	cam->farPlane = 1000.f;
+	
+	view->setInteractive(true);
+	view->panXModifier = 0.25f;
+	view->panYModifier = 0.2f;
+	view->zoomBounds = Vec2(10.f, 1000.f);
+	view->zoomModifier = 25.f;
 }
 
-void TestWorldLevel::draw(float _delta, SpriteBatch* _batch) {
+void TestWorldLevel::update() {
+	view->clear(sf::Color::Black);
+	//auto c = reinterpret_cast<ArcballCamera*>(view->getCamera());
+	//c->arcball(c->target, c->azimuth += 0.5f, c->height, c->distance);
+	view->apply();	
+}
+
+void TestWorldLevel::draw() {
 	//for (auto v : world->bgVAOs)
 		//v->draw(bgShader);
 	//for (auto v : world->indexVAOs)
 		//v->draw(treeShader);
 	//Main::getAI()->draw(Main::getViewport()->cam.getTransform());
+
+	modelShader->bind();
+	uint uniforms = view->getUniformBuffer();
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, uniforms);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, uniforms);
+
+	glBindVertexArray(model->vao);
+	glDrawElements(GL_TRIANGLES, model->indexBufferSize, GL_UNSIGNED_INT, nullptr);
+	glBindVertexArray(0);
+
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+	modelShader->unbind();
+
+	App::Gdx::printOpenGlErrors("post draw");
 }
 

@@ -2,8 +2,22 @@
 
 #include <GL/glew.h>
 
-#include <glm/glm.hpp>
+#include <glm/ext/vector_float2.hpp>
+#include <glm/ext/vector_float3.hpp>
+#include <glm/ext/vector_float4.hpp>
+
+#include <glm/ext/vector_uint2.hpp>
+#include <glm/ext/vector_uint3.hpp>
+#include <glm/ext/vector_uint4.hpp>
+
+#include <glm/ext/vector_int2.hpp>
+#include <glm/ext/vector_int3.hpp>
+#include <glm/ext/vector_int4.hpp>
+
+#include <glm/ext/matrix_float4x4.hpp>
+
 #include <glm/gtx/quaternion.hpp>
+
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -168,7 +182,7 @@ typedef glm::quat Quat;
 #define EQUAL(X, Y) (Heerbann::App::Util::almost_equal((X), (Y)))
 #define ISNULL(X) (Heerbann::App::Util::almost_equal((X), (0.f)))
 #define ABS(X) (std::fabsf(X))
-#define CLAMP(X, MIN, MAX) (std::clamp(X, MIN, MAX))
+#define CLAMP(X, MIN, MAX) (std::clamp((X), (MIN), (MAX)))
 #define SIN(X) (std::sinf(X))
 #define ASIN(X) (std::asinf(X))
 #define COS(X) (std::cosf(X))
@@ -460,7 +474,24 @@ typedef glm::quat Quat;
 						hasError = true;
 						std::cout << "---- Print OpenGl Errors: " << _id << " ----" << std::endl;
 					}
-					std::cout << err << std::endl;
+					if (err == GL_INVALID_VALUE)
+						std::cout << "Invalid Value"; 
+					else if(err == GL_INVALID_OPERATION)
+						std::cout << "Invalid Operation";
+					else if (err == GL_OUT_OF_MEMORY)
+						std::cout << "Out of Memory";
+					else if (err == GL_INVALID_ENUM)
+						std::cout << "Invalid Enum";
+					else if (err == GL_STACK_OVERFLOW)
+						std::cout << "Stack Overflow";
+					else if (err == GL_STACK_UNDERFLOW)
+						std::cout << "Stack Underflow";
+					else if (err == GL_INVALID_FRAMEBUFFER_OPERATION)
+						std::cout << "Invalid Framebuffer Operation";
+					else if (err == GL_CONTEXT_LOST)
+						std::cout << "Context Lost";
+
+					std::cout << " (" << err << ")" << std::endl;
 				}
 				if (hasError) std::cout << "---- Finished ----" << std::endl;
 			};

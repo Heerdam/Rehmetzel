@@ -21,29 +21,29 @@ namespace Heerbann {
 		bool lockIfDiscrete = true;
 
 		//actual async loading 
-		virtual void load(AssetManager*) {};
+		virtual void load() {};
 
 		//actual async unloading 
-		virtual void unload(AssetManager*) {};
+		virtual void unload() {};
 
 		//add assets to queue for loading
-		virtual void preLoad(AssetManager*) {};
+		virtual void preLoad() {};
 
 		//add assets to queue for unloading
-		virtual void preUnload(AssetManager*) {};
+		virtual void preUnload() {};
 
 		//on main thread for opengl
-		virtual void postLoad(AssetManager*) {};
+		virtual void postLoad() {};
 		
-		virtual void update(float) {};
-		virtual void draw(float, SpriteBatch*) {};
+		virtual void update() {};
+		virtual void draw() {};
 	};
 
 	struct PreLoadLevel : public Level {
 		PreLoadLevel() : Level("PreLoadLevel") {};
 
-		void preLoad(AssetManager*) override;
-		void postLoad(AssetManager*) override;
+		void preLoad() override;
+		void postLoad() override;
 	};
 
 	struct LoadingScreenLevel : public Level {
@@ -51,20 +51,20 @@ namespace Heerbann {
 
 		Label* label;
 
-		void preLoad(AssetManager*) override;
-		void load(AssetManager*) override;
-		void preUnload(AssetManager*) override;
-		void postLoad(AssetManager*) override;
-		void unload(AssetManager*) override;
-		void update(float) override;
+		void preLoad() override;
+		void load() override;
+		void preUnload() override;
+		void postLoad() override;
+		void unload() override;
+		void update() override;
 	};
 
 	struct MainMenuLevel : public Level {
 		MainMenuLevel() : Level("MainMenuLevel") {};
 
-		void load(AssetManager*) override;
-		void unload(AssetManager*) override;
-		void update(float) override;
+		void load() override;
+		void unload() override;
+		void update() override;
 	};
 
 	struct TestWorldLevel : public Level {
@@ -76,6 +76,8 @@ namespace Heerbann {
 
 		G3D::Model* model;
 		GLuint camPos;
+
+		View* view;
 
 		WorldOut* world;
 
@@ -91,11 +93,11 @@ namespace Heerbann {
 
 		Text::TextBlock* testblock;
 
-		void preLoad(AssetManager*) override;
-		void load(AssetManager*) override;
-		void postLoad(AssetManager*) override;
-		void update(float) override;
-		void draw(float, SpriteBatch*) override;
+		void preLoad() override;
+		void load() override;
+		void postLoad() override;
+		void update() override;
+		void draw() override;
 	};
 
 	class LevelManager {
@@ -116,8 +118,8 @@ namespace Heerbann {
 		void unloadLevel(Level*);
 
 	public:
-		void update(float);
-		void draw(float, SpriteBatch*);
+		void update();
+		void draw();
 
 		void queueLevelToLoad(std::string);
 		void queueLevelToUnLoad(std::string);

@@ -8,6 +8,7 @@
 #include "UI.hpp"
 #include "Level.h"
 #include "Utils.hpp"
+#include "TimeLog.hpp"
 
 using namespace Heerbann;
 
@@ -19,6 +20,10 @@ int main() {
 	config->name = "Rehmetzel a0.3";
 	config->windowWidth = 1980u;
 	config->windowHeight = 1080u;
+	config->settings.majorVersion = 4;
+	config->settings.minorVersion = 6;
+	config->settings.stencilBits = 8;
+	config->settings.depthBits = 24;
 
 	M_Main->intialize(config);
 
@@ -39,29 +44,27 @@ int main() {
 
 	sf::Event event;
 	while (M_Context->isOpen()) {
+		auto start = TIMESTAMP;
 		if (close) {
 			M_Context->close();
 			delete M_Main;
 			return 0;
-		}
+		}	
 		try {
+			
 			M_Main->update();
 			while (M_Context->pollEvent(event))
 				M_Input->fire(event);
 
 			const float delta = 1.f / 60.f;
 
-			M_World->update(delta);
 			//update & apply
 
-			M_Level->update(delta);
-			M_Level->draw(delta, M_Batch);
+			M_Level->update();
+			M_Level->draw();
 
-			M_Stage->act();
-			M_Stage->draw(M_Batch);
-
-			M_Batch->build();
-			M_Batch->drawToScreen();
+			//M_Stage->act();
+			//M_Stage->draw(M_Batch);
 	
 		} catch (const std::runtime_error& re) {
 			std::cerr << "Runtime error: " << re.what() << std::endl;
@@ -70,6 +73,11 @@ int main() {
 		} catch (...) {
 			std::cerr << "Unknown failure occurred. Possible memory corruption" << std::endl;
 		}
+		unsigned long long elapsedTime = std::chrono::duration_cast<std::chrono::microseconds>(TIMESTAMP.time - start.time).count();
+		const uint NsToMs = 1000000;
+		unsigned long long wait = (14 - elapsedTime) * NsToMs;
+		auto sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+		glClientWaitSync(sync, GL_SYNC_FLUSH_COMMANDS_BIT, wait);
 		M_Context->display();
 	}
 	return 0;

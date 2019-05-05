@@ -4,6 +4,7 @@
 #include "InputMultiplexer.hpp"
 #include "Utils.hpp"
 #include "Math.hpp"
+#include "TimeLog.hpp"
 
 using namespace Heerbann;
 
@@ -14,6 +15,10 @@ bool ViewportHandler::checkBounds(const Vec4u& _bounds) {
 	currentGLBounds[2] = _bounds[2];
 	currentGLBounds[3] = _bounds[3];
 	return false;
+}
+
+View* ViewportHandler::get(std::string _id) {
+	return views[_id];
 }
 
 View* ViewportHandler::create(std::string _id, ViewType _type, bool _uniform) {
@@ -28,10 +33,6 @@ void ViewportHandler::remove(std::string _id) {
 	views[_id] = nullptr;
 }
 
-View* ViewportHandler::operator[](std::string _id) {
-	return views[_id];
-}
-
 void View::setViewportBounds(uint _x, uint _y, uint _width, uint _height) {
 	GLBounds[0] = _x;
 	GLBounds[1] = _y;
@@ -43,6 +44,7 @@ void View::setViewportBounds(uint _x, uint _y, uint _width, uint _height) {
 
 void View::clear(const sf::Color _color) {
 	glClearColor(colF(_color.r), colF(_color.g), colF(_color.b), colF(_color.a));
+	glClearDepth(1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
@@ -68,27 +70,31 @@ void View::setInteractive(bool _setActive) {
 	if (_setActive && !inputsActive) {
 		inputsActive = true;
 		InputEntry* entry = new InputEntry();
+
 		entry->mouseMoveEvent = [&](int _x, int _y)->bool {
-			switch (type) {
-				case ViewType::pers:
-				{
-					ArcballCamera* cam = reinterpret_cast<ArcballCamera*>(camera);
-					cam->azimuth += (_x - lastPos.x) * panXModifier;
-					cam->height += (_y - lastPos.y) * panYModifier;
-					camera->arcball(cam->target, cam->azimuth, cam->height, cam->distance);
-				}
-				return true;
-				case ViewType::ortho:
-				{
-				}
-				return true;
-				case ViewType::ortho2d:
-				{
-					OrthographicCamera* cam = reinterpret_cast<OrthographicCamera*>(camera);
-					cam->translate(static_cast<float>(_x - lastPos.x), static_cast<float>(_y - lastPos.y));
-				}
-				return true;
-			}		
+			if (buttonPressed) {
+				switch (type) {
+					case ViewType::pers:
+						{
+							ArcballCamera* cam = reinterpret_cast<ArcballCamera*>(camera);
+							cam->azimuth = std::fmod((cam->azimuth + (_x - lastPos.x) * panXModifier), 360.f);
+							cam->height = CLAMP((cam->height + (_y - lastPos.y) * panYModifier), 1.f, 179.f);
+							camera->arcball(cam->target, cam->azimuth, cam->height, cam->distance);
+							lastPos = Vec2i(_x, _y);
+						}
+					return true;
+					case ViewType::ortho:
+						{
+						}
+					return true;
+					case ViewType::ortho2d:
+						{
+							OrthographicCamera* cam = reinterpret_cast<OrthographicCamera*>(camera);
+							cam->translate(static_cast<float>(_x - lastPos.x), static_cast<float>(_y - lastPos.y));
+						}
+					return true;
+				}				
+			}
 			return false;
 		};
 
@@ -132,8 +138,10 @@ void View::setInteractive(bool _setActive) {
 				case ViewType::pers:
 				{
 					ArcballCamera* cam = reinterpret_cast<ArcballCamera*>(camera);
-					cam->distance = CLAMP(cam->distance += _delta * zoomModifier, zoomBounds[0], zoomBounds[1]);
+					cam->distance = CLAMP(cam->distance -= _delta * zoomModifier, zoomBounds[0], zoomBounds[1]);
 					camera->arcball(cam->target, cam->azimuth, cam->height, cam->distance);
+					camera->normalizeUpYLocked();
+					camera->update();
 				}
 				return true;
 				case ViewType::ortho:
@@ -168,11 +176,12 @@ View::View(std::string _id, ViewType _type, ViewportHandler* _parent, bool _unif
 		case ViewType::pers:
 		{
 			ArcballCamera* cam = new ArcballCamera();
-			setViewportBounds(0, 0, M_WIDTH, M_HEIGHT);
 			camera = cam;
+			setViewportBounds(0, 0, M_WIDTH, M_HEIGHT);			
 			zoomBounds = Vec2(1.f, 100.f);
-			cam->distance = 50.f;
+			cam->distance = 100.f;
 			camera->arcball(cam->target, cam->azimuth, cam->height, cam->distance);
+			apply();
 		}
 		break;
 		case ViewType::ortho:
@@ -182,40 +191,46 @@ View::View(std::string _id, ViewType _type, ViewportHandler* _parent, bool _unif
 		case ViewType::ortho2d:
 		{
 			OrthographicCamera* cam = new OrthographicCamera();
-			setViewportBounds(0, 0, M_WIDTH, M_HEIGHT);
 			camera = cam;
+			setViewportBounds(0, 0, M_WIDTH, M_HEIGHT);			
 			zoomBounds = Vec2(0.1f, 100.f);
 			cam->setToOrtho(false);
 		}
 		break;
 	}	
 	if (_uniform) {
+		App::Gdx::printOpenGlErrors("pre uniform aloc: " + _id);
+
+		uniBuffers.resize(2u);
 		uniform = _uniform;
-		glCreateBuffers(1, &uniformBuffer);
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, uniformBuffer);
+		GLuint buffers[2];
+		glCreateBuffers(2, buffers);
+		for (uint i = 0; i < 2u; ++i) {
+			glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffers[i]);
 
-		uint bufferSize = sizeof(float) * (16 + 2);
-		glBufferStorage(GL_SHADER_STORAGE_BUFFER, bufferSize * 3, nullptr,
-			GL_MAP_PERSISTENT_BIT | GL_MAP_WRITE_BIT | GL_CLIENT_STORAGE_BIT);
+			uint bufferSize = sizeof(float) * (16 + 2);
+			glBufferStorage(GL_SHADER_STORAGE_BUFFER, bufferSize, nullptr,
+				GL_MAP_PERSISTENT_BIT | GL_MAP_WRITE_BIT);
 
-		buffer[0] = reinterpret_cast<float*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, bufferSize,
-			GL_MAP_READ_BIT | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_PERSISTENT_BIT));
-		buffer[1] = reinterpret_cast<float*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, bufferSize, 2*bufferSize,
-			GL_MAP_READ_BIT | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_PERSISTENT_BIT));
-		buffer[2] = reinterpret_cast<float*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 2* bufferSize, 3*bufferSize,
-			GL_MAP_READ_BIT | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_PERSISTENT_BIT));
+			float* data = reinterpret_cast<float*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, bufferSize,
+				GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_INVALIDATE_RANGE_BIT));
 
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+			glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+			uniBuffers[i] = std::make_tuple(buffers[i], data);
+		}
+
+		App::Gdx::printOpenGlErrors("post uniform aloc: " + _id);
 	}
  }
 
 void View::updateUniforms() {
-	bufferIndex = (bufferIndex + 1) % 3;
+	bufferIndex = (bufferIndex + 1) % 2;
 	float* comb = combined();
-	std::memcpy(buffer[bufferIndex], comb, sizeof(float) * 16);
-	buffer[bufferIndex][16] = static_cast<float>(GLBounds.z);
-	buffer[bufferIndex][17] = static_cast<float>(GLBounds.w);
-	delete comb;
+	float* data = std::get<1>(uniBuffers[bufferIndex]);
+	std::memcpy(data, comb, sizeof(float) * 16);
+	data[16] = static_cast<float>(GLBounds.z);
+	data[17] = static_cast<float>(GLBounds.w);
 }
 
 View::~View() {
@@ -233,6 +248,7 @@ View::~View() {
 	 camera->update();
 	 if (uniform) updateUniforms();
  }
+
  Camera* View::getCamera() {
 	 return camera;
  }
@@ -242,7 +258,7 @@ View::~View() {
  }
 
  GLuint View::getUniformBuffer() {
-	 return uniformBuffer;
+	 return std::get<0>(uniBuffers[bufferIndex]);
  }
 
  Camera::Camera(const float _viewportWidth, const float _viewportHeight) :viewportWidth(_viewportWidth), viewportHeight(_viewportHeight),
@@ -253,8 +269,8 @@ View::~View() {
 
  void Camera::lookAt(const float _x, const float _y, const float _z) {
 	 direction = NOR(Vec4(_x, _y, _z, 1.f) - position);
-	 view = LOOKAT(Vec3(position), Vec3(_x, _y, _z), Vec3(up));
 	 normalizeUp();
+	 view = LOOKAT(Vec3(position), Vec3(_x, _y, _z), Vec3(up));
  }
 
  void Camera::lookAt(const Vec4& _pos) {
@@ -268,7 +284,7 @@ View::~View() {
 
  void Camera::normalizeUpYLocked() {
 	 right = Vec4(NOR(CRS(Vec3(UVY), Vec3(direction))), 1.f);
-	 up = Vec4(NOR(CRS(Vec3(right), Vec3(direction))), 1.f);
+	 up = Vec4(NOR(CRS(Vec3(direction), Vec3(right))), 1.f);
  }
 
  Quat Camera::getRotation(const Quat& _quat) {	
@@ -313,12 +329,7 @@ View::~View() {
  }
 
  void Camera::arcball(const Vec4& _point, const float _azimuth, const float _altitude, const float _radius) {
-	
-	 float ahh = TORAD(_altitude);
-	 float azz = TORAD(_azimuth);
-	 float ah = SIN(ahh);
-	 float az = COS(azz);
-
+		
 	 float x = _radius * SIN(TORAD(_altitude)) * COS(TORAD(_azimuth));
 	 float y = _radius * SIN(TORAD(_altitude)) * SIN(TORAD(_azimuth));
 	 float z = _radius * COS(TORAD(_altitude));
@@ -327,10 +338,9 @@ View::~View() {
 	 position.y = z;
 	 position.z = y;
 
-	 lookAt(_point);
+	 //lookAt(_point);
 	
-	 normalizeUpYLocked();
-	 update();
+	 //update();
  }
 
  void Camera::transform(const Mat4& _transform) {
@@ -384,8 +394,9 @@ View::~View() {
 
  void PerspectiveCamera::update(const bool _updateFrustum) {
 	 float aspect = viewportWidth / viewportHeight;
-	 projection = PERSPECTIVE(fieldOfView, aspect, ABS(nearPlane), ABS(farPlane));
+	 projection = PERSPECTIVE(TORAD(fieldOfView), aspect, ABS(nearPlane), ABS(farPlane));
 	 view = LOOKAT(Vec3(position), Vec3(position + direction), Vec3(up));
+	 //std::cout << position.x << " " << position.y << " " << position.z << std::endl;
 	 combined = projection * view;
 
 	 if (_updateFrustum) frustum->update(combined);
@@ -580,3 +591,10 @@ View::~View() {
 
  ArcballCamera::ArcballCamera(const float _fieldOfViewY, const float _viewportWidth, const float _viewportHeight) :
 	PerspectiveCamera(_fieldOfViewY, _viewportWidth, _viewportHeight) {}
+
+ void ArcballCamera::update() {
+	 direction = NOR(target - position);
+	 normalizeUpYLocked();
+	 //normalizeUp();
+	 PerspectiveCamera::update(true);
+ }

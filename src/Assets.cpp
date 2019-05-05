@@ -6,6 +6,7 @@
 #include "TextUtil.hpp"
 #include "Utils.hpp"
 #include "G3D.hpp"
+#include "TimeLog.hpp"
 
 using namespace Heerbann;
 
@@ -95,7 +96,7 @@ void AssetManager::addAsset(std::string _id, Type _type) {
 
 void AssetManager::addAsset(LoadItem* _item) {
 	std::lock_guard<std::mutex> guard(assetLock);
-	if (assets.count(_item->id) != 0) std::exception(std::string("Asset already exists [").append(_item->id).append("]").c_str());	
+	if (assets.count(_item->id) != 0) throw new std::exception(std::string("Asset already exists [").append(_item->id).append("]").c_str());
 	assets[_item->id] = _item;
 }
 
@@ -105,7 +106,7 @@ AssetManager::~AssetManager() {}
 
 LoadItem* AssetManager::getAsset(std::string _id) {
 	std::lock_guard<std::mutex> guard(assetLock);
-	if (assets.count(_id) == 0) std::exception(std::string("Asset doesnt exists [").append(_id).append("]").c_str());
+	if (assets.count(_id) == 0) throw new std::exception(std::string("Asset doesnt exists [").append(_id).append("]").c_str());
 	LoadItem* item = assets[_id];
 	return item;
 }
@@ -117,7 +118,7 @@ bool AssetManager::exists(std::string _id) {
 
 Level* AssetManager::getLevel(std::string _id) {
 	std::lock_guard<std::mutex> guard(levelLock);
-	if (levels.count(_id) == 0) std::exception(std::string("Level doesnt exists [").append(_id).append("]").c_str());
+	if (levels.count(_id) == 0) throw new std::exception(std::string("Level doesnt exists [").append(_id).append("]").c_str());
 	Level* level = levels[_id];
 	return level;
 }
@@ -130,46 +131,46 @@ Level* AssetManager::getLoadedLevel(std::string _id) {
 }
 
 void AssetManager::load(std::string _id) {
-	if (isLoading() && state == discrete) std::exception("cant add to loading queue while loading and in discrete mode");
+	if (isLoading() && state == discrete) throw new std::exception("cant add to loading queue while loading and in discrete mode");
 	LoadItem* item = getAsset(_id);
-	if (item == nullptr || item->isLoaded) std::exception(std::string("Asset does not exist or is already loaded [").append(_id).append("]").c_str());
+	if (item == nullptr || item->isLoaded) throw new std::exception(std::string("Asset does not exist or is already loaded [").append(_id).append("]").c_str());
 	if(state == continuous) queueLoad(item);
 	else discreteLoadQueue.emplace(item);
 }
 
 void AssetManager::unload(std::string _id) {
-	if (isLoading() && state == discrete) std::exception("cant add to unloading queue while loading and in discrete mode");
+	if (isLoading() && state == discrete) throw new std::exception("cant add to unloading queue while loading and in discrete mode");
 	LoadItem* item = (*this)[_id];
-	if (item == nullptr) std::exception(std::string("Asset does not exist [").append(_id).append("]").c_str());
+	if (item == nullptr) throw new std::exception(std::string("Asset does not exist [").append(_id).append("]").c_str());
 	if (state == continuous) queueUnLoad(item);
 	else discreteUnloadQueue.emplace(item);
 }
 
 void Heerbann::AssetManager::addLevel(std::string _id, Level* _level) {
 	std::lock_guard<std::mutex> guard(levelLock);
-	if (levels.count(_id) != 0) std::exception(std::string("Level already exists [").append(_id).append("]").c_str());
+	if (levels.count(_id) != 0) throw new std::exception(std::string("Level already exists [").append(_id).append("]").c_str());
 	levels[_id] = _level;
 }
 
 void Heerbann::AssetManager::loadLevel(std::string _id) {
-	if (isLoading() && state == discrete) std::exception("cant add to loading queue while loading and in discrete mode");
+	if (isLoading() && state == discrete) throw new std::exception("cant add to loading queue while loading and in discrete mode");
 	Level* item = getLevel(_id);
-	if (item == nullptr || item->isLoaded) std::exception(std::string("Level does not exist or is already loaded [").append(_id).append("]").c_str());
+	if (item == nullptr || item->isLoaded) throw new std::exception(std::string("Level does not exist or is already loaded [").append(_id).append("]").c_str());
 	if (state == continuous) queueLoad(item);
 	else discreteLevelLoadQueue.emplace(item);
 }
 
 void Heerbann::AssetManager::unloadLevel(std::string _id) {
-	if (isLoading() && state == discrete) std::exception("cant add to unloading queue while loading and in discrete mode");
+	if (isLoading() && state == discrete) throw new std::exception("cant add to unloading queue while loading and in discrete mode");
 	Level* item = getLevel(_id);
-	if (item == nullptr || !item->isLoaded) std::exception(std::string("Level does not exist or is already unloaded [").append(_id).append("]").c_str());
+	if (item == nullptr || !item->isLoaded) throw new std::exception(std::string("Level does not exist or is already unloaded [").append(_id).append("]").c_str());
 	if (state == continuous) queueUnLoad(item);
 	else discreteLevelUnloadQueue.emplace(item);
 }
 
 void Heerbann::AssetManager::startLoading() {
-	if (state == continuous) std::exception("state needs to be discrete!");
-	if (locked) std::exception("already loading!");
+	if (state == continuous) throw new std::exception("state needs to be discrete!");
+	if (locked) throw new std::exception("already loading!");
 	locked = true;
 	loadingThread = new std::thread(&AssetManager::asyncDiscreteLoad, this);	
 }
@@ -240,11 +241,11 @@ void Heerbann::AssetManager::asyncContinuousLoad() {
 }
 
 void AssetManager::levelLoader(Level* _level) {
-	_level->load(this);
+	_level->load();
 }
 
 void AssetManager::levelUnloader(Level * _level) {
-	_level->unload(this);
+	_level->unload();
 }
 
 void AssetManager::asyncDiscreteLoad() {
@@ -451,7 +452,7 @@ void AssetManager::asyncDiscreteLoad() {
 			case Type::font:
 			{
 				std::ifstream ifs(next->id);
-				if (!ifs.good()) std::exception((std::string("can't open file [") + next->id + std::string(".vert]")).data());
+				if (!ifs.good()) throw new std::exception((std::string("can't open file [") + next->id + std::string("]")).data());
 
 				//length
 				ifs.seekg(0, std::ios::end);
@@ -489,7 +490,7 @@ void AssetManager::asyncDiscreteLoad() {
 				for (unsigned int i = 0; i < atlas->files.size(); ++i) {
 
 					std::ifstream ifs(atlas->files[i], std::ios::binary);
-					if (!ifs.good()) std::exception((std::string("can't open file [") + atlas->files[i] + std::string("]")).data());
+					if (!ifs.good()) throw new std::exception((std::string("can't open file [") + atlas->files[i] + std::string("]")).data());
 
 					//length
 					ifs.seekg(0, std::ios::end);
@@ -598,12 +599,12 @@ void AssetManager::asyncDiscreteLoad() {
 
 						//pos
 						vertexBuffer.emplace_back(pos.x);
-						vertexBuffer.emplace_back(pos.y);
 						vertexBuffer.emplace_back(pos.z);
+						vertexBuffer.emplace_back(pos.y);
 						//norm
 						vertexBuffer.emplace_back(norm.x);
-						vertexBuffer.emplace_back(norm.y);
 						vertexBuffer.emplace_back(norm.z);
+						vertexBuffer.emplace_back(norm.y);
 						//uv
 						vertexBuffer.emplace_back(uv == NULL ? 0.f : uv[k].x);
 						vertexBuffer.emplace_back(uv == NULL ? 0.f : uv[k].y);
@@ -662,9 +663,33 @@ void AssetManager::asyncDiscreteLoad() {
 				M_Main->addJob([](void* _entry)->void {
 					LoadItem* item = reinterpret_cast<LoadItem*>(_entry);
 					G3D::Model* model = reinterpret_cast<G3D::Model*>(item->data);
-					std::cout << "Loading: [Model] " << item->id << std::endl;
+					LOG("Loading: [Model] " + item->id);
 					GLuint vbo;
 					GLuint index;
+
+					/*
+					float vertices[] = {
+						0.0f, 50.f, 50.f,   // top right
+						1.f, 0.5f, 0.5f,
+						0.f, 0.f, 0.f,
+
+						0.0f, 50.f, -50.f,  // bottom right
+						0.5f, 1.f, 0.5f,
+						0.f, 0.f, 0.f,
+
+						0.0f, -50.f, -50.f,   // bottom left
+						0.5f, 0.5f, 1.f,
+						0.f, 0.f, 0.f,
+
+						0.0f, -50.f, 50.f,   // top left 
+						0.5f, 0.5f, 0.5f,
+						0.f, 0.f, 0.f
+					};
+					unsigned int indices[] = {  // note that we start from 0!
+						0, 1, 3,   // first triangle
+						1, 2, 3    // second triangle
+					};
+					*/
 					//create buffer
 					glGenVertexArrays(1, &model->vao);
 					glGenBuffers(1, &vbo);
@@ -678,7 +703,7 @@ void AssetManager::asyncDiscreteLoad() {
 
 					//index
 					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index);
-					glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * model->indexBufferSize, model->indexBuffer, GL_STATIC_DRAW);
+					glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint) * model->indexBufferSize, model->indexBuffer, GL_STATIC_DRAW);
 
 					glEnableVertexAttribArray(0);
 					glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)0);
@@ -691,9 +716,9 @@ void AssetManager::asyncDiscreteLoad() {
 
 					glEnableVertexAttribArray(3);
 					glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(8 * sizeof(float)));
-
-					glBindBuffer(GL_ARRAY_BUFFER, 0);
+				
 					glBindVertexArray(0);
+					glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 					if (model->vertexBuffer != nullptr) delete model->vertexBuffer;
 					if (model->indexBuffer != nullptr) delete model->indexBuffer;
@@ -701,6 +726,8 @@ void AssetManager::asyncDiscreteLoad() {
 
 					item->isLoaded = true;
 					item->isLocked = false;
+
+					App::Gdx::printOpenGlErrors(item->id);
 
 				}, next);
 			
@@ -808,8 +835,8 @@ void AssetManager::asyncDiscreteLoad() {
 }
 
 void AssetManager::finish() {
-	if (state == continuous) std::exception("state needs to be discrete!");
-	if(locked) std::exception("already loading!");
+	if (state == continuous) throw new std::exception("state needs to be discrete!");
+	if(locked) throw new std::exception("already loading!");
 	locked = true;
 	loadingThread = new std::thread(&AssetManager::asyncDiscreteLoad, this);
 	if (loadingThread->joinable())
@@ -849,7 +876,7 @@ Vec2 AtlasRegion::getV() {
 }
 
 AtlasRegion* TextureAtlas::operator[](std::string _id) {
-	if (regions.count(_id) == 0) std::exception((std::string("region does not exist [") + _id + std::string("]")).c_str());
+	if (regions.count(_id) == 0) throw new std::exception((std::string("region does not exist [") + _id + std::string("]")).c_str());
 	return regions[_id];
 }
 

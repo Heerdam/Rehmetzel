@@ -69,16 +69,22 @@ void Main::intialize(MainConfig* _config) {
 
 	//------------- Everything needing openGl goes below this line -------------\\
 
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glEnable(GL_BLEND);
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
+	glDepthMask(GL_TRUE);
+	glDepthFunc(GL_LEQUAL);
+	glDepthRange(0.0f, 1.0f);
+
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
-	glEnable(GL_SCISSOR_TEST);
-
+	glFrontFace(GL_CCW);
+	//glEnable(GL_SCISSOR_TEST);
+	
 	getAssetManager()->addAsset("assets/fonts/default.ttf", Type::font);
 	getAssetManager()->load("assets/fonts/default.ttf");
+	getAssetManager()->addAsset("assets/shader/spritebatch/sb_sprite", Type::shader);
+	getAssetManager()->load("assets/shader/spritebatch/sb_sprite");
 	getAssetManager()->finish();
 	update();
 
@@ -89,7 +95,7 @@ void Main::intialize(MainConfig* _config) {
 	cache = new Text::FontCache();
 	cache->addFont(Util::s2ws("default"), getDefaultFont());
 	
-	batch = new SpriteBatch(_config->MAXSPRITES);
+	//batch = new SpriteBatch(_config->MAXSPRITES);
 	
 	level->initialize();
 
