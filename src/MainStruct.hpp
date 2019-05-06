@@ -53,6 +53,7 @@
 #include <assimp/postprocess.h>
 #include <assimp/Logger.hpp>
 #include <assimp/DefaultLogger.hpp>
+#include <assimp/types.h>
 
 namespace Heerbann {
 
@@ -289,11 +290,6 @@ typedef glm::quat Quat;
 	//MapGenerator
 	class MapGenerator;
 
-	//G3D
-	namespace G3D {
-		struct Model;
-	}
-
 	//Assets
 	enum Type : int;
 	enum State : int;
@@ -327,8 +323,8 @@ typedef glm::quat Quat;
 	struct SpotLight;
 	struct DirectionalLight;
 	struct Material;
-	enum DrawableType : int;
-	struct Drawable;
+	struct Mesh;
+	struct Model;
 
 	//TimeLog
 	class Logger;

@@ -7,8 +7,8 @@
 #include "World.hpp"
 #include "TextUtil.hpp"
 #include "AI.hpp"
-#include "G3D.hpp"
 #include "InputMultiplexer.hpp"
+#include "Gdx.hpp"
 
 using namespace Heerbann;
 using namespace UI;
@@ -148,6 +148,7 @@ void PreLoadLevel::preLoad() {
 
 	assetToLoad.emplace_back(new LoadItem("assets/3d/deer/Model/Deer_old.dae", Type::model));
 	assetToLoad.emplace_back(new LoadItem("assets/shader/simple forward/sb_sf", Type::shader));
+	assetToLoad.emplace_back(new LoadItem("assets/3d/deer/Textures/Deer Common.png", Type::texture_png));
 }
 
 void PreLoadLevel::postLoad() {
@@ -218,8 +219,9 @@ void TestWorldLevel::postLoad() {
 	//treeShader = reinterpret_cast<ShaderProgram*>(Main::getAssetManager()->getAsset("assets/shader/tree_shader")->data);
 	
 	modelShader = reinterpret_cast<ShaderProgram*>(M_Asset->getAsset("assets/shader/simple forward/sb_sf")->data);
-	camPos = glGetUniformLocation(modelShader->getHandle(), "transform");
-	model = reinterpret_cast<G3D::Model*>(M_Asset->getAsset("assets/3d/deer/Model/Deer_old.dae")->data);
+	model = reinterpret_cast<Model*>(M_Asset->getAsset("assets/3d/deer/Model/Deer_old.dae")->data);
+	mTex = reinterpret_cast<sf::Texture*>(M_Asset->getAsset("assets/3d/deer/Textures/Deer Common.png")->data);
+
 	App::Gdx::printOpenGlErrors("test");
 	view = M_View->create("main", ViewType::pers, true);
 	view->setViewportBounds(0, 0, M_WIDTH, M_HEIGHT);
@@ -228,6 +230,7 @@ void TestWorldLevel::postLoad() {
 	cam->fieldOfView = 67.f;
 	cam->nearPlane = 0.1f;
 	cam->farPlane = 1000.f;
+	cam->arcball(cam->target, cam->azimuth, cam->height, cam->distance);
 	
 	view->setInteractive(true);
 	view->panXModifier = 0.25f;
@@ -255,10 +258,17 @@ void TestWorldLevel::draw() {
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, uniforms);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, uniforms);
 
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, mTex->getNativeHandle());
+
+	App::Gdx::printOpenGlErrors("post draw");
 	glBindVertexArray(model->vao);
-	glDrawElements(GL_TRIANGLES, model->indexBufferSize, GL_UNSIGNED_INT, nullptr);
+	auto mesh = model->meshList[5];
+	glDrawElements(GL_TRIANGLES, mesh->indexCount, GL_UNSIGNED_INT, (void*)(mesh->indexOffset * sizeof(uint)));
+	App::Gdx::printOpenGlErrors("post draw");
 	glBindVertexArray(0);
 
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 	modelShader->unbind();
 

@@ -5,8 +5,8 @@
 #include "Level.h"
 #include "TextUtil.hpp"
 #include "Utils.hpp"
-#include "G3D.hpp"
 #include "TimeLog.hpp"
+#include "Gdx.hpp"
 
 using namespace Heerbann;
 
@@ -567,30 +567,60 @@ void AssetManager::asyncDiscreteLoad() {
 				std::vector<unsigned int> indexBuffer;
 				 //offset, size
 
-				G3D::Model* modelOut = new G3D::Model();
+				Model* modelOut = new Model();
 				next->data = modelOut;
 
-				//numIndex
-				//offset_to_weights[index]
-				//offset_to_animation[animation_index]
-				//offset_to_bones[animation_index]
+				std::vector<Material> materialList;
 
-				//weights [index]: {bone_index, weight}
-				//animation [animation_index][bone_index][time]: {mat4}
+				//Material
+				materialList.resize(scene->mNumMaterials);
+				for (uint i = 0; i < scene->mNumMaterials; ++i) {
+					Material material;					
+					auto mat = scene->mMaterials[i];
 
-				//int boneCount = 0;
-				//std::vector<aiString> boneCache;
-				//std::unordered_map<std::string, unsigned int> boneIndices;
+					aiColor3D out;
 
-				//weights [index]: {bone_index, weight}
-				//std::vector<std::vector<std::tuple<unsigned int, float>*>*> weights;
+					mat->Get(AI_MATKEY_COLOR_DIFFUSE, out);
+					material.COLOR_DIFFUSE = Vec4(out.r, out.g, out.b, 1.f);
 
+					mat->Get(AI_MATKEY_COLOR_SPECULAR, out);
+					material.COLOR_SPECULAR = Vec4(out.r, out.g, out.b, 1.f);
+
+					mat->Get(AI_MATKEY_COLOR_AMBIENT, out);
+					material.COLOR_AMBIENT = Vec4(out.r, out.g, out.b, 1.f);
+
+					mat->Get(AI_MATKEY_COLOR_EMISSIVE, out);
+					material.COLOR_EMISSIVE = Vec4(out.r, out.g, out.b, 1.f);
+
+					mat->Get(AI_MATKEY_COLOR_TRANSPARENT, out);
+					material.COLOR_TRANSPARENT = Vec4(out.r, out.g, out.b, 1.f);
+
+					mat->Get(AI_MATKEY_OPACITY, material.OPACITY);
+
+					mat->Get(AI_MATKEY_SHININESS, material.SHININESS);
+
+					mat->Get(AI_MATKEY_SHININESS_STRENGTH, material.SHININESS_STRENGTH);
+
+					materialList[i] = material;
+				}
+
+				//Vertex & Index data
 				int meshIndexOffset = 0;
 				int meshVertexOffset = 0;
 				//meshes
-				for (unsigned int i = 5; i < 6; ++i) {
-					//if (i == 1) break;
+
+				modelOut->meshList.resize(scene->mNumMeshes);
+
+				for (unsigned int i = 0; i < scene->mNumMeshes; ++i) {
+					
 					aiMesh* mesh = scene->mMeshes[i];
+					Mesh* meshOut = new Mesh();
+					modelOut->meshList[i] = meshOut;
+					modelOut->meshMap[std::string(mesh->mName.C_Str())] = meshOut;
+
+					meshOut->vertexCount = mesh->mNumVertices;
+					meshOut->vertexOffset = static_cast<uint>(vertexBuffer.size());
+
 					//vertex
 					for (unsigned int k = 0; k < mesh->mNumVertices; ++k) {
 						auto pos = mesh->mVertices[k];
@@ -609,7 +639,7 @@ void AssetManager::asyncDiscreteLoad() {
 						vertexBuffer.emplace_back(uv == NULL ? 0.f : uv[k].x);
 						vertexBuffer.emplace_back(uv == NULL ? 0.f : uv[k].y);
 						//index
-						vertexBuffer.emplace_back(0.f);
+						vertexBuffer.emplace_back(static_cast<float>(mesh->mMaterialIndex));
 
 						meshVertexOffset += mesh->mNumVertices;
 					}
@@ -623,8 +653,10 @@ void AssetManager::asyncDiscreteLoad() {
 							++iCount;
 						}
 					}
+					
+					meshOut->indexCount = iCount;
+					meshOut->indexOffset = meshIndexOffset;
 
-					modelOut->meshMeta[std::string(mesh->mName.C_Str())] = std::make_tuple(meshVertexOffset, mesh->mNumVertices, meshIndexOffset, iCount);
 					meshIndexOffset += iCount;
 
 
@@ -652,58 +684,81 @@ void AssetManager::asyncDiscreteLoad() {
 
 				}
 
-				modelOut->vertexBufferSize = static_cast<uint>(vertexBuffer.size());
-				modelOut->vertexBuffer = new float[vertexBuffer.size()];
-				std::memcpy(modelOut->vertexBuffer, vertexBuffer.data(), vertexBuffer.size() * sizeof(float));
 
-				modelOut->indexBufferSize = static_cast<uint>(indexBuffer.size());
-				modelOut->indexBuffer = new unsigned int[indexBuffer.size()];
-				std::memcpy(modelOut->indexBuffer, indexBuffer.data(), indexBuffer.size() * sizeof(unsigned int));
+
+
+				//numIndex
+				//offset_to_weights[index]
+				//offset_to_animation[animation_index]
+				//offset_to_bones[animation_index]
+
+				//weights [index]: {bone_index, weight}
+				//animation [animation_index][bone_index][time]: {mat4}
+
+				//int boneCount = 0;
+				//std::vector<aiString> boneCache;
+				//std::unordered_map<std::string, unsigned int> boneIndices;
+
+				//weights [index]: {bone_index, weight}
+				//std::vector<std::vector<std::tuple<unsigned int, float>*>*> weights;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				modelOut->vertexBufferCacheSize = static_cast<uint>(vertexBuffer.size());
+				modelOut->vertexBufferCache = new float[vertexBuffer.size()];
+				std::memcpy(modelOut->vertexBufferCache, vertexBuffer.data(), vertexBuffer.size() * sizeof(float));
+
+				modelOut->indexBufferCacheSize = static_cast<uint>(indexBuffer.size());
+				modelOut->indexBufferCache = new unsigned int[indexBuffer.size()];
+				std::memcpy(modelOut->indexBufferCache, indexBuffer.data(), indexBuffer.size() * sizeof(unsigned int));
+
+				modelOut->materialCacheSize = static_cast<uint>(materialList.size());
+				modelOut->materialCache = new char[sizeof(Material) * materialList.size()];
+				std::memcpy(modelOut->materialCache, indexBuffer.data(), materialList.size() * sizeof(Material));
 
 				M_Main->addJob([](void* _entry)->void {
 					LoadItem* item = reinterpret_cast<LoadItem*>(_entry);
-					G3D::Model* model = reinterpret_cast<G3D::Model*>(item->data);
+					Model* model = reinterpret_cast<Model*>(item->data);
 					LOG("Loading: [Model] " + item->id);
 					GLuint vbo;
 					GLuint index;
 
-					/*
-					float vertices[] = {
-						0.0f, 50.f, 50.f,   // top right
-						1.f, 0.5f, 0.5f,
-						0.f, 0.f, 0.f,
-
-						0.0f, 50.f, -50.f,  // bottom right
-						0.5f, 1.f, 0.5f,
-						0.f, 0.f, 0.f,
-
-						0.0f, -50.f, -50.f,   // bottom left
-						0.5f, 0.5f, 1.f,
-						0.f, 0.f, 0.f,
-
-						0.0f, -50.f, 50.f,   // top left 
-						0.5f, 0.5f, 0.5f,
-						0.f, 0.f, 0.f
-					};
-					unsigned int indices[] = {  // note that we start from 0!
-						0, 1, 3,   // first triangle
-						1, 2, 3    // second triangle
-					};
-					*/
 					//create buffer
 					glGenVertexArrays(1, &model->vao);
 					glGenBuffers(1, &vbo);
 					glGenBuffers(1, &index);
+					glGenBuffers(1, &model->matBuffer);
 
 					glBindVertexArray(model->vao);
 
 					//vbo
 					glBindBuffer(GL_ARRAY_BUFFER, vbo);
-					glBufferData(GL_ARRAY_BUFFER, sizeof(float) * model->vertexBufferSize, model->vertexBuffer, GL_STATIC_DRAW);
+					glBufferData(GL_ARRAY_BUFFER, sizeof(float) * model->vertexBufferCacheSize, model->vertexBufferCache, GL_STATIC_DRAW);
 
 					//index
 					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index);
-					glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint) * model->indexBufferSize, model->indexBuffer, GL_STATIC_DRAW);
+					glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint) * model->indexBufferCacheSize, model->indexBufferCache, GL_STATIC_DRAW);
+
+					//material
+					glBindBuffer(GL_SHADER_STORAGE_BUFFER, model->matBuffer);
+					glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Material) * model->materialCacheSize, model->materialCache, GL_STATIC_DRAW);
+					glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, model->matBuffer);
 
 					glEnableVertexAttribArray(0);
 					glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)0);
@@ -718,11 +773,15 @@ void AssetManager::asyncDiscreteLoad() {
 					glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(8 * sizeof(float)));
 				
 					glBindVertexArray(0);
-					glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-					if (model->vertexBuffer != nullptr) delete model->vertexBuffer;
-					if (model->indexBuffer != nullptr) delete model->indexBuffer;
-					if (model->ssboBuffer != nullptr) delete model->ssboBuffer;
+					glBindBuffer(GL_ARRAY_BUFFER, 0);
+					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+					glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+					if (model->vertexBufferCache != nullptr) delete model->vertexBufferCache;
+					if (model->indexBufferCache != nullptr) delete model->indexBufferCache;
+					if (model->animationCache != nullptr) delete model->animationCache;
+					if (model->materialCache != nullptr) delete model->materialCache;
 
 					item->isLoaded = true;
 					item->isLocked = false;

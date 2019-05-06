@@ -74,9 +74,9 @@ namespace Heerbann {
 		ShaderProgram* treeShader;
 		ShaderProgram* modelShader;
 
-		G3D::Model* model;
-		GLuint camPos;
-
+		Model* model;
+		sf::Texture* mTex;
+		
 		View* view;
 
 		WorldOut* world;
