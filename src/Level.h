@@ -72,14 +72,24 @@ namespace Heerbann {
 
 		ShaderProgram* bgShader;
 		ShaderProgram* treeShader;
-		ShaderProgram* modelShader;
+		ShaderProgram* sf_vsmShader;
+		ShaderProgram* sf_vsmShaderNoTex;
+		ShaderProgram* vsmShader;
+		ShaderProgram* fboDebugshader;
+
+		uint shadowMapTexDepth, shadowMapTex, shadowMapFBO;
 
 		Model* model;
 		sf::Texture* mTex;
+
+		GLuint floor, box;
 		
 		View* view;
 
 		WorldOut* world;
+		sLight* sun;
+		Light* sl;
+		float angle = 0;
 
 		float* data;
 		int vertexCount;

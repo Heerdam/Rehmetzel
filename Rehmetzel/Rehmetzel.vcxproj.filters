@@ -181,5 +181,29 @@
     <None Include="..\bin\assets\shader\simple forward\sb_sf.frag">
       <Filter>Resource Files\Simple Forward Shadowless</Filter>
     </None>
+    <None Include="..\bin\assets\shader\simple forward\sb_vsm.frag">
+      <Filter>Resource Files\Simple Forward Shadowless</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\simple forward\sb_vsm.vert">
+      <Filter>Resource Files\Simple Forward Shadowless</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\simple forward\sb_sf_vsm.frag">
+      <Filter>Resource Files\Simple Forward Shadowless</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\simple forward\sb_sf_vsm.vert">
+      <Filter>Resource Files\Simple Forward Shadowless</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\simple forward\sb_sf_vsm_notex.frag">
+      <Filter>Resource Files\Simple Forward Shadowless</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\simple forward\sb_sf_vsm_notex.vert">
+      <Filter>Resource Files\Simple Forward Shadowless</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\fbo_debug_shader.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\fbo_debug_shader.frag">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -222,6 +222,7 @@ typedef glm::quat Quat;
 #define M_Timer Heerbann::App::Get()->getTimer()
 #define M_Logger Heerbann::App::Get()->getLogger()
 #define M_Shape Heerbann::App::Get()->getShape()
+#define M_Env Heerbann::App::Get()->getEnv()
 
 #define ID Heerbann::App::Util::getId()
 #define DeltaTime Heerbann::App::Get()->deltaTime()
@@ -234,6 +235,11 @@ typedef glm::quat Quat;
 #define LOG(X) (Heerbann::App::Get()->getLogger()->log(X));
 
 #define LERP(START, END, T) ((START) + ((END) - (START)) * (T))
+
+#define GLError(X) (Heerbann::App::Gdx::printOpenGlErrors((X)))
+#define FBError(X) (Heerbann::App::Gdx::printFrameBufferErrors((X)))
+
+#define FLOAT(X) (static_cast<float>((X)))
 
 	namespace App {
 		class Main;
@@ -323,6 +329,18 @@ typedef glm::quat Quat;
 	struct SpotLight;
 	struct DirectionalLight;
 	struct Material;
+	enum LightType : int;
+	struct sLight;
+	class ModeInstancer;
+	enum AnimBehaviour : int;
+	struct mNode;
+	struct Bone;
+	struct NodeAnimation;
+	struct MeshKey;
+	struct VectorKey;
+	struct QuatKey;
+	struct MeshAnimation;
+	struct Animation;
 	struct Mesh;
 	struct Model;
 
@@ -358,6 +376,7 @@ typedef glm::quat Quat;
 			Logger* logger;
 			Timer* timer;
 			ShapeRenderer* shape;
+			Environment* env;
 
 			Main();
 
@@ -438,6 +457,7 @@ typedef glm::quat Quat;
 			//---------------------- World ----------------------\\
 
 			static World* getWorld();
+			static Environment* getEnv();
 		
 			//---------------------- Viewport ----------------------\\
 
@@ -490,6 +510,42 @@ typedef glm::quat Quat;
 					std::cout << " (" << err << ")" << std::endl;
 				}
 				if (hasError) std::cout << "---- Finished ----" << std::endl;
+			};
+
+			inline void printFrameBufferErrors(std::string _id) {
+				switch (glCheckFramebufferStatus(GL_FRAMEBUFFER)) {
+				case GL_FRAMEBUFFER_COMPLETE:
+					return;
+				case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+					std::cout << "---- Print Framebuffer Errors: " << _id << " ----" << std::endl;
+					std::cout << "FRAMEBUFFER INCOMPLETE ATTACHMENT" << std::endl;
+					break;
+				case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+					std::cout << "---- Print Framebuffer Errors: " << _id << " ----" << std::endl;
+					std::cout << "FRAMEBUFFER INCOMPLETE MISSING ATTACHMENT" << std::endl;
+					break;
+				case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
+					std::cout << "---- Print Framebuffer Errors: " << _id << " ----" << std::endl;
+					std::cout << "FRAMEBUFFER INCOMPLETE DRAW BUFFER" << std::endl;
+					break;
+				case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
+					std::cout << "---- Print Framebuffer Errors: " << _id << " ----" << std::endl;
+					std::cout << "FRAMEBUFFER INCOMPLETE READ BUFFER" << std::endl;
+					break;
+				case GL_FRAMEBUFFER_UNSUPPORTED:
+					std::cout << "---- Print Framebuffer Errors: " << _id << " ----" << std::endl;
+					std::cout << "FRAMEBUFFER UNSUPPORTED" << std::endl;
+					break;
+				case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
+					std::cout << "---- Print Framebuffer Errors: " << _id << " ----" << std::endl;
+					std::cout << "FRAMEBUFFER INCOMPLETE MULTISAMPLE" << std::endl;
+					break;
+				case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:
+					std::cout << "---- Print Framebuffer Errors: " << _id << " ----" << std::endl;
+					std::cout << "FRAMEBUFFER INCOMPLETE LAYER TARGETS" << std::endl;
+					break;
+				}
+				std::cout << "---- Finished ----" << std::endl;
 			};
 
 			inline unsigned long long getFrameId() {

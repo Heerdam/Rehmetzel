@@ -595,11 +595,11 @@ void AssetManager::asyncDiscreteLoad() {
 					mat->Get(AI_MATKEY_COLOR_TRANSPARENT, out);
 					material.COLOR_TRANSPARENT = Vec4(out.r, out.g, out.b, 1.f);
 
-					mat->Get(AI_MATKEY_OPACITY, material.OPACITY);
+					mat->Get(AI_MATKEY_OPACITY, material.vals.x);
 
-					mat->Get(AI_MATKEY_SHININESS, material.SHININESS);
+					mat->Get(AI_MATKEY_SHININESS, material.vals.y);
 
-					mat->Get(AI_MATKEY_SHININESS_STRENGTH, material.SHININESS_STRENGTH);
+					mat->Get(AI_MATKEY_SHININESS_STRENGTH, material.vals.z);
 
 					materialList[i] = material;
 				}
@@ -611,6 +611,8 @@ void AssetManager::asyncDiscreteLoad() {
 
 				modelOut->meshList.resize(scene->mNumMeshes);
 
+				modelOut->boneCache.resize(scene->mNumMeshes);				
+
 				for (unsigned int i = 0; i < scene->mNumMeshes; ++i) {
 					
 					aiMesh* mesh = scene->mMeshes[i];
@@ -620,6 +622,7 @@ void AssetManager::asyncDiscreteLoad() {
 
 					meshOut->vertexCount = mesh->mNumVertices;
 					meshOut->vertexOffset = static_cast<uint>(vertexBuffer.size());
+					meshOut->matIndex = mesh->mMaterialIndex;
 
 					//vertex
 					for (unsigned int k = 0; k < mesh->mNumVertices; ++k) {
@@ -638,8 +641,6 @@ void AssetManager::asyncDiscreteLoad() {
 						//uv
 						vertexBuffer.emplace_back(uv == NULL ? 0.f : uv[k].x);
 						vertexBuffer.emplace_back(uv == NULL ? 0.f : uv[k].y);
-						//index
-						vertexBuffer.emplace_back(static_cast<float>(mesh->mMaterialIndex));
 
 						meshVertexOffset += mesh->mNumVertices;
 					}
@@ -659,66 +660,95 @@ void AssetManager::asyncDiscreteLoad() {
 
 					meshIndexOffset += iCount;
 
-
-
-					/*
-					weights.resize(indexBuffer.size());
-					boneCache.resize(mesh->mNumBones);
-
-					boneCount += mesh->mNumBones;
-
-					//weights
-					for (unsigned int k = 0; k < mesh->mNumBones; ++k) {
-						auto bone = mesh->mBones[k];
-						boneCache[k] = std::string(bone->mName.C_Str());
-						boneIndices[std::string(bone->mName.C_Str())] = k;
-						for (unsigned int j = 0; j < bone->mNumWeights; ++j) {
-							unsigned int index = static_cast<unsigned int>(bone->mWeights[j].mVertexId);
-							if (weights[index] == nullptr)
-								weights[index] = new std::vector<std::tuple<unsigned int, float>*>();
-							weights[index]->emplace_back(new std::tuple<unsigned int, float>(index, bone->mWeights[j].mWeight));
-						}	
-
+					modelOut->boneCache[i].resize(mesh->mNumBones);
+					for (uint k = 0; k < mesh->mNumBones; ++k) {
+						auto bone = mesh->mBones[i];
+						Bone* out = new Bone();				
+						modelOut->boneCache[i].emplace_back(out);
+						out->id = bone->mName.C_Str();
+						meshOut->boneMap[out->id] = out;
+						out->numWeights = bone->mNumWeights;
+						out->offset = Mat4(
+							bone->mOffsetMatrix.a1, bone->mOffsetMatrix.b1, bone->mOffsetMatrix.c1, bone->mOffsetMatrix.d1,
+							bone->mOffsetMatrix.a2, bone->mOffsetMatrix.b2, bone->mOffsetMatrix.c2, bone->mOffsetMatrix.d2,
+							bone->mOffsetMatrix.a3, bone->mOffsetMatrix.b3, bone->mOffsetMatrix.c3, bone->mOffsetMatrix.d3,
+							bone->mOffsetMatrix.a4, bone->mOffsetMatrix.b4, bone->mOffsetMatrix.c4, bone->mOffsetMatrix.d4);
+						out->weights.resize(bone->mNumWeights);
+						for (uint j = 0; j < bone->mNumWeights; ++j)
+							out->weights[j] = std::make_tuple(bone->mWeights[j].mVertexId, bone->mWeights[j].mWeight);
 					}
-					*/
 
 				}
 
+				//create node hierarchy
+				std::function<mNode*(mNode*, aiNode*)> sort = [&](mNode* _parent, aiNode* _self)->mNode* {
+				
+					mNode* out = new mNode();
+					if (_parent != nullptr) {
+						out->parent = _parent;
+						_parent->children.emplace_back(out);
+					}
+					out->id = _self->mName.C_Str();
+					out->meshes.resize(_self->mNumMeshes);
+					std::memcpy(&out->meshes[0], _self->mMeshes, _self->mNumMeshes * sizeof(uint));
+					out->transform = Mat4(
+						_self->mTransformation.a1, _self->mTransformation.b1, _self->mTransformation.c1, _self->mTransformation.d1,
+						_self->mTransformation.a2, _self->mTransformation.b2, _self->mTransformation.c2, _self->mTransformation.d2,
+						_self->mTransformation.a3, _self->mTransformation.b3, _self->mTransformation.c3, _self->mTransformation.d3,
+						_self->mTransformation.a4, _self->mTransformation.b4, _self->mTransformation.c4, _self->mTransformation.d4);
+					
+					modelOut->nodeMap[out->id] = out;
+					modelOut->nodeCache.emplace_back(out);
+					if (_self->mNumChildren == 0) return out;
+					for (uint i = 0; i < _self->mNumChildren; ++i)
+						sort(out, _self->mChildren[i]);
+					return out;
+				};
 
+				//modelOut->root = sort(nullptr, scene->mRootNode);
+				
+				//animations
+				for (uint i = 0; i < scene->mNumAnimations; ++i) {
+					auto an = scene->mAnimations[i];
+					Animation* out = new Animation();
+					out->duration = FLOAT(an->mDuration);
+					out->ticksPerSecond = FLOAT(an->mTicksPerSecond);
 
+					for (uint j = 0; j < an->mNumChannels; ++j) {
+						auto chan = an->mChannels[j];
+						NodeAnimation* na = new NodeAnimation();
+						na->affectedNode = chan->mNodeName.C_Str();
 
-				//numIndex
-				//offset_to_weights[index]
-				//offset_to_animation[animation_index]
-				//offset_to_bones[animation_index]
+						na->positionKeys.resize(chan->mNumPositionKeys);
+						for (uint k = 0; k < chan->mNumPositionKeys; ++k) {
+							auto vec = chan->mPositionKeys[k];
+							na->positionKeys[k] = VectorKey{ FLOAT(vec.mTime), Vec3(vec.mValue.x, vec.mValue.y, vec.mValue.z) };
+						}
+							
+						na->quatKeys.resize(chan->mNumRotationKeys);
+						for (uint k = 0; k < chan->mNumRotationKeys; ++k) {
+							auto quat = chan->mRotationKeys[k];
+							na->quatKeys[k] = QuatKey{ FLOAT(quat.mTime), Quat(quat.mValue.x, quat.mValue.y, quat.mValue.z, quat.mValue.w) };
+						}
 
-				//weights [index]: {bone_index, weight}
-				//animation [animation_index][bone_index][time]: {mat4}
+						na->scalingKeys.resize(chan->mNumScalingKeys);
+						for (uint k = 0; k < chan->mNumScalingKeys; ++k) {
+							auto vec = chan->mPositionKeys[k];
+							na->scalingKeys[k] = VectorKey{ FLOAT(vec.mTime), Vec3(vec.mValue.x, vec.mValue.y, vec.mValue.z) };
+						}
+					}
 
-				//int boneCount = 0;
-				//std::vector<aiString> boneCache;
-				//std::unordered_map<std::string, unsigned int> boneIndices;
-
-				//weights [index]: {bone_index, weight}
-				//std::vector<std::vector<std::tuple<unsigned int, float>*>*> weights;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+					for (uint j = 0; j < an->mNumMeshChannels; ++j) {
+						auto chan = an->mMeshChannels[j];
+						MeshAnimation* ma = new MeshAnimation();
+						ma->affectedMesh = chan->mName.C_Str();
+						ma->keys.resize(chan->mNumKeys);
+						for (uint k = 0; k < chan->mNumKeys; ++k) {
+							auto vec = chan->mKeys[k];
+							ma->keys[k] = MeshKey{ FLOAT(vec.mTime), vec.mValue };
+						}
+					}
+				}
 
 				modelOut->vertexBufferCacheSize = static_cast<uint>(vertexBuffer.size());
 				modelOut->vertexBufferCache = new float[vertexBuffer.size()];
@@ -730,7 +760,7 @@ void AssetManager::asyncDiscreteLoad() {
 
 				modelOut->materialCacheSize = static_cast<uint>(materialList.size());
 				modelOut->materialCache = new char[sizeof(Material) * materialList.size()];
-				std::memcpy(modelOut->materialCache, indexBuffer.data(), materialList.size() * sizeof(Material));
+				std::memcpy(modelOut->materialCache, materialList.data(), materialList.size() * sizeof(Material));
 
 				M_Main->addJob([](void* _entry)->void {
 					LoadItem* item = reinterpret_cast<LoadItem*>(_entry);
@@ -754,28 +784,25 @@ void AssetManager::asyncDiscreteLoad() {
 					//index
 					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index);
 					glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint) * model->indexBufferCacheSize, model->indexBufferCache, GL_STATIC_DRAW);
-
-					//material
-					glBindBuffer(GL_SHADER_STORAGE_BUFFER, model->matBuffer);
-					glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Material) * model->materialCacheSize, model->materialCache, GL_STATIC_DRAW);
-					glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, model->matBuffer);
-
+			
 					glEnableVertexAttribArray(0);
-					glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)0);
+					glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 
 					glEnableVertexAttribArray(1);
-					glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(3 * sizeof(float)));
+					glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
 
 					glEnableVertexAttribArray(2);
-					glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(6 * sizeof(float)));
+					glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
 
-					glEnableVertexAttribArray(3);
-					glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(8 * sizeof(float)));
-				
 					glBindVertexArray(0);
 
 					glBindBuffer(GL_ARRAY_BUFFER, 0);
 					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+					glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+					//material
+					glBindBuffer(GL_SHADER_STORAGE_BUFFER, model->matBuffer);
+					glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Material) * model->materialCacheSize, model->materialCache, GL_STATIC_DRAW);
 					glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 					if (model->vertexBufferCache != nullptr) delete model->vertexBufferCache;
@@ -785,9 +812,8 @@ void AssetManager::asyncDiscreteLoad() {
 
 					item->isLoaded = true;
 					item->isLocked = false;
-
+				
 					App::Gdx::printOpenGlErrors(item->id);
-
 				}, next);
 			
 				/*

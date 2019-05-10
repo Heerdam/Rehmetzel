@@ -198,40 +198,7 @@ View::View(std::string _id, ViewType _type, ViewportHandler* _parent, bool _unif
 		}
 		break;
 	}	
-	if (_uniform) {
-		App::Gdx::printOpenGlErrors("pre uniform aloc: " + _id);
-
-		uniBuffers.resize(2u);
-		uniform = _uniform;
-		GLuint buffers[2];
-		glCreateBuffers(2, buffers);
-		for (uint i = 0; i < 2u; ++i) {
-			glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffers[i]);
-
-			uint bufferSize = sizeof(float) * (16 + 2);
-			glBufferStorage(GL_SHADER_STORAGE_BUFFER, bufferSize, nullptr,
-				GL_MAP_PERSISTENT_BIT | GL_MAP_WRITE_BIT);
-
-			float* data = reinterpret_cast<float*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, bufferSize,
-				GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_INVALIDATE_RANGE_BIT));
-
-			glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
-			uniBuffers[i] = std::make_tuple(buffers[i], data);
-		}
-
-		App::Gdx::printOpenGlErrors("post uniform aloc: " + _id);
-	}
  }
-
-void View::updateUniforms() {
-	bufferIndex = (bufferIndex + 1) % 2;
-	float* comb = combined();
-	float* data = std::get<1>(uniBuffers[bufferIndex]);
-	std::memcpy(data, comb, sizeof(float) * 16);
-	data[16] = static_cast<float>(GLBounds.z);
-	data[17] = static_cast<float>(GLBounds.w);
-}
 
 View::~View() {
 	setInteractive(false);
@@ -246,7 +213,6 @@ View::~View() {
 	 camera->viewportHeight = static_cast<float>(GLBounds.w);
 
 	 camera->update();
-	 if (uniform) updateUniforms();
  }
 
  Camera* View::getCamera() {
@@ -257,8 +223,19 @@ View::~View() {
 	 return ToArray(camera->combined);
  }
 
- GLuint View::getUniformBuffer() {
-	 return std::get<0>(uniBuffers[bufferIndex]);
+ void View::bindCombined(uint _location) {
+	 glUniformMatrix4fv(_location, 1, false, combined());
+	 GLError("View::bindCombined");
+ }
+
+ void View::bindViewSize(uint _location) {
+	 glUniform4f(_location, static_cast<float>(GLBounds.x), static_cast<float>(GLBounds.y), static_cast<float>(GLBounds.z), static_cast<float>(GLBounds.w));
+	 GLError("View::bindViewSize");
+ }
+
+ void View::bindPosition(uint _location) {
+	 glUniform3f(_location, camera->position.x, camera->position.y, camera->position.z);
+	 GLError("View::bindPosition");
  }
 
  Camera::Camera(const float _viewportWidth, const float _viewportHeight) :viewportWidth(_viewportWidth), viewportHeight(_viewportHeight),

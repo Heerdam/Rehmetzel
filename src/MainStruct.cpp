@@ -11,6 +11,7 @@
 #include "TextUtil.hpp"
 #include "AI.hpp"
 #include "TimeLog.hpp"
+#include "Gdx.hpp"
 
 using namespace Heerbann;
 using namespace App;
@@ -46,6 +47,7 @@ void Main::intialize(MainConfig* _config) {
 	level = new LevelManager();
 	timer = new Timer();
 	logger = new Logger();
+	env = new Environment();
 	
 	viewport = new ViewportHandler();
 
@@ -98,6 +100,7 @@ void Main::intialize(MainConfig* _config) {
 	//batch = new SpriteBatch(_config->MAXSPRITES);
 	
 	level->initialize();
+	env->initialize();
 
 	//aiHandler = new AI::AIHandler();
 	
@@ -185,6 +188,10 @@ InputMultiplexer* Main::getInput() {
 
 World* Main::getWorld() {
 	return instance->world;
+}
+
+Environment* App::Main::getEnv() {
+	return getInstance()->env;
 }
 
 //---------------------- Viewport ----------------------\\

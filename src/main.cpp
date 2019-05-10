@@ -9,6 +9,7 @@
 #include "Level.h"
 #include "Utils.hpp"
 #include "TimeLog.hpp"
+#include "Gdx.hpp"
 
 using namespace Heerbann;
 
@@ -59,6 +60,7 @@ int main() {
 			const float delta = 1.f / 60.f;
 
 			//update & apply
+			M_Env->update();
 
 			M_Level->update();
 			M_Level->draw();

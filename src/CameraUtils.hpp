@@ -63,17 +63,14 @@ namespace Heerbann {
 
 		float* combined();
 
-		GLuint getUniformBuffer();
+		void bindCombined(uint);
+		void bindViewSize(uint);
+		void bindPosition(uint);
 
 	private:		
 		bool buttonPressed = false;
 		bool inputsActive = false;
 		Vec2i lastPos;
-
-		bool uniform = false;
-		std::vector<std::tuple<GLuint, float*>> uniBuffers;
-
-		uint bufferIndex = 0;
 
 		void updateUniforms();
 
