@@ -80,7 +80,8 @@ int main() {
 		unsigned long long wait = (14 - elapsedTime) * NsToMs;
 		auto sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 		glClientWaitSync(sync, GL_SYNC_FLUSH_COMMANDS_BIT, wait);
-		M_Context->display();
+		glDeleteSync(sync);
+		M_Context->display();	
 	}
 	return 0;
 }

@@ -186,6 +186,11 @@ View::View(std::string _id, ViewType _type, ViewportHandler* _parent, bool _unif
 		break;
 		case ViewType::ortho:
 		{
+			OrthoPersCamera* cam = new OrthoPersCamera();
+			camera = cam;
+			setViewportBounds(0, 0, M_WIDTH, M_HEIGHT);
+			zoomBounds = Vec2(1.f, 100.f);
+			apply();
 		}
 		break;
 		case ViewType::ortho2d:
@@ -574,4 +579,12 @@ View::~View() {
 	 normalizeUpYLocked();
 	 //normalizeUp();
 	 PerspectiveCamera::update(true);
+ }
+
+ void OrthoPersCamera::update(const bool _updateFrustum) {
+	 projection = ORTHO(-viewportWidth / 2, viewportWidth/2, -viewportHeight / 2, viewportHeight/2, nearPlane, farPlane);
+	 view = LOOKAT(Vec3(position), Vec3(position + direction), Vec3(up));
+	 combined = projection * view;
+
+	 if (_updateFrustum) frustum->update(combined);
  }

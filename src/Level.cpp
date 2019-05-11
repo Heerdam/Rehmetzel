@@ -236,7 +236,7 @@ void TestWorldLevel::postLoad() {
 	cam ->distance = 400.f;
 	cam->fieldOfView = 67.f;
 	cam->nearPlane = 0.1f;
-	cam->farPlane = 1000.f;
+	cam->farPlane = 2000.f;
 	cam->arcball(cam->target, cam->azimuth, cam->height, cam->distance);
 	
 	view->setInteractive(true);
@@ -254,63 +254,64 @@ void TestWorldLevel::postLoad() {
 	uint ssize = 1024;
 
 	sl = M_Env->addLight("sun", LightType::Directionallight, false, sun);
-	sl->shadowMapSize = Vec2u(ssize, ssize);
-
+	sl->shadowMapSize = Vec2u(ssize, ssize);	
+	
 	glGenTextures(1, &shadowMapTexDepth);
 	glBindTexture(GL_TEXTURE_2D, shadowMapTexDepth);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, ssize, ssize, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glGenTextures(1, &shadowMapTex);
 	glBindTexture(GL_TEXTURE_2D, shadowMapTex);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32F, ssize, ssize, 0, GL_RG, GL_FLOAT, nullptr);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glGenFramebuffers(1, &shadowMapFBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowMapTexDepth, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, shadowMapTex, 0);
+	
 	FBError("TestWorldLevel::postLoad");
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	float col = M_FloatBits(sf::Color::Green);
 
 	float vertices[] = {
-		500.f,
+		5000.f,
 		0.0f,
-		500.f,
+		5000.f,
 		0.f,
 		1.f,
 		0.f,
 		col,
 
-		500.f,
+		5000.f,
 		0.0f,
-		-500.f,
+		-5000.f,
 		0.f,
 		1.f,
 		0.f,
 		col,
 
-		-500.f,
+		-5000.f,
 		0.0f,
-		-500.f,
+		-5000.f,
 		0.f,
 		1.f,
 		0.f,
 		col,
 
-		-500.f,
+		-5000.f,
 		0.0f,
-		500.f,
+		5000.f,
 		0.f,
 		1.f,
 		0.f,
@@ -339,7 +340,7 @@ void TestWorldLevel::postLoad() {
 	glEnableVertexAttribArray(0); //a_Pos
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)0);
 
-	glEnableVertexAttribArray(1); //a_uv
+	glEnableVertexAttribArray(1); //a_norm
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(3 * sizeof(float)));
 
 	glEnableVertexAttribArray(2); //a_Col
@@ -356,11 +357,11 @@ void TestWorldLevel::postLoad() {
 		1.f, -1.f, 0.f,
 		1.f, 0.f,
 
-		-1.f, -1.f, 1.f,
+		-1.f, -1.f, 0.f,
 		0.f, 0.f,
 
-		-1.f, 1.f, 1.f,
-		0.f, 1.f,
+		-1.f, 1.f, 0.f,
+		0.f, 1.f
 	};
 
 	unsigned int indes[] = {  
@@ -368,23 +369,25 @@ void TestWorldLevel::postLoad() {
 		3, 2, 1   
 	};
 
+	GLuint i, v;
+
 	glGenVertexArrays(1, &box);
-	glGenBuffers(1, &index);
-	glGenBuffers(1, &vertex);
+	glGenBuffers(1, &i);
+	glGenBuffers(1, &v);
 
 	glBindVertexArray(box);
 
-	glBindBuffer(GL_ARRAY_BUFFER, vertex);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertis), vertis, GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, i);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indes), indes, GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, v);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertis), vertis, GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(0); //a_Pos
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
 
 	glEnableVertexAttribArray(1); //a_uv
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)3);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -412,6 +415,7 @@ void TestWorldLevel::update() {
 void TestWorldLevel::draw() {
 
 	GLError("TestWorldLevel::draw");
+	auto mesh = model->meshList[5];
 
 	vsmShader->bind();
 
@@ -420,8 +424,7 @@ void TestWorldLevel::draw() {
 	model->bindTransform(2);
 
 	//model
-	glBindVertexArray(model->vao);
-	auto mesh = model->meshList[5];
+	glBindVertexArray(model->vao);	
 	glDrawElements(GL_TRIANGLES, mesh->indexCount, GL_UNSIGNED_INT, (void*)(mesh->indexOffset * sizeof(uint)));
 	glBindVertexArray(0);
 	
@@ -432,9 +435,11 @@ void TestWorldLevel::draw() {
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	vsmShader->unbind();
+	
+	glViewport(view->GLBounds[0], view->GLBounds[1], view->GLBounds[2], view->GLBounds[3]);
 
 	/*
-	//
+
 	fboDebugshader->bind();
 
 	glActiveTexture(GL_TEXTURE0);
@@ -447,9 +452,8 @@ void TestWorldLevel::draw() {
 	glBindVertexArray(0);
 
 	fboDebugshader->unbind();
+
 	*/
-	
-	glViewport(view->GLBounds[0], view->GLBounds[1], view->GLBounds[2], view->GLBounds[3]);
 
 	//draw model
 	sf_vsmShader->bind();

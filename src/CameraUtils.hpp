@@ -173,6 +173,10 @@ namespace Heerbann {
 		void update (const bool) override;
 	};
 
+	class OrthoPersCamera : public PerspectiveCamera {
+		void update(const bool) override;
+	};
+
 	class ArcballCamera : public PerspectiveCamera {
 		
 	public:
