@@ -183,6 +183,9 @@
     <None Include="..\bin\assets\shader\bg_shader.frag" />
     <None Include="..\bin\assets\shader\bg_shader.geom" />
     <None Include="..\bin\assets\shader\bg_shader.vert" />
+    <None Include="..\bin\assets\shader\esm\shader_esm.frag" />
+    <None Include="..\bin\assets\shader\esm\shader_esm.vert" />
+    <None Include="..\bin\assets\shader\esm\shader_esm_gb.comp" />
     <None Include="..\bin\assets\shader\fbo_debug_shader.frag" />
     <None Include="..\bin\assets\shader\fbo_debug_shader.vert" />
     <None Include="..\bin\assets\shader\forwardplus_shader.frag" />
@@ -193,6 +196,7 @@
     <None Include="..\bin\assets\shader\model_shader.vert" />
     <None Include="..\bin\assets\shader\simple forward\sb_sf.frag" />
     <None Include="..\bin\assets\shader\simple forward\sb_sf.vert" />
+    <None Include="..\bin\assets\shader\simple forward\sb_sf_blur.comp" />
     <None Include="..\bin\assets\shader\simple forward\sb_sf_vsm.frag" />
     <None Include="..\bin\assets\shader\simple forward\sb_sf_vsm.vert" />
     <None Include="..\bin\assets\shader\simple forward\sb_sf_vsm_notex.frag" />

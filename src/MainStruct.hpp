@@ -321,6 +321,7 @@ typedef glm::quat Quat;
 	class OrthographicCamera;
 	class PerspectiveCamera;
 	class AxisWidgetCamera;
+	class OrthoPersCamera;
 
 	//Gdx
 	class Environment;
@@ -343,6 +344,15 @@ typedef glm::quat Quat;
 	struct Animation;
 	struct Mesh;
 	struct Model;
+	class TextureDebugRenderer;
+	class ShadowMap;
+	class Renderer;
+	class VSMRenderer;
+	class ESMRenderer;
+	struct Renderable;
+	struct VSMRenderable;
+	struct GaussianBlur;
+	struct GBlurData;
 
 	//TimeLog
 	class Logger;

@@ -19,6 +19,15 @@
     <Filter Include="Resource Files\Simple Forward Shadowless">
       <UniqueIdentifier>{d5698c0b-95d7-4c2e-8ed8-afa46072f91f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\trash">
+      <UniqueIdentifier>{e79c46c3-e1f5-4d62-9232-6fe6410094fb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\debug">
+      <UniqueIdentifier>{fac84d1c-981e-4930-b10a-a47d0a391386}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Expentional Shadow Mapping">
+      <UniqueIdentifier>{40fb9fc5-b4d8-4dbd-b133-c38ac8672bad}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\CameraUtils.hpp">
@@ -95,9 +104,6 @@
     <ClCompile Include="..\src\World.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\bin\assets\shader\testshader.frag">
-      <Filter>Resource Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\TextUtil.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -116,59 +122,11 @@
     <ClCompile Include="..\src\TimeLog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\bin\assets\shader\testshader.frag">
+      <Filter>Resource Files\trash</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\bin\assets\shader\bg_shader.frag">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="..\bin\assets\shader\bg_shader.geom">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="..\bin\assets\shader\bg_shader.vert">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="..\README.md">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="..\bin\assets\shader\tree_shader.frag">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="..\bin\assets\shader\tree_shader.vert">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="..\bin\assets\shader\ai.comp">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="..\bin\assets\shader\AiTest.vert">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="..\bin\assets\shader\AiTest.geom">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="..\bin\assets\shader\AiTest.frag">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="..\bin\assets\shader\AiTestComp.comp">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="..\bin\assets\shader\model_shader.vert">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="..\bin\assets\shader\model_shader.frag">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="..\bin\assets\shader\lightgrid_shader.comp">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="..\bin\assets\shader\LightCullShader.comp">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="..\bin\assets\shader\forwardplus_shader.vert">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="..\bin\assets\shader\forwardplus_shader.frag">
-      <Filter>Resource Files</Filter>
-    </None>
     <None Include="..\bin\assets\shader\spritebatch\sb_sprite.vert">
       <Filter>Resource Files\SpriteBatch</Filter>
     </None>
@@ -199,11 +157,74 @@
     <None Include="..\bin\assets\shader\simple forward\sb_sf_vsm_notex.vert">
       <Filter>Resource Files\Simple Forward Shadowless</Filter>
     </None>
-    <None Include="..\bin\assets\shader\fbo_debug_shader.vert">
-      <Filter>Resource Files</Filter>
+    <None Include="..\bin\assets\shader\ai.comp">
+      <Filter>Resource Files\trash</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\AiTest.frag">
+      <Filter>Resource Files\trash</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\AiTest.geom">
+      <Filter>Resource Files\trash</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\AiTest.vert">
+      <Filter>Resource Files\trash</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\AiTestComp.comp">
+      <Filter>Resource Files\trash</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\bg_shader.frag">
+      <Filter>Resource Files\trash</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\bg_shader.geom">
+      <Filter>Resource Files\trash</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\bg_shader.vert">
+      <Filter>Resource Files\trash</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\forwardplus_shader.frag">
+      <Filter>Resource Files\trash</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\forwardplus_shader.vert">
+      <Filter>Resource Files\trash</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\LightCullShader.comp">
+      <Filter>Resource Files\trash</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\lightgrid_shader.comp">
+      <Filter>Resource Files\trash</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\model_shader.frag">
+      <Filter>Resource Files\trash</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\model_shader.vert">
+      <Filter>Resource Files\trash</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\tree_shader.frag">
+      <Filter>Resource Files\trash</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\tree_shader.vert">
+      <Filter>Resource Files\trash</Filter>
     </None>
     <None Include="..\bin\assets\shader\fbo_debug_shader.frag">
+      <Filter>Resource Files\debug</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\fbo_debug_shader.vert">
+      <Filter>Resource Files\debug</Filter>
+    </None>
+    <None Include="..\README.md">
       <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\esm\shader_esm.vert">
+      <Filter>Resource Files\Expentional Shadow Mapping</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\esm\shader_esm.frag">
+      <Filter>Resource Files\Expentional Shadow Mapping</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\esm\shader_esm_gb.comp">
+      <Filter>Resource Files\Expentional Shadow Mapping</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\simple forward\sb_sf_blur.comp">
+      <Filter>Resource Files\Simple Forward Shadowless</Filter>
     </None>
   </ItemGroup>
 </Project>

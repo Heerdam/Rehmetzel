@@ -75,14 +75,13 @@ namespace Heerbann {
 		ShaderProgram* sf_vsmShader;
 		ShaderProgram* sf_vsmShaderNoTex;
 		ShaderProgram* vsmShader;
-		ShaderProgram* fboDebugshader;
 
-		uint shadowMapTexDepth, shadowMapTex, shadowMapFBO;
+		VSMRenderer* vsm;
+		VSMRenderable* drawable_1;
+		VSMRenderable* drawable_2;
 
-		Model* model;
+		Model* model, *floorModel;
 		sf::Texture* mTex;
-
-		GLuint floor, box;
 		
 		View* view;
 

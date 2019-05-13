@@ -123,6 +123,15 @@ void LevelManager::queueLevelToUnLoad(Level* _level) {
 //---------------------- PreLoadLevel ----------------------\\
 
 void PreLoadLevel::preLoad() {
+
+	assetToLoad.emplace_back(new LoadItem("assets/shader/simple forward/sb_sf", Type::shader));
+	assetToLoad.emplace_back(new LoadItem("assets/shader/simple forward/sb_sf_vsm", Type::shader));
+	assetToLoad.emplace_back(new LoadItem("assets/shader/simple forward/sb_sf_vsm_notex", Type::shader));
+	assetToLoad.emplace_back(new LoadItem("assets/shader/simple forward/sb_vsm", Type::shader));
+	assetToLoad.emplace_back(new LoadItem("assets/shader/simple forward/sb_vsm", Type::shader));
+	assetToLoad.emplace_back(new LoadItem("assets/shader/simple forward/sb_sf_blur", Type::shader));
+	assetToLoad.emplace_back(new LoadItem("assets/shader/fbo_debug_shader", Type::shader));
+
 	//assetToLoad.emplace_back(new LoadItem("assets/fonts/black.ttf", Type::font));
 	//assetToLoad.emplace_back(new LoadItem("assets/tex/Forest_soil_diffuse.png", Type::texture_png));
 	//assetToLoad.emplace_back(new LoadItem("assets/tex/ForestCliff_basecolor.png", Type::texture_png));
@@ -147,11 +156,6 @@ void PreLoadLevel::preLoad() {
 	//assetToLoad.emplace_back(new LoadItem("assets/trees/trees", Type::atlas));
 
 	assetToLoad.emplace_back(new LoadItem("assets/3d/deer/Model/Deer_old.dae", Type::model));
-	assetToLoad.emplace_back(new LoadItem("assets/shader/simple forward/sb_sf", Type::shader));
-	assetToLoad.emplace_back(new LoadItem("assets/shader/simple forward/sb_sf_vsm", Type::shader));
-	assetToLoad.emplace_back(new LoadItem("assets/shader/simple forward/sb_sf_vsm_notex", Type::shader));
-	assetToLoad.emplace_back(new LoadItem("assets/shader/simple forward/sb_vsm", Type::shader));
-	assetToLoad.emplace_back(new LoadItem("assets/shader/fbo_debug_shader", Type::shader));
 	assetToLoad.emplace_back(new LoadItem("assets/3d/deer/Textures/Deer Common.png", Type::texture_png));
 }
 
@@ -222,12 +226,10 @@ void TestWorldLevel::postLoad() {
 	//bgShader = reinterpret_cast<ShaderProgram*>(Main::getAssetManager()->getAsset("assets/shader/bg_shader")->data);
 	//treeShader = reinterpret_cast<ShaderProgram*>(Main::getAssetManager()->getAsset("assets/shader/tree_shader")->data);
 	
-	sf_vsmShader = reinterpret_cast<ShaderProgram*>(M_Asset->getAsset("assets/shader/simple forward/sb_sf_vsm")->data);
-	sf_vsmShaderNoTex = reinterpret_cast<ShaderProgram*>(M_Asset->getAsset("assets/shader/simple forward/sb_sf_vsm_notex")->data);
+	
 	model = reinterpret_cast<Model*>(M_Asset->getAsset("assets/3d/deer/Model/Deer_old.dae")->data);
 	mTex = reinterpret_cast<sf::Texture*>(M_Asset->getAsset("assets/3d/deer/Textures/Deer Common.png")->data);
-	vsmShader = reinterpret_cast<ShaderProgram*>(M_Asset->getAsset("assets/shader/simple forward/sb_vsm")->data);
-	fboDebugshader = reinterpret_cast<ShaderProgram*>(M_Asset->getAsset("assets/shader/fbo_debug_shader")->data);	
+
 
 	App::Gdx::printOpenGlErrors("test");
 	view = M_View->create("main", ViewType::pers, true);
@@ -250,37 +252,24 @@ void TestWorldLevel::postLoad() {
 	sun->direction = NOR(Vec4(-1.f, -1.f, 0.f, 0.f));
 	sun->dis.x = 0.5f;
 
-	// ShadowMap-textures and FBO
-	uint ssize = 1024;
-
 	sl = M_Env->addLight("sun", LightType::Directionallight, false, sun);
-	sl->shadowMapSize = Vec2u(ssize, ssize);	
-	
-	glGenTextures(1, &shadowMapTexDepth);
-	glBindTexture(GL_TEXTURE_2D, shadowMapTexDepth);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, ssize, ssize, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-	glBindTexture(GL_TEXTURE_2D, 0);
+	sl->shadowMap = new ShadowMap(1024, 1024);
+	sl->shadowMap->begin();
+	sl->shadowMap->addTex("depth", GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT, GL_NEAREST, GL_CLAMP_TO_BORDER);
+	sl->shadowMap->addTex("color", GL_RG32F, GL_RG, GL_FLOAT, GL_NEAREST, GL_CLAMP_TO_BORDER);
+	sl->shadowMap->end();
 
-	glGenTextures(1, &shadowMapTex);
-	glBindTexture(GL_TEXTURE_2D, shadowMapTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32F, ssize, ssize, 0, GL_RG, GL_FLOAT, nullptr);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-	glBindTexture(GL_TEXTURE_2D, 0);
+	/*	
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, ssize, ssize, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);	
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32F, ssize, ssize, 0, GL_RG, GL_FLOAT, nullptr);	
+	*/
 
-	glGenFramebuffers(1, &shadowMapFBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowMapTexDepth, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, shadowMapTex, 0);
+	floorModel = new Model();
 	
-	FBError("TestWorldLevel::postLoad");
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	Mesh* floorMesh = new Mesh();
+	floorMesh->indexCount = 6;
+	floorMesh->indexOffset = 0;
+	floorModel->meshList.emplace_back(floorMesh);
 
 	float col = M_FloatBits(sf::Color::Green);
 
@@ -323,13 +312,13 @@ void TestWorldLevel::postLoad() {
 		1, 2, 3   
 	};
 
-	glGenVertexArrays(1, &floor);
+	glGenVertexArrays(1, &floorModel->vao);
 
 	GLuint index, vertex;
 	glGenBuffers(1, &index);
 	glGenBuffers(1, &vertex);
 
-	glBindVertexArray(floor);
+	glBindVertexArray(floorModel->vao);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vertex);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
@@ -350,48 +339,26 @@ void TestWorldLevel::postLoad() {
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-	float vertis[] = {
-		1.f, 1.f, 0.f,
-		1.f, 1.f,
+	vsm = new VSMRenderer();
 
-		1.f, -1.f, 0.f,
-		1.f, 0.f,
+	Mesh* mesh = model->meshList[5];
 
-		-1.f, -1.f, 0.f,
-		0.f, 0.f,
+	drawable_1 = new VSMRenderable();
+	drawable_1->vao = model->vao;
+	drawable_1->count = mesh->indexCount;
+	drawable_1->offset = mesh->indexOffset;
+	drawable_1->model = model;
+	drawable_1->shadowTex = sl->shadowMap->getTex("color");
+	drawable_1->matIndex = mesh->matIndex;
+	drawable_1->texture = mTex->getNativeHandle();
 
-		-1.f, 1.f, 0.f,
-		0.f, 1.f
-	};
-
-	unsigned int indes[] = {  
-		3, 1, 0, 
-		3, 2, 1   
-	};
-
-	GLuint i, v;
-
-	glGenVertexArrays(1, &box);
-	glGenBuffers(1, &i);
-	glGenBuffers(1, &v);
-
-	glBindVertexArray(box);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, i);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indes), indes, GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ARRAY_BUFFER, v);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertis), vertis, GL_STATIC_DRAW);
-
-	glEnableVertexAttribArray(0); //a_Pos
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-
-	glEnableVertexAttribArray(1); //a_uv
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	drawable_2 = new VSMRenderable();
+	drawable_2->hasTex = false;
+	drawable_2->vao = floorModel->vao;
+	drawable_2->count = floorMesh->indexCount;
+	drawable_2->offset = floorMesh->indexOffset;
+	drawable_2->model = floorModel;
+	drawable_2->shadowTex = sl->shadowMap->getTex("color");
 }
 
 void TestWorldLevel::update() {
@@ -408,109 +375,14 @@ void TestWorldLevel::update() {
 	//sun->direction = Vec4(tmp.x, tmp.y, 0.f, 0.f);
 
 
-	view->clear(sf::Color::Black);
+	view->clear(sf::Color::White);
 	view->apply();	
+
+	vsm->add(drawable_1);
+	vsm->add(drawable_2);
 }
 
 void TestWorldLevel::draw() {
-
-	GLError("TestWorldLevel::draw");
-	auto mesh = model->meshList[5];
-
-	vsmShader->bind();
-
-	sl->bindSMap(shadowMapFBO, 1);
-	sl->bindLightTransform(1, Vec3(0.f, 0.f, 0.f));
-	model->bindTransform(2);
-
-	//model
-	glBindVertexArray(model->vao);	
-	glDrawElements(GL_TRIANGLES, mesh->indexCount, GL_UNSIGNED_INT, (void*)(mesh->indexOffset * sizeof(uint)));
-	glBindVertexArray(0);
-	
-	//floor
-	glBindVertexArray(floor);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-	glBindVertexArray(0);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	vsmShader->unbind();
-	
-	glViewport(view->GLBounds[0], view->GLBounds[1], view->GLBounds[2], view->GLBounds[3]);
-
-	/*
-
-	fboDebugshader->bind();
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, shadowMapTex);
-
-	glBindVertexArray(box);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glBindVertexArray(0);
-
-	fboDebugshader->unbind();
-
-	*/
-
-	//draw model
-	sf_vsmShader->bind();
-
-	model->bindTransform(0);
-	model->bindinvTransform(1);
-
-	view->bindCombined(2);	
-	view->bindPosition(4);
-
-	sl->bindLightTransform(3, Vec3(0.f, 0.f, 0.f));
-
-	M_Env->bindLights(0);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, mTex->getNativeHandle());
-
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, shadowMapTex);
-
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, model->matBuffer);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, model->matBuffer);
-
-	glBindVertexArray(model->vao);
-	glUniform1ui(5, mesh->matIndex);
-	glDrawElements(GL_TRIANGLES, mesh->indexCount, GL_UNSIGNED_INT, (void*)(mesh->indexOffset * sizeof(uint)));
-	glBindVertexArray(0);
-
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-	sf_vsmShader->unbind();
-
-
-	//draw floor
-	sf_vsmShaderNoTex->bind();
-
-	model->bindTransform(0);
-	model->bindinvTransform(1);
-
-	view->bindCombined(2);
-	view->bindPosition(4);
-
-	sl->bindLightTransform(3, Vec3(0.f, 0.f, 0.f));
-
-	M_Env->bindLights(0);
-
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, shadowMapTex);
-
-	glBindVertexArray(floor);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); 
-	glBindVertexArray(0);
-
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-	sf_vsmShaderNoTex->unbind();
-
-	GLError("TestWorldLevel::draw");
+	vsm->draw(view);
 }
 
