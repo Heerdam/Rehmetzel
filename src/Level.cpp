@@ -131,20 +131,31 @@ void PreLoadLevel::preLoad() {
 	assetToLoad.emplace_back(new LoadItem("assets/shader/simple forward/sb_vsm", Type::shader));
 	assetToLoad.emplace_back(new LoadItem("assets/shader/simple forward/sb_sf_blur", Type::shader));
 	assetToLoad.emplace_back(new LoadItem("assets/shader/fbo_debug_shader", Type::shader));
+	assetToLoad.emplace_back(new LoadItem("assets/shader/voxel/shader_voxel_builder", Type::shader));
+	assetToLoad.emplace_back(new LoadItem("assets/shader/voxel/shader_voxel_draw", Type::shader));
 
 	//assetToLoad.emplace_back(new LoadItem("assets/fonts/black.ttf", Type::font));
-	//assetToLoad.emplace_back(new LoadItem("assets/tex/Forest_soil_diffuse.png", Type::texture_png));
-	//assetToLoad.emplace_back(new LoadItem("assets/tex/ForestCliff_basecolor.png", Type::texture_png));
-	//assetToLoad.emplace_back(new LoadItem("assets/tex/ForestDirt_diffuse.png", Type::texture_png));
 
-	//assetToLoad.emplace_back(new LoadItem("assets/tex/ForestGrass_basecolor.png", Type::texture_png));
-	//assetToLoad.emplace_back(new LoadItem("assets/tex/ForestMoss_basecolor.png", Type::texture_png));
-	//assetToLoad.emplace_back(new LoadItem("assets/tex/ForestMud_baseColor.png", Type::texture_png));
+	/*
+	std::vector<std::string> postfix;
+	postfix.emplace_back("_ao.png");
+	postfix.emplace_back("_basecolor.png");
+	postfix.emplace_back("_height.png");
+	postfix.emplace_back("_normal.png");
+	postfix.emplace_back("_roughness.png");
 
-	//assetToLoad.emplace_back(new LoadItem("assets/tex/ForestRoad_diffuse.png", Type::texture_png));
-	//assetToLoad.emplace_back(new LoadItem("assets/tex/ForestRock_basecolor.png", Type::texture_png));
-	//assetToLoad.emplace_back(new LoadItem("assets/tex/ForestWetMud_baseColor.png", Type::texture_png));
-
+	for (auto pf : postfix) {	
+		assetToLoad.emplace_back(new LoadItem("assets/tex/forest_soil" + pf, Type::image_png));
+		assetToLoad.emplace_back(new LoadItem("assets/tex/forest_cliff" + pf, Type::image_png));
+		assetToLoad.emplace_back(new LoadItem("assets/tex/forest_dirt" + pf, Type::image_png));
+		assetToLoad.emplace_back(new LoadItem("assets/tex/forest_grass" + pf, Type::image_png));
+		assetToLoad.emplace_back(new LoadItem("assets/tex/forest_moss" + pf, Type::image_png));
+		assetToLoad.emplace_back(new LoadItem("assets/tex/forest_mud" + pf, Type::image_png));
+		assetToLoad.emplace_back(new LoadItem("assets/tex/forest_road" + pf, Type::image_png));
+		assetToLoad.emplace_back(new LoadItem("assets/tex/forest_rock" + pf, Type::image_png));
+		assetToLoad.emplace_back(new LoadItem("assets/tex/forest_wet_mud" + pf, Type::image_png));
+	}
+	*/
 	//assetToLoad.emplace_back(new LoadItem("assets/shader/bg_shader", Type::shader));
 
 	//assetToLoad.emplace_back(new LoadItem("assets/shader/bg_shader", Type::shader));
@@ -238,7 +249,7 @@ void TestWorldLevel::postLoad() {
 	cam ->distance = 400.f;
 	cam->fieldOfView = 67.f;
 	cam->nearPlane = 0.1f;
-	cam->farPlane = 2000.f;
+	cam->farPlane = 100000.f;
 	cam->arcball(cam->target, cam->azimuth, cam->height, cam->distance);
 	
 	view->setInteractive(true);
@@ -359,6 +370,105 @@ void TestWorldLevel::postLoad() {
 	drawable_2->offset = floorMesh->indexOffset;
 	drawable_2->model = floorModel;
 	drawable_2->shadowTex = sl->shadowMap->getTex("color");
+
+	//textureblocks
+	/*
+	std::vector<std::string> files;
+	files.emplace_back("assets/tex/forest_soil");
+	files.emplace_back("assets/tex/forest_cliff");
+	files.emplace_back("assets/tex/forest_dirt");
+	files.emplace_back("assets/tex/forest_grass");
+	files.emplace_back("assets/tex/forest_moss");
+	files.emplace_back("assets/tex/forest_mud");
+	files.emplace_back("assets/tex/forest_road");
+	files.emplace_back("assets/tex/forest_rock");
+	files.emplace_back("assets/tex/forest_wet_mud");
+
+	std::vector<std::string> postFix;
+	postFix.emplace_back("_ao.png");
+	postFix.emplace_back("_basecolor.png");
+	postFix.emplace_back("_height.png");
+	postFix.emplace_back("_normal.png");
+	postFix.emplace_back("_roughness.png");
+
+	GLuint* tex = new GLuint[5];
+	glGenTextures(5, tex);
+	for (uint i = 0; i < 5; ++i) {
+		glBindTexture(GL_TEXTURE_2D_ARRAY, tex[i]);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		GLuint internalFormat, format, type;
+		uint texSize = POW(2048, 2) * files.size();
+	
+		switch (i) {
+			case 0: //_ao
+			{
+				format = GL_RED;
+				internalFormat = GL_R16;
+				type = GL_UNSIGNED_SHORT;
+			}
+			break;
+			case 1://_basecolor
+			{
+				format = GL_RGB;
+				internalFormat = GL_RGB8;
+				type = GL_UNSIGNED_BYTE;
+			}
+			break;
+			case 2://_height
+			{
+				format = GL_RED;
+				internalFormat = GL_R16;
+				type = GL_UNSIGNED_SHORT;
+			}
+			break;
+			case 3://_normal
+			{
+				format = GL_RGBA;
+				internalFormat = GL_RGBA8;
+				type = GL_UNSIGNED_BYTE;
+			}
+			break;
+			case 4://_roughness
+			{
+				format = GL_RED;
+				internalFormat = GL_R16;
+				type = GL_UNSIGNED_SHORT;
+			}
+			break;			
+		}
+
+		glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, internalFormat, 2048, 2048, 9);
+		GLError("TestWorldLevel::postLoad");
+		for (uint k = 0; k < files.size(); ++k) {
+			auto file = M_Asset->getAsset(files[k] + postFix[i]);
+			std::cout << files[k] + postFix[i] << std::endl;
+			sf::Image* image = reinterpret_cast<sf::Image*>(file->data);
+			glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, k, 2048, 2048, 1, format, type, image->getPixelsPtr());
+			GLError("TestWorldLevel::postLoad");
+			delete file->data;			
+		}
+
+		//glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+		GLError("TestWorldLevel::postLoad");
+	}
+
+	LoadItem* item = new LoadItem("bgTex", Type::texture_png);
+	item->isLoaded = true;
+	item->isLocked = false;
+	item->data = tex;
+
+	M_Asset->addAsset(item);
+
+	*/
+
+	WorldBuilderDefinition* wdef = new WorldBuilderDefinition();
+
+	M_World->build(wdef);
 }
 
 void TestWorldLevel::update() {
@@ -378,11 +488,12 @@ void TestWorldLevel::update() {
 	view->clear(sf::Color::White);
 	view->apply();	
 
-	vsm->add(drawable_1);
-	vsm->add(drawable_2);
+	//vsm->add(drawable_1);
+	//vsm->add(drawable_2);
 }
 
 void TestWorldLevel::draw() {
+	M_World->draw(view, vsm);
 	vsm->draw(view);
 }
 

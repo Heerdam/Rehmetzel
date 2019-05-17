@@ -343,10 +343,39 @@ void AssetManager::asyncDiscreteLoad() {
 		std::unique_lock<std::mutex> lock(queueLock);
 		lock.unlock();
 		switch (next->type) {
+			case Type::image_png:
+			{
+				std::ifstream ifs(next->id, std::ios::binary);
+				if (!ifs.good()) throw new std::exception((std::string("can't open file [") + next->id + std::string("]")).data());
+
+				//length
+				ifs.seekg(0, std::ios::end);
+				int length = (int)ifs.tellg();
+				ifs.seekg(0, std::ios::beg);
+				char* data = new char[length];
+				ifs.read(data, length);
+				ifs.close();
+
+				WorkOrder order;
+				order.data = data;
+				order.item = next;
+				order.size = length;
+				order.pngLoader = [](char* _data, int _size, LoadItem* _item, std::atomic<bool>& _ready)->void {
+					sf::Image* tex = new sf::Image();
+					tex->loadFromMemory(_data, _size);
+					_item->data = tex;			
+					_ready = true;
+				};
+
+				lock.lock();
+				orders.emplace(order);
+				lock.unlock();
+			}
+			break;
 			case Type::texture_png:
 			{
 				std::ifstream ifs(next->id, std::ios::binary);
-				if (!ifs.good()) std::exception((std::string("can't open file [") + next->id + std::string("]")).data());			
+				if (!ifs.good()) throw new std::exception((std::string("can't open file [") + next->id + std::string("]")).data());			
 
 				//length
 				ifs.seekg(0, std::ios::end);
@@ -357,7 +386,6 @@ void AssetManager::asyncDiscreteLoad() {
 
 				//auto start = std::chrono::system_clock::now();
 				ifs.read(data, length);
-				auto end = std::chrono::system_clock::now();
 				//std::chrono::duration<double> elapsed_seconds = end - start;
 				//std::cout << elapsed_seconds.count() << std::endl;
 

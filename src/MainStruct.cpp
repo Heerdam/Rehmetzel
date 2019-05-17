@@ -12,6 +12,7 @@
 #include "AI.hpp"
 #include "TimeLog.hpp"
 #include "Gdx.hpp"
+#include "World.hpp"
 
 using namespace Heerbann;
 using namespace App;
@@ -41,7 +42,7 @@ void Main::intialize(MainConfig* _config) {
 	context->setFramerateLimit(60);	
 
 	inputListener = new InputMultiplexer();
-	world = new World();
+	world = new VoxelWorld();
 	assets = new AssetManager();
 	stage = new UI::Stage();
 	level = new LevelManager();
@@ -186,7 +187,7 @@ InputMultiplexer* Main::getInput() {
 
 //---------------------- World ----------------------\\
 
-World* Main::getWorld() {
+VoxelWorld* Main::getWorld() {
 	return instance->world;
 }
 

@@ -4,68 +4,38 @@
 
 namespace Heerbann {
 
+#define VOXELS 12 //voxels + 2 border
+
 	using namespace Heerbann;
 
-	enum EntityType {
-		red_deer, tree, hunter
+	struct WorldBuilderDefinition {
+
+		uint heightMapWidth = 1000;
 	};
 
-	struct WorldObject {
-		WorldObject* next = 0;
-		WorldObject* tail = 0;
+	class VoxelWorld {
 
-		bool isStatic = true;
-		bool isLoaded = false;
-		bool isVAO = false;
+		ShaderProgram* voxelComputeShader;
+		TextureDebugRenderer* debug;
 
-		const long long id = ID;
-		unsigned long lastSeen;
+		GLuint* texture;
+		GLuint heightmap;
+		GLuint vertexBuffer;
+		GLuint vao;
 
-		EntityType type;
+		GLuint bSizeBuffer[2];
+		uint* bSizeBufferPntr[2];
+		float* bSizeBufferPntrf[2];
+		uint bSizeIndex = 0;
 
-		std::function<void(WorldObject*, float, sf::RenderWindow&)> draw;
-		//finalize loading called on main thread
-		std::function<void(WorldObject*)> finishedLoading;
-	};
+		VSMRenderable* renderable;
 
-	class World {
-
-		friend WorldBuilder;
-
-		DebugDraw* debug;
-
-		std::unordered_map<long long, WorldObject*> objects;
-
-		std::queue<WorldObject*> finishQueue;
-
-		std::mutex mapLock;
-		std::mutex worldLock;
+		void createVAO(GLuint&, GLuint&);
 
 	public:
-
-		World();
-		WorldBuilder* builder;
-		void update(float);
-		void debugDraw();
-		long long create(EntityType, Vec2);
-
-		WorldObject* operator[](long _id) {
-			std::lock_guard<std::mutex> guard(mapLock);
-			if (objects.count(_id) == 0) return nullptr;
-			return objects[_id];
-		};
-
-	};
-
-	struct WorldBuilderDefinition {
-		long seed = 0;
-	};
-
-	struct WorldOut {
-		std::vector<BGVAO*> bgVAOs;
-		std::vector<IndexedVAO*> indexVAOs;
-
-		//void finalize(ShaderProgram*, ShaderProgram*);
+		VoxelWorld();
+		void build(WorldBuilderDefinition*);
+		void draw(View*, Renderer*);
 	};
 
 }

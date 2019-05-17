@@ -7,7 +7,7 @@ namespace Heerbann {
 	using namespace Heerbann;
 
 	enum Type {
-		texture_png, texture_dds, font, level, atlas, shader, model
+		byteArray, image_png, texture_png, texture_dds, font, level, atlas, shader, model
 	};
 
 	enum State {
@@ -22,6 +22,7 @@ namespace Heerbann {
 		Type type;
 		std::string id;
 		void* data;
+		uint dataSize;
 		LoadItem(std::string _id, Type _type) : id(_id), type(_type) {};
 	};
 

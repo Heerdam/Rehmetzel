@@ -60,6 +60,7 @@ namespace Heerbann {
 	using namespace Heerbann;
 
 typedef unsigned int uint;
+typedef unsigned short ushort;
 
 typedef glm::ivec2 Vec2i;
 typedef glm::ivec3 Vec3i;
@@ -192,6 +193,7 @@ typedef glm::quat Quat;
 #define ATAN(X) (std::atan(X))
 #define INF (std::numeric_limits<float>::infinity())
 #define SQRT(X) (std::sqrtf((X)))
+#define POW(X, Y) (std::powf((X), (Y)))
 
 #define colF(X) ((X)/255.f)
 	// 1 meter (box2d) is more or less 64 pixels (sfml)
@@ -306,12 +308,8 @@ typedef glm::quat Quat;
 	class TextureAtlasLoader;
 
 	//World
-	enum EntityType : int;
-	struct WorldObject;
-	class World;
+	class VoxelWorld;
 	struct WorldBuilderDefinition;
-	struct WorldOut;
-	class WorldBuilder;
 
 	//CameraUtils
 	enum ViewType : int;
@@ -374,7 +372,7 @@ typedef glm::quat Quat;
 		private:
 			sf::RenderWindow* context;
 			InputMultiplexer* inputListener;
-			World* world;
+			VoxelWorld* world;
 			//ViewportHandler* viewports;
 			AssetManager* assets;
 			UI::Stage* stage;
@@ -466,7 +464,7 @@ typedef glm::quat Quat;
 
 			//---------------------- World ----------------------\\
 
-			static World* getWorld();
+			static VoxelWorld* getWorld();
 			static Environment* getEnv();
 		
 			//---------------------- Viewport ----------------------\\

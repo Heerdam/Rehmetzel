@@ -207,6 +207,9 @@
     <None Include="..\bin\assets\shader\spritebatch\sb_sprite.vert" />
     <None Include="..\bin\assets\shader\tree_shader.frag" />
     <None Include="..\bin\assets\shader\tree_shader.vert" />
+    <None Include="..\bin\assets\shader\voxel\shader_voxel_builder.comp" />
+    <None Include="..\bin\assets\shader\voxel\shader_voxel_draw.frag" />
+    <None Include="..\bin\assets\shader\voxel\shader_voxel_draw.vert" />
     <None Include="..\README.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

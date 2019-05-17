@@ -2,171 +2,149 @@
 #include "World.hpp"
 #include "Assets.hpp"
 #include "Utils.hpp"
-
-#include <math.h>
+#include "Gdx.hpp"
+#include "CameraUtils.hpp"
+#include "Math.hpp"
 
 using namespace Heerbann;
 
-World::World() {
+void VoxelWorld::createVAO(GLuint& _vao, GLuint& _vertexBuffer) {
 
-}
+	const uint isize = VOXELS * VOXELS * 5 * 2 * 3;
+	static uint indices[isize];
+	for (uint i = 0, k = 0; i < isize; i += 6, k += 4) {
+		indices[i] = k;
+		indices[i + 1] = k + 1;
+		indices[i + 2] = k + 2;
 
-void World::update(float _deltaTime) {
-	std::lock_guard<std::mutex> g1(mapLock);
-	while (!finishQueue.empty()) {
-		WorldObject* object = finishQueue.front();
-		finishQueue.pop();
-		object->isLoaded = true;
-		if (object->finishedLoading != nullptr)
-			object->finishedLoading(object);
+		indices[i + 3] = k + 2;
+		indices[i + 4] = k + 3;
+		indices[i + 5] = k;
 	}
-	std::lock_guard<std::mutex> g2(worldLock);
+
+	GLuint index;
+	const uint vertexSize = (3 + 3 + 3 + 3 + 3) * sizeof(float);
+
+	glGenVertexArrays(1, &_vao);
+	glGenBuffers(1, &index);
+	glGenBuffers(1, &_vertexBuffer);
+
+	glBindVertexArray(_vao);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, _vertexBuffer);
+	glBufferData(GL_ARRAY_BUFFER, vertexSize * 4 * 5 * static_cast<uint>(POW(VOXELS, 2)), nullptr, GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(0); //a_Pos
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertexSize, (void*)0);
+
+	glEnableVertexAttribArray(1); //a_norm
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertexSize, (void*)(3 * sizeof(float)));
+
+	glEnableVertexAttribArray(2); //a_uv
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, vertexSize, (void*)(6 * sizeof(float)));
+
+	glEnableVertexAttribArray(3); //a_tang
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, vertexSize, (void*)(9 * sizeof(float)));
+
+	glEnableVertexAttribArray(4); //a_bitang
+	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, vertexSize, (void*)(12 * sizeof(float)));
+
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	GLError("VoxelWorld::build_c");
+
+	debug = new TextureDebugRenderer();
 
 }
 
-void World::debugDraw() {
+VoxelWorld::VoxelWorld() {
 	
+	renderable = new VSMRenderable();
 }
 
-long long World::create(EntityType _type, Vec2 _pos) {
-	return 0l;
-}
-/*
-//pos: lower left corner
-BGVAO* WorldBuilder::createBGVAO(Vec2 _pos, int _tex) {
-	int cellvertex = 50 * 50;
+void VoxelWorld::build(WorldBuilderDefinition* _def) {
+	GLError("VoxelWorld::build_0");
+	voxelComputeShader = reinterpret_cast<ShaderProgram*>(M_Asset->getAsset("assets/shader/voxel/shader_voxel_builder")->data);
 
-	float* data = new float[3 * cellvertex];
+	ushort* heightMapCache = new ushort[static_cast<uint>(POW(VOXELS, 2))]{ 0 };
 
-	float xw = cosf(DEGTORAD * 30.f) * 50.f;
-	float yw = 1.5f * 50.f;
-
-	for (int y = 0; y < 50; ++y) {
-		for (int x = 0; x < 50; ++x) {
-
-			int index = 3 * (y * 50 + x);
-
-			data[index] = x * 2 * xw - ((y % 2 == 0) ? xw : 0);
-			data[index + 1] = y * yw;
-			data[index + 2] = (float)_tex;
+	for (uint x = 1; x < VOXELS - 1; ++x) {
+		for (uint y = 1; y < VOXELS - 1; ++y) {
+			heightMapCache[y + x * VOXELS] = static_cast<uint>(1 + M_Random * (25 - 1));
 		}
 	}
+	
+	//heightmap
+	glGenTextures(1, &heightmap);
+	glBindTexture(GL_TEXTURE_RECTANGLE, heightmap);
+	glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_R16UI, VOXELS, VOXELS, 0, GL_RED_INTEGER, GL_UNSIGNED_SHORT, heightMapCache);
+	//glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	//glTexSubImage2D(GL_TEXTURE_RECTANGLE, 0, 0, 0, VOXELS + 2, VOXELS + 2, GL_RED_INTEGER, GL_UNSIGNED_SHORT, heightMapCache);
+	glBindTexture(GL_TEXTURE_RECTANGLE, 0);
+	GLError("VoxelWorld::build_a");
 
-	BGVAO* out = new BGVAO();
-	out->set(data, cellvertex, 3);
-
-	return out;
-}
-
-IndexedVAO* WorldBuilder::createTrees(int _treeCount, Vec2 _low, Vec2 _high) {
-
-	TextureAtlas* atlas = (TextureAtlas*)M_Asset->getAsset("assets/trees/trees")->data;
-
-	uint treeSpriteCount = static_cast<uint>(atlas->regions.size());
-
-	float* vertex = new float[_treeCount * 4 * (2 + 2 + 1)]; //#trees * 4 vertices/tree * (position + uv + index)
-	GLuint* index = new GLuint[_treeCount * 2 * 3]; //#trees * triangles/tree * vertex/triangle
-
-	float xw = cosf(DEGTORAD * 30.f) * 50.f;
-	float yw = 1.5f * 50.f;
-
-	for (int i = 0; i < _treeCount; ++i) {
-
-		Vec2 pos(M_Main->getRandom(_low.x, _high.x), M_Main->getRandom(_low.y, _high.y));
-		//Vec2 pos(0, 0);
-		AtlasRegion* region = (*atlas)[(int)(M_Main->getRandom(0.f, (float)treeSpriteCount))];
-
-		//AtlasRegion* region = (*atlas)["strees_05_top"];
-		Vec2 u = region->getU();
-		Vec2 v = region->getV();
-
-		float w = region->width * 0.5f;
-		float h = region->height * 0.5f;
-
-		vertex[20 * i] = pos.x + w; //x
-		vertex[20 * i + 1] = pos.y - h; //y
-		vertex[20 * i + 2] = (float)region->texIndex;
-		vertex[20 * i + 3] = u.y; //u
-		vertex[20 * i + 4] = v.x; //v
-
-		vertex[20 * i + 5] = pos.x + w; //x
-		vertex[20 * i + 6] = pos.y + h; //y
-		vertex[20 * i + 7] = (float)region->texIndex;
-		vertex[20 * i + 8] = u.y; //u
-		vertex[20 * i + 9] = v.y; //v
-
-		vertex[20 * i + 10] = pos.x - w; //x
-		vertex[20 * i + 11] = pos.y + h; //y
-		vertex[20 * i + 12] = (float)region->texIndex;
-		vertex[20 * i + 13] = u.x; //u
-		vertex[20 * i + 14] = v.y; //v
-
-		vertex[20 * i + 15] = pos.x - w; //x
-		vertex[20 * i + 16] = pos.y - h; //y
-		vertex[20 * i + 17] = (float)region->texIndex;
-		vertex[20 * i + 18] = u.x; //u
-		vertex[20 * i + 19] = v.x; //v
-
-		//t1
-		index[6 * i] = 4 * i;
-		index[6 * i + 1] = 4 * i + 1;
-		index[6 * i + 2] = 4 * i + 2;
-
-		//t2
-		index[6 * i + 3] = 4 * i + 2;
-		index[6 * i + 4] = 4 * i + 3;
-		index[6 * i + 5] = 4 * i;
-
-		WorldObject *ob = new WorldObject();
-		M_World->objects[ob->id] = ob;
-		ob->isLoaded = true;
-		ob->isVAO = true;
-
-		b2BodyDef* bodyDef = new b2BodyDef();
-		bodyDef->userData = ob;
-		bodyDef->type = b2BodyType::b2_staticBody;
-		bodyDef->position = b2Vec2(pos.x * UNRATIO, pos.y * UNRATIO);
-		ob->body = M_World->bworld->CreateBody(bodyDef);
-
-		b2CircleShape circle;
-		circle.m_p.Set(0.f, 0.f);
-		circle.m_radius = 1;
-
-		b2FixtureDef def;
-		def.userData = ob;
-		def.shape = &circle;
-
-		ob->body->CreateFixture(&def);
-
-		b2PolygonShape shape;
-		shape.SetAsBox(w * UNRATIO, h * UNRATIO);
-
-		b2FixtureDef def1;
-		def1.isSensor = true;
-		def1.shape = &shape;
-
-		ob->body->CreateFixture(&def1);
+	//buffersize buffers
+	glGenBuffers(2, bSizeBuffer);
+	for (uint i = 0; i < 2; ++i) {
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, bSizeBuffer[i]);
+		glBufferStorage(GL_SHADER_STORAGE_BUFFER, 7 * sizeof(uint), nullptr,
+			GL_MAP_PERSISTENT_BIT | GL_MAP_READ_BIT | GL_MAP_WRITE_BIT);
+		bSizeBufferPntr[i] = reinterpret_cast<uint*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 7 * sizeof(float),
+			GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT));
+		bSizeBufferPntrf[i] = reinterpret_cast<float*>(bSizeBufferPntr[i]);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 	}
+	GLError("VoxelWorld::build_b");
 
-	IndexedVAO* out = new IndexedVAO();
-	out->set(vertex, index, _treeCount * 4, 5);
-	return out;
+	createVAO(vao, vertexBuffer);
+
+	//texture = reinterpret_cast<GLuint*>(M_Asset->getAsset("bgTex")->data);
+
+	delete _def; 
 }
 
-WorldOut * WorldBuilder::build(const WorldBuilderDefinition& _def) {
-	WorldOut* out = new WorldOut();
-	M_Main->setSeed(_def.seed);
+void VoxelWorld::draw(View* _view, Renderer* _renderer) {
 
-	out->bgVAOs.emplace_back(createBGVAO(Vec2(0, 0), 4));
-	//out->indexVAOs.emplace_back(createTrees(50, Vec2(0, 0), Vec2(cosf(DEGTORAD * 30.f) * BG_CELLDIAMETER * BG_CELLCOUNT, 1.5f * BG_CELLDIAMETER * BG_CELLCOUNT)));
+	BoundingBox* aabb = _view->getCamera()->frustum->toAABB(_view->getCamera());
+	Vec3u num_groups(VOXELS - 2, VOXELS - 2, 1);
 
-	return out;
+	bSizeIndex = (bSizeIndex + 1) % 2;
+	auto pntr = bSizeBufferPntr[bSizeIndex];
+	pntr[0] = 0;
+
+	pntr[1] = VOXELS - 2;
+	pntr[2] = VOXELS - 2;
+
+	pntr[3] = 0;
+	pntr[4] = 0;
+
+	pntr[5] = 50;
+	pntr[6] = 5;
+
+	voxelComputeShader->bind();
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_RECTANGLE, heightmap);
+
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, vertexBuffer);
+
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, bSizeBuffer[bSizeIndex]);
+
+	glDispatchCompute(num_groups.x, num_groups.y, num_groups.z);
+	glMemoryBarrier(GL_ALL_BARRIER_BITS | GL_SHADER_STORAGE_BARRIER_BIT | GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
+	voxelComputeShader->unbind();
+
+	GLError("VoxelWorld::draw");
+
+	renderable->offset = 0;
+	renderable->count = static_cast<uint>(bSizeBufferPntr[(bSizeIndex + 1) % 2][0]) * 6;
+	renderable->isVoxel = true;
+	renderable->texVox = texture;
+	renderable->vao = vao;
+	_renderer->add(renderable);
+
+	//debug->draw(heightmap, GL_TEXTURE_RECTANGLE, 5, VOXELS, VOXELS, VOXELS * 50, VOXELS * 50);
 }
-
-void WorldOut::finalize(ShaderProgram* _bg, ShaderProgram* _tree) {
-	for (auto v : bgVAOs)
-		v->build(_bg);
-	//for (auto v : indexVAOs)
-		//v->build(_tree);
-}
-*/

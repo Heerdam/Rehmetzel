@@ -16,9 +16,6 @@
     <Filter Include="Resource Files\SpriteBatch">
       <UniqueIdentifier>{1cfb012a-ffc3-48f9-a7a4-3390e65b17a0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Resource Files\Simple Forward Shadowless">
-      <UniqueIdentifier>{d5698c0b-95d7-4c2e-8ed8-afa46072f91f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Resource Files\trash">
       <UniqueIdentifier>{e79c46c3-e1f5-4d62-9232-6fe6410094fb}</UniqueIdentifier>
     </Filter>
@@ -27,6 +24,12 @@
     </Filter>
     <Filter Include="Resource Files\Expentional Shadow Mapping">
       <UniqueIdentifier>{40fb9fc5-b4d8-4dbd-b133-c38ac8672bad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\voxel">
+      <UniqueIdentifier>{412bd06b-afb6-4d23-91a9-81c3610619b2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Simple Forward">
+      <UniqueIdentifier>{d5698c0b-95d7-4c2e-8ed8-afa46072f91f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -134,28 +137,28 @@
       <Filter>Resource Files\SpriteBatch</Filter>
     </None>
     <None Include="..\bin\assets\shader\simple forward\sb_sf.vert">
-      <Filter>Resource Files\Simple Forward Shadowless</Filter>
+      <Filter>Resource Files\Simple Forward</Filter>
     </None>
     <None Include="..\bin\assets\shader\simple forward\sb_sf.frag">
-      <Filter>Resource Files\Simple Forward Shadowless</Filter>
+      <Filter>Resource Files\Simple Forward</Filter>
     </None>
     <None Include="..\bin\assets\shader\simple forward\sb_vsm.frag">
-      <Filter>Resource Files\Simple Forward Shadowless</Filter>
+      <Filter>Resource Files\Simple Forward</Filter>
     </None>
     <None Include="..\bin\assets\shader\simple forward\sb_vsm.vert">
-      <Filter>Resource Files\Simple Forward Shadowless</Filter>
+      <Filter>Resource Files\Simple Forward</Filter>
     </None>
     <None Include="..\bin\assets\shader\simple forward\sb_sf_vsm.frag">
-      <Filter>Resource Files\Simple Forward Shadowless</Filter>
+      <Filter>Resource Files\Simple Forward</Filter>
     </None>
     <None Include="..\bin\assets\shader\simple forward\sb_sf_vsm.vert">
-      <Filter>Resource Files\Simple Forward Shadowless</Filter>
+      <Filter>Resource Files\Simple Forward</Filter>
     </None>
     <None Include="..\bin\assets\shader\simple forward\sb_sf_vsm_notex.frag">
-      <Filter>Resource Files\Simple Forward Shadowless</Filter>
+      <Filter>Resource Files\Simple Forward</Filter>
     </None>
     <None Include="..\bin\assets\shader\simple forward\sb_sf_vsm_notex.vert">
-      <Filter>Resource Files\Simple Forward Shadowless</Filter>
+      <Filter>Resource Files\Simple Forward</Filter>
     </None>
     <None Include="..\bin\assets\shader\ai.comp">
       <Filter>Resource Files\trash</Filter>
@@ -170,15 +173,6 @@
       <Filter>Resource Files\trash</Filter>
     </None>
     <None Include="..\bin\assets\shader\AiTestComp.comp">
-      <Filter>Resource Files\trash</Filter>
-    </None>
-    <None Include="..\bin\assets\shader\bg_shader.frag">
-      <Filter>Resource Files\trash</Filter>
-    </None>
-    <None Include="..\bin\assets\shader\bg_shader.geom">
-      <Filter>Resource Files\trash</Filter>
-    </None>
-    <None Include="..\bin\assets\shader\bg_shader.vert">
       <Filter>Resource Files\trash</Filter>
     </None>
     <None Include="..\bin\assets\shader\forwardplus_shader.frag">
@@ -224,7 +218,25 @@
       <Filter>Resource Files\Expentional Shadow Mapping</Filter>
     </None>
     <None Include="..\bin\assets\shader\simple forward\sb_sf_blur.comp">
-      <Filter>Resource Files\Simple Forward Shadowless</Filter>
+      <Filter>Resource Files\Simple Forward</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\voxel\shader_voxel_builder.comp">
+      <Filter>Resource Files\voxel</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\bg_shader.frag">
+      <Filter>Resource Files\trash</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\bg_shader.geom">
+      <Filter>Resource Files\trash</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\bg_shader.vert">
+      <Filter>Resource Files\trash</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\voxel\shader_voxel_draw.frag">
+      <Filter>Resource Files\voxel</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\voxel\shader_voxel_draw.vert">
+      <Filter>Resource Files\voxel</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -85,7 +85,6 @@ namespace Heerbann {
 		
 		View* view;
 
-		WorldOut* world;
 		sLight* sun;
 		Light* sl;
 		float angle = 0;
