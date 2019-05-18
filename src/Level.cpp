@@ -136,7 +136,7 @@ void PreLoadLevel::preLoad() {
 
 	//assetToLoad.emplace_back(new LoadItem("assets/fonts/black.ttf", Type::font));
 
-	/*
+	
 	std::vector<std::string> postfix;
 	postfix.emplace_back("_ao.png");
 	postfix.emplace_back("_basecolor.png");
@@ -155,7 +155,7 @@ void PreLoadLevel::preLoad() {
 		assetToLoad.emplace_back(new LoadItem("assets/tex/forest_rock" + pf, Type::image_png));
 		assetToLoad.emplace_back(new LoadItem("assets/tex/forest_wet_mud" + pf, Type::image_png));
 	}
-	*/
+	
 	//assetToLoad.emplace_back(new LoadItem("assets/shader/bg_shader", Type::shader));
 
 	//assetToLoad.emplace_back(new LoadItem("assets/shader/bg_shader", Type::shader));
@@ -255,7 +255,7 @@ void TestWorldLevel::postLoad() {
 	view->setInteractive(true);
 	view->panXModifier = 0.25f;
 	view->panYModifier = 0.2f;
-	view->zoomBounds = Vec2(10.f, 1000.f);
+	view->zoomBounds = Vec2(10.f, 10000.f);
 	view->zoomModifier = 25.f;
 
 	sun = new sLight();
@@ -372,7 +372,7 @@ void TestWorldLevel::postLoad() {
 	drawable_2->shadowTex = sl->shadowMap->getTex("color");
 
 	//textureblocks
-	/*
+	
 	std::vector<std::string> files;
 	files.emplace_back("assets/tex/forest_soil");
 	files.emplace_back("assets/tex/forest_cliff");
@@ -391,7 +391,7 @@ void TestWorldLevel::postLoad() {
 	postFix.emplace_back("_normal.png");
 	postFix.emplace_back("_roughness.png");
 
-	GLuint* tex = new GLuint[5];
+	tex = new GLuint[5];
 	glGenTextures(5, tex);
 	for (uint i = 0; i < 5; ++i) {
 		glBindTexture(GL_TEXTURE_2D_ARRAY, tex[i]);
@@ -413,8 +413,8 @@ void TestWorldLevel::postLoad() {
 			break;
 			case 1://_basecolor
 			{
-				format = GL_RGB;
-				internalFormat = GL_RGB8;
+				format = GL_RGBA;
+				internalFormat = GL_RGBA8;
 				type = GL_UNSIGNED_BYTE;
 			}
 			break;
@@ -464,11 +464,13 @@ void TestWorldLevel::postLoad() {
 
 	M_Asset->addAsset(item);
 
-	*/
+	
 
 	WorldBuilderDefinition* wdef = new WorldBuilderDefinition();
 
 	M_World->build(wdef);
+
+	debug = new TextureDebugRenderer();
 }
 
 void TestWorldLevel::update() {
@@ -495,5 +497,6 @@ void TestWorldLevel::update() {
 void TestWorldLevel::draw() {
 	M_World->draw(view, vsm);
 	vsm->draw(view);
+	//debug->draw(tex[1], GL_TEXTURE_2D_ARRAY, 6, 2048, 2048, 0, 2048, 2048);
 }
 

@@ -102,7 +102,7 @@ void VoxelWorld::build(WorldBuilderDefinition* _def) {
 
 	createVAO(vao, vertexBuffer);
 
-	//texture = reinterpret_cast<GLuint*>(M_Asset->getAsset("bgTex")->data);
+	texture = reinterpret_cast<GLuint*>(M_Asset->getAsset("bgTex")->data);
 
 	delete _def; 
 }

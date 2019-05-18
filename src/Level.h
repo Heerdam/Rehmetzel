@@ -80,6 +80,9 @@ namespace Heerbann {
 		VSMRenderable* drawable_1;
 		VSMRenderable* drawable_2;
 
+		TextureDebugRenderer* debug;
+		GLuint* tex;
+
 		Model* model, *floorModel;
 		sf::Texture* mTex;
 		

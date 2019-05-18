@@ -4,7 +4,7 @@
 
 namespace Heerbann {
 
-#define VOXELS 12 //voxels + 2 border
+#define VOXELS 102 //voxels + 2 border
 
 	using namespace Heerbann;
 
