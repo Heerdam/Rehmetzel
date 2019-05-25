@@ -4,8 +4,6 @@
 
 namespace Heerbann {
 
-#define VOXELS 102 //voxels + 2 border
-
 	using namespace Heerbann;
 
 	struct WorldBuilderDefinition {

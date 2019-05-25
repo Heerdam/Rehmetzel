@@ -99,9 +99,11 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\lib\assimp\include;..\lib\glew\include;..\lib\glm-0.9.9.5;..\lib\SFML-2.5.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Heerbann\Dropbox\Coding\Projects\Rehmetzel\lib\SFML-2.5.1\include;..\lib\assimp\include;..\lib\glew\include;..\lib\glm-0.9.9.5;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>SFML_STATIC;GLEW_STATIC;ASSIMP_STATIC;GLM_FORCE_CXX17;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <OpenMPSupport>true</OpenMPSupport>
+      <AdditionalOptions>/Zc:twoPhase- %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>..\lib\SFML-2.5.1\lib;..\lib\assimp\lib;..\lib\freetype-2.3.5.-1\lib;..\lib\glew\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -150,6 +152,7 @@
     <ClInclude Include="..\src\MainStruct.hpp" />
     <ClInclude Include="..\src\MapGenerator.h" />
     <ClInclude Include="..\src\Math.hpp" />
+    <ClInclude Include="..\src\Renderer.hpp" />
     <ClInclude Include="..\src\TextUtil.hpp" />
     <ClInclude Include="..\src\TimeLog.hpp" />
     <ClInclude Include="..\src\UI.hpp" />
@@ -168,6 +171,7 @@
     <ClCompile Include="..\src\main.cpp" />
     <ClCompile Include="..\src\MainStruct.cpp" />
     <ClCompile Include="..\src\Math.cpp" />
+    <ClCompile Include="..\src\Renderer.cpp" />
     <ClCompile Include="..\src\TextUtil.cpp" />
     <ClCompile Include="..\src\TimeLog.cpp" />
     <ClCompile Include="..\src\UI.cpp" />

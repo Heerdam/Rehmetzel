@@ -71,6 +71,64 @@ void View::setInteractive(bool _setActive) {
 		inputsActive = true;
 		InputEntry* entry = new InputEntry();
 
+		entry->keyPressEvent = [&](sf::Keyboard::Key _key, bool _alt, bool _ctrl, bool _shift, bool _system)->bool {
+			if (_alt || _ctrl || _shift || _system) return false;
+			rotateLeftDown = _key == rotateLeft;
+			rotateRightDown = _key == rotateRight;
+			panNDown = _key == panN;
+			panSDown = _key == panS;
+			panWDown = _key == panW;
+			panEDown = _key == panE;
+			return true;
+		};
+
+		entry->keyReleaseEvent = [&](sf::Keyboard::Key _key, bool _alt, bool _ctrl, bool _shift, bool _system)->bool {
+			if (_alt || _ctrl || _shift || _system) return false;
+			rotateLeftDown = !(_key == rotateLeft);
+			rotateRightDown = !(_key == rotateRight);
+			panNDown = !(_key == panN);
+			panSDown = !(_key == panS);
+			panWDown = !(_key == panW);
+			panEDown = !(_key == panE);
+			return true;
+		};
+
+		entry->textEvent = [&](sf::Uint32)->bool {
+			if (type == ViewType::pers) {
+				//rotate
+				if (rotateLeftDown) {
+					ArcballCamera* cam = reinterpret_cast<ArcballCamera*>(camera);
+					return true;
+				} else if (rotateRightDown) {
+					ArcballCamera* cam = reinterpret_cast<ArcballCamera*>(camera);
+					return true;
+				}
+				//forward - backward
+				if (panNDown) {
+					ArcballCamera* cam = reinterpret_cast<ArcballCamera*>(camera);
+					Vec4 dir = Vec4(NOR(CRS(Vec3(cam->right), Vec3(0.f, 1.f, 0.f))), 1.f);
+					cam->target += dir * panModifier;
+					return true;
+				} else if (panSDown) {
+					ArcballCamera* cam = reinterpret_cast<ArcballCamera*>(camera);
+					Vec4 dir = Vec4(NOR(CRS(Vec3(cam->right), Vec3(0.f, 1.f, 0.f))), 1.f);
+					cam->target += dir * panModifier * -1.f;
+					return true;
+				}
+				//left - right
+				if (panWDown) {
+					ArcballCamera* cam = reinterpret_cast<ArcballCamera*>(camera);
+					cam->target += cam->right * panModifier;
+					return true;
+				} else if (panEDown) {
+					ArcballCamera* cam = reinterpret_cast<ArcballCamera*>(camera);
+					cam->target += cam->right * panModifier * -1.f;
+					return true;
+				}
+			}
+			return false;
+		};
+
 		entry->mouseMoveEvent = [&](int _x, int _y)->bool {
 			if (buttonPressed) {
 				switch (type) {
@@ -169,6 +227,9 @@ void View::setInteractive(bool _setActive) {
 		M_Input->remove(id);
 	}
 	
+}
+
+void Heerbann::View::unlock(bool) {
 }
 
 View::View(std::string _id, ViewType _type, ViewportHandler* _parent, bool _uniform) : parent(_parent), id(_id), type(_type) {

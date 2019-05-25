@@ -24,6 +24,8 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/System.hpp>
 
+#include <omp.h>
+
 #include <unordered_map>
 #include <thread>
 #include <condition_variable>
@@ -248,11 +250,7 @@ typedef glm::quat Quat;
 	}
 
 	//Utils
-	class VAO;
-	class BGVAO;
-	class IndexedVAO;
 	class SpriteBatch;
-	class ShaderProgram;
 	class DebugDraw;
 	class ShapeRenderer;
 
@@ -300,12 +298,18 @@ typedef glm::quat Quat;
 
 	//Assets
 	enum Type : int;
-	enum State : int;
-	struct LoadItem;
+	struct Ressource;
 	class AssetManager;
-	struct TextureAtlas;
+	class Image;
+	class Texture2D;
+	class Array2DTexture;
 	struct AtlasRegion;
-	class TextureAtlasLoader;
+	class TextureAtlas;
+	class Model;
+	class ShaderProgram;
+	class Framebuffer;
+	class ShadowMap;
+	class Font;
 
 	//World
 	class VoxelWorld;
@@ -321,16 +325,7 @@ typedef glm::quat Quat;
 	class AxisWidgetCamera;
 	class OrthoPersCamera;
 
-	//Gdx
-	class Environment;
-	struct Light;
-	struct PointLight;
-	struct SpotLight;
-	struct DirectionalLight;
-	struct Material;
-	enum LightType : int;
-	struct sLight;
-	class ModeInstancer;
+	//G3D
 	enum AnimBehaviour : int;
 	struct mNode;
 	struct Bone;
@@ -341,7 +336,17 @@ typedef glm::quat Quat;
 	struct MeshAnimation;
 	struct Animation;
 	struct Mesh;
-	struct Model;
+	struct ModelData;
+
+	//Gdx
+	class Environment;
+	struct Light;
+	struct PointLight;
+	struct SpotLight;
+	struct DirectionalLight;
+	struct Material;
+	enum LightType : int;
+	struct sLight;
 	class TextureDebugRenderer;
 	class ShadowMap;
 	class Renderer;

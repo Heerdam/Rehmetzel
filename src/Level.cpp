@@ -266,8 +266,7 @@ void TestWorldLevel::postLoad() {
 	sl = M_Env->addLight("sun", LightType::Directionallight, false, sun);
 	sl->shadowMap = new ShadowMap(1024, 1024);
 	sl->shadowMap->begin();
-	sl->shadowMap->addTex("depth", GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT, GL_NEAREST, GL_CLAMP_TO_BORDER);
-	sl->shadowMap->addTex("color", GL_RG32F, GL_RG, GL_FLOAT, GL_NEAREST, GL_CLAMP_TO_BORDER);
+	
 	sl->shadowMap->end();
 
 	/*	

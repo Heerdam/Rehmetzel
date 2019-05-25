@@ -7,151 +7,125 @@ namespace Heerbann {
 	using namespace Heerbann;
 
 	enum Type {
-		byteArray, image_png, texture_png, texture_dds, font, level, atlas, shader, model
+		byteArray, image, texture2D, texture2DArray, 
+		font, level, atlas, shader, model, renderer,
+		shadowMap, framebuffer
 	};
 
-	enum State {
-		continuous, discrete
-	};
+	struct Ressource {
 
-	struct LoadItem {
-		const long long uniqueId = ID;
-		std::atomic<bool> isLocked = false;
+		friend AssetManager;
 
-		bool isLoaded = false;
-		Type type;
-		std::string id;
-		void* data;
+	protected:
+		std::atomic<bool> isLoaded = false;
+
 		uint dataSize;
-		LoadItem(std::string _id, Type _type) : id(_id), type(_type) {};
+		void* data;
+
+		virtual void load() {};
+		virtual void unload() {};
+		virtual void glLoad(void*) {};
+		virtual void glUnload(void*) {};
+
+	public:
+
+		const Type type;
+		const std::string id;
+
+		Ressource(std::string, Type);
+		~Ressource();
+
+		bool inline loaded() {
+			return isLoaded;
+		}
 	};
 
 	class AssetManager {
 
-		friend Text::FontCache;
+		friend Ressource;
 
-	private:
-		std::unordered_map<std::string, LoadItem*> assets;
-		std::unordered_map<std::string, Level*> levels;
+		std::unordered_map<std::string, Ressource*> assets;
 
-		State state = State::discrete;
-		std::atomic<bool> locked = false;
+		void loadFromDisk(std::string, Ressource*);
+		void unload(Ressource*);
 
-		std::thread* loadingThread;
-
-		//discrete loading
-		std::queue<LoadItem*> discreteLoadQueue;
-		std::queue<LoadItem*> discreteUnloadQueue;
-		std::queue<Level*> discreteLevelLoadQueue;
-		std::queue<Level*> discreteLevelUnloadQueue;
-		std::atomic<float> progress;
-
-
-		//continous loading
-		std::queue<LoadItem*> continuousLoadQueue;
-		std::queue<LoadItem*> continuousUnloadQueue;
-		std::queue<Level*> continuousLevelLoadQueue;
-		std::queue<Level*> continuousLevelUnloadQueue;
-
-		std::mutex loadQueueLock;
-		std::mutex unloadQueueLock;
-		std::mutex loadLevelQueueLock;
-		std::mutex unloadLevelQueueLock;
-
-		std::mutex assetLock;
-		std::mutex levelLock;
-
-		std::mutex cvLock;
-		std::condition_variable cv;
-		
-		//thread safe functions for continous loading
-		LoadItem* popLoad();
-		LoadItem* popUnload();
-		Level* popLevelLoad();
-		Level* popLevelUnload();
-
-		bool isContinuousLoadQueueEmpty();
-		bool iscontinuousUnloadQueueEmpty();
-		bool iscontinuousLevelLoadQueueEmpty();
-		bool iscontinuousLevelUnloadQueueEmpty();
-
-		void queueLoad(LoadItem*);
-		void queueUnLoad(LoadItem*);
-		void queueLoad(Level*);
-		void queueUnLoad(Level*);
-
-		//loading functions
-		void asyncDiscreteLoad();
-		void asyncContinuousLoad();
-
-		void levelLoader(Level* _level);
-		void levelUnloader(Level* _level);
-		
 	public:
 
-		AssetManager();
-		~AssetManager();
+		template<class T>
+		T get(std::string);
 
-		//thread safe method to get Asset
-		LoadItem* operator[](std::string _id) {
-			std::lock_guard<std::mutex> guard(assetLock);
-			if (assets.count(_id) == 0) return nullptr;
-			auto asset = assets[_id];
-			return asset->isLoaded ? asset : nullptr;
-		};
-
-		//get asset if exists (thread safe)
-		LoadItem* getAsset(std::string);
-
-		//check if asset exists (thread safe)
 		bool exists(std::string);
+	};
 
-		//get a loaded level (thread safe)
-		Level* getLoadedLevel(std::string);
+	template<class T>
+	inline T AssetManager::get(std::string _id) {
+		if (!exists(_id)) return nullptr;
+		return reinterpret_cast<T>(assets[_id]);
+	}
 
-		//get a level if exists (thread safe)
-		Level* getLevel(std::string);
-
-		//adds an asset to the manager (thread safe)
-		void addAsset(std::string, Type);
-
-		//adds an asset to the manager (thread safe)
-		void addAsset(LoadItem*);
-
-		//enqueues a new asset to load (discrete, continuous) (thread safe)
-		void load(std::string);
-
-		//enqueues a new asset to unload (discrete, continuous) (thread safe)
-		void unload(std::string);
-
-		//adds a level to the manager (thread safe)
-		void addLevel(std::string, Level*);
-
-		//adds a level to the loading queue (discrete, continuous) (thread safe)
-		void loadLevel(std::string);
-
-		//adds a level to the unloading queue (discrete, continuous) (thread safe)
-		void unloadLevel(std::string);
-
-		//begins loading (discrete) (thread safe)
-		void startLoading();
-
-		//is currently loading (discrete, continuous) (thread safe)
-		bool isLoading();
-
-		//blocks threat until loading is finished (discrete loading) (thread safe)
+	class Image : public Ressource {
+		sf::Image* image;
+	public:
+		Image(std::string);
+		void load() override;
+		void unload() override;
+		sf::Image* get();
 		void finish();
+		static Image* get(std::string);
+	};
 
-		//changes the state of the loader (thread safe)
-		void toggleState();
+	class Texture2D : public Ressource {
+		friend TextureDebugRenderer;
+		friend Framebuffer;
 
-		inline State getState() {
-			return state;
-		};
+		GLuint handle;
+		GLenum target, format, type;
+		GLint level, internalFormat;
+		Vec2u bounds;
+	protected:
+		void load() override;
+		void glLoad(void*) override;
+		void glUnload(void*) override;
+	public:
+		//https://www.khronos.org/opengl/wiki/GLAPI/glTexImage2D
+		//target, level, internalFormat, format, type
+		Texture2D(std::string, GLuint, GLint, GLint, GLenum, GLenum);
+		GLuint get();
+		void bind(GLuint);
+		void setWrap(GLint, GLint);
+		void setFilter(GLint, GLint);
+		void setParai(GLenum, GLint);
+		void setParaf(GLenum, GLfloat);
+		static Texture2D* get(std::string);
+	};
 
+	class Array2DTexture : public Ressource {
+		friend TextureDebugRenderer;
+
+		std::vector<std::string> files;
+		GLuint handle;
+		GLenum target, format, type;
+		GLint levels, level, internalFormat;
+		Vec2u bounds;
+	protected:
+		void load() override;
+		void glLoad(void*) override;
+		void glUnload(void*) override;
+	public:
+		// https://www.khronos.org/opengl/wiki/GLAPI/glTexStorage3D
+		//id, files, levels, target, level, internalFormat, format, type
+		Array2DTexture(std::string, std::vector<std::string>, GLuint, GLuint, GLint, GLint, GLenum, GLenum);
+		GLuint get();
+		void bind(GLuint);
+		void setWrap(GLint, GLint);
+		void setFilter(GLint, GLint);
+		void setParai(GLenum, GLint);
+		void setParaf(GLenum, GLfloat);
 	};
 
 	struct AtlasRegion {
+		friend TextureDebugRenderer;
+
 		TextureAtlas* parent;
 		sf::Sprite* sprite;
 		int texIndex = -1;
@@ -162,30 +136,237 @@ namespace Heerbann {
 		Vec2 getV();
 	};
 
-	struct TextureAtlas {
-		std::vector<sf::Texture*> tex;
-		std::vector<sf::Image*> img;
-		std::vector<std::string> files;
+	class TextureAtlas : public Ressource {
+		friend TextureDebugRenderer;
+
+		std::unordered_map<std::string, Texture2D*> textures;
 		std::unordered_map<std::string, AtlasRegion*> regions;
-		std::vector<AtlasRegion*> regionList;
-		AtlasRegion* operator[](std::string);
-		AtlasRegion* operator[](int);
-	};
-
-	class TextureAtlasLoader {
+	protected:
+		void load() override;
+		void glLoad(void*) override;
+		void glUnload(void*) override;
 	public:
-		TextureAtlas* operator()(std::string);
+		TextureAtlas(std::string);
+		AtlasRegion* getRegion(std::string);
+		static TextureAtlas* get(std::string);
 	};
 
-	class myStream : public Assimp::LogStream {
+	class Model : public Ressource {
+
+		ModelData* model;
+
+	protected:
+		void load() override;
+		void glLoad(void*) override;
+		void glUnload(void*) override;
 	public:
-
-		myStream() {}
-		~myStream() {}
-
-		void write(const char* message) {
-			std::cout << message << std::endl;
-		}
+		Model(std::string);
+		ModelData* getData();
+		Mat4 transform = IDENTITY;
+		Vec3 position;
+		void bindTransform(uint);
+		void bindinvTransform(uint);
+		static Model* get(std::string);
 	};
 
+	class ShaderProgram : public Ressource {
+		enum Status {
+			success, failed, missing
+		};
+		GLuint program = -1, compute = -1, vertex = -1, geom = -1, frag = -1;
+		void print(std::string, Status, Status, Status, Status, Status, std::string);
+		bool compile(const std::string&, const char*, const char*, const char*, const char*);
+		bool loadFromMemory(const std::string&, const std::string&, const std::string&, const std::string&, const std::string&);
+	protected:
+		void load() override;
+		void glLoad(void*) override;
+		void glUnload(void*) override;
+	public:
+		ShaderProgram(std::string);
+		bool printDebug = true;
+		GLuint getHandle();		
+		void bind();
+		void unbind();
+		static ShaderProgram* get(std::string);
+	};
+
+	class Framebuffer : public Ressource {
+		GLuint handle;
+		std::unordered_map<std::string, Texture2D*> textures;
+	protected:
+		void glLoad(void*) override;
+		void glUnload(void*) override;
+	public:
+		Vec2u bounds;
+		Framebuffer(std::string, std::unordered_map<std::string, Texture2D*>);
+		void bind();
+		void unbind();
+		Texture2D* getTex(std::string);
+		static Framebuffer* get(std::string);
+	};
+
+	class ShadowMap : public Ressource {
+		Framebuffer* fb;
+		std::string shadowId;
+	protected:
+		void glUnload(void*) override;
+	public:
+		ShadowMap(std::string, Framebuffer*, std::string);
+		void bind();
+		void unbind();
+		Vec2u getBounds();
+		Texture2D* getTex();
+		static ShadowMap* get(std::string);
+	};
+
+	class Font : public Ressource {
+		sf::Font* font;
+
+	protected:
+		void glLoad(void*) override;
+		void glUnload(void*) override;
+
+	public:
+		Font(std::string);
+		static Font* get(std::string);
+	};
+
+	struct Renderable {
+	};
+
+	class Renderer : public Ressource {
+	public:
+		Renderer(std::string);
+		virtual void add(Renderable*) = 0;
+		virtual void add(std::vector<Renderable*>) = 0;
+		virtual void draw(View*) = 0;
+	};
+
+	struct TxDbgRenderable : public Renderable {
+		enum { Texture2D, Array2DTexture, AtlasRegion, TextureAtlas };
+		uint type = 0;
+		float scale = 1.f;
+		uint layer = 0;
+		void* data;
+		template<class T>
+		T get();
+	};
+
+	template<class T>
+	inline T TxDbgRenderable::get() {
+		return reinterpret_cast<T>(data);
+	}
+
+	class TextureDebugRenderer : public Renderer {
+		GLuint vao;
+		ShaderProgram* shader;
+
+		std::vector<TxDbgRenderable*> renderables;
+
+		void draw(Texture2D*, float = 1.f);
+		void draw(Array2DTexture*, uint, float = 1.f);
+		void draw(AtlasRegion*, float = 1.f);
+		void draw(TextureAtlas*, uint, float = 1.f);
+
+		/*
+		0: sampler2D
+		1: isampler2D
+		2: usampler2D
+		3: sampler2DRect
+		4: isampler2DRect
+		5: usampler2DRect
+		*/
+		void draw(GLuint, GLuint, uint, uint = 0, uint = 0, uint = 0, uint = M_WIDTH, uint = M_HEIGHT);
+
+	protected:
+		void glLoad(void*) override;
+		void glUnload(void*) override;
+	public:
+		TextureDebugRenderer();
+		void add(Renderable*) override;
+		void add(std::vector<Renderable*>) override;
+		void draw(View*) override;
+	};
+
+	struct VSMRenderable : public Renderable {
+		bool hasTex = true;
+		bool isVoxel = false;
+		GLuint texture, shadowTex;
+		GLuint* texVox;
+		Model* model;
+		uint vao, offset, count, matIndex;
+	};
+
+	class ShadowRenderer : public Renderer {
+		uint renderType;
+		ShaderProgram* shader;
+		Framebuffer* fb;
+		std::vector<VSMRenderable*> renderables;
+	protected:
+		void glLoad(void*) override;
+		void glUnload(void*) override;
+	public:
+		enum { VSM };
+		ShadowRenderer(std::string, uint);
+		void add(Renderable*) override;
+		void add(std::vector<Renderable*>) override;
+		void draw(View*) override;
+	};
+
+	class GaussianBlurRenderer : public Renderer {
+	private:
+		ShaderProgram* blurShader;
+		GLuint uniformBuffer;
+		GBlurData data;
+	public:
+		GaussianBlurRenderer(uint, float);
+		~GaussianBlurRenderer();
+		void blur(GLuint[2]);
+	};
+
+	class VSMRenderer : public Renderer {
+
+		TextureDebugRenderer* debugR;
+		ShadowRenderer* shadowR;
+		GaussianBlurRenderer* blur;
+
+		ShaderProgram* vsmNoTexShader;
+		ShaderProgram* vsmShader;
+
+		std::vector<VSMRenderable*> renderables;
+		std::vector<VSMRenderable*> rendNoTex;
+		std::vector<VSMRenderable*> voxelRend;
+
+		void drawVSM(std::vector<VSMRenderable*>);
+		void drawVSMNoTex(std::vector<VSMRenderable*>);
+		void drawVoxel(std::vector<VSMRenderable*>);
+
+	public:
+		VSMRenderer(std::string);
+		void add(Renderable*) override;
+		void add(std::vector<Renderable*>);
+		void draw(View*) override;
+	};
+
+	struct VoxelRenderable : Renderable {
+		GLuint vao;
+		GLuint heightmap;
+	};
+
+	class VoxelBackGroundRenderer : public Renderer {
+		ShaderProgram* shader;
+		GLuint bSizeBuffer[2];
+		uint* bSizeBufferPntr[2];
+		float* bSizeBufferPntrf[2];
+		uint bSizeIndex = 0;
+		std::vector<VoxelRenderable*> renderables;
+	protected:
+		void glLoad(void*) override;
+		void glUnload(void*) override;
+	public:
+		uint VOXELS = 102;
+		VoxelBackGroundRenderer(std::string);
+		void add(Renderable*) override;
+		void draw(View*) override;
+	};
 }

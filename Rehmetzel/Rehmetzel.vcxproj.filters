@@ -78,6 +78,9 @@
     <ClInclude Include="..\src\TimeLog.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\Renderer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\InputMultiplexer.cpp">
@@ -127,6 +130,9 @@
     </ClCompile>
     <ClCompile Include="..\bin\assets\shader\testshader.frag">
       <Filter>Resource Files\trash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Renderer.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

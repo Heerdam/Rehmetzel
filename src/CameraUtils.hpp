@@ -34,6 +34,21 @@ namespace Heerbann {
 	// all viewport held in some handler
 
     struct View {
+	private:
+		bool rotateLeftDown = false, rotateRightDown = false;
+		bool panNDown = false, panSDown = false;
+		bool panWDown = false, panEDown = false;
+	public:
+		sf::Keyboard::Key rotateLeft = sf::Keyboard::Key::Q;
+		sf::Keyboard::Key rotateRight = sf::Keyboard::Key::E;
+
+		sf::Keyboard::Key panN = sf::Keyboard::Key::W;
+		sf::Keyboard::Key panS = sf::Keyboard::Key::S;
+		sf::Keyboard::Key panW = sf::Keyboard::Key::A;
+		sf::Keyboard::Key panE = sf::Keyboard::Key::D;
+
+		float panModifier = 1.f;
+		float rotateModfier = 1.f;
 
 		sf::Mouse::Button panButton = sf::Mouse::Button::Right;
 		float panXModifier = 0.1f;
@@ -44,6 +59,7 @@ namespace Heerbann {
 		Vec4u GLBounds;
 
 		void setInteractive(bool);		
+		void unlock(bool);
 
 		const std::string id;
 		const ViewType type;
@@ -70,9 +86,8 @@ namespace Heerbann {
 	private:		
 		bool buttonPressed = false;
 		bool inputsActive = false;
+		bool isUnlocked = false;
 		Vec2i lastPos;
-
-		void updateUniforms();
 
 		ViewportHandler* parent;
 		Camera* camera;

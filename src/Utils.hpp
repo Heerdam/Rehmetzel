@@ -4,61 +4,6 @@
 
 namespace Heerbann {
 
-	class VAO {
-	protected:
-		GLuint vao, vbo;
-		GLint cameraUniformHandle;
-
-		float* data;
-
-		int vertexCount, vertexSize;
-
-	public:
-		virtual void set(float*, int) = 0;
-		virtual void build(ShaderProgram*) = 0;
-		virtual void draw(ShaderProgram*) = 0;
-
-	};
-
-	class BGVAO {
-
-		GLuint texLoc[9];
-		sf::Texture* tex[9];
-
-		GLuint vao, vbo;
-		GLint cameraUniformHandle;
-
-		float* data;
-
-		int vertexCount, vertexSize;
-
-	public:
-		void set(float*, int, int);
-		void build(ShaderProgram*);
-		void draw(ShaderProgram*);
-	};
-
-	class IndexedVAO {
-
-		GLuint vao, vbo, index;
-		GLint cameraUniformHandle, viewportSizeUniformHandle, radiusUniformHandle;
-
-		float* data;
-		GLuint* indices;
-
-		int vertexCount, vertexSize;
-
-		std::vector<GLuint> texLoc;
-		std::vector<sf::Texture*> tex;
-
-	public:
-		float viewRadius = 500.f;
-
-		void set(float*, GLuint*, int, int);
-		void build(ShaderProgram*);
-		void draw(ShaderProgram*);
-	};
-
 	class SpriteBatch {
 
 		enum Type {
@@ -115,21 +60,6 @@ namespace Heerbann {
 		uint addTexture(GLuint);
 		uint getIndex(GLuint);
 		bool textureExists(GLuint);
-	};
-
-	class ShaderProgram {
-		enum Status {
-			success, failed, missing
-		};
-		GLuint program = -1, compute = -1, vertex = -1, geom = -1, frag = -1;
-		void print(std::string, Status, Status, Status, Status, Status, std::string);
-		bool compile(const std::string&, const char*, const char*, const char*, const char*);
-	public:
-		bool printDebug = true;
-		GLuint getHandle();
-		bool loadFromMemory(const std::string&, const std::string&, const std::string&, const std::string&, const std::string&);
-		void bind();
-		void unbind();
 	};
 
 	class ShapeRenderer {
@@ -194,4 +124,6 @@ namespace Heerbann {
 
 	};
 
-}
+};
+
+
