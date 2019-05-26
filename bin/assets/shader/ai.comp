@@ -1,0 +1,516 @@
+
+#version 460 core
+
+#extension GL_ARB_compute_variable_group_size : enable
+
+//------------------- DEFINES -------------------\\
+
+#define CELLSX 500
+#define CELLSY 500
+
+#define MAX_ANIMAL_COUNT 1000
+#define ANIMAL_DATA_COUNT 1
+
+#define MAX_ANIMAL_SENSE 50
+
+#define MapCellEntryCount 100
+
+//Body State
+#define BM_IDLE 0
+#define BM_WALK 1
+#define BM_WALK_FAST 2
+#define BM_CANTER 2
+#define BM_RUN 3
+#define BM_SPRINT 4
+#define BM_RUMINATE 5
+#define BM_EAT 6
+#define BM_DRINK 7
+#define BM_SLEEP 8 
+
+//Mind State
+#define	MS_CALM 0
+#define	MS_STARTLED 1
+#define MS_ATTENTIVE 1
+#define	MS_AGRESSIVE 2
+#define	MS_PANICKED 3
+#define	MS_FLEEING 4
+
+//Sickness Effect
+#define SE_LIMP 0
+
+//Sickness
+#define S_AIDS 0
+
+//Body Part
+#define BP_BIG_PENIS 0
+
+//Animals
+#define	A_RED_DEER 0
+
+//------------------- STRUCTS -------------------\\
+
+//immuteable values of an animal
+struct DataEntry{
+	float walkSpeed;
+	float canterSpeed;
+	float runSpeed;
+	float sprintSpeed;
+
+	float baseSenseDistance;
+
+	float deltaHunger;
+	float deltaThirst;
+	float deltaEnergy;
+};
+
+struct SicknessEffect {
+	unsigned int type;
+	float effectStrength;
+};
+
+struct Sickness{
+
+	unsigned int type;
+
+	float duration;
+	SicknessEffect effects[10];
+};
+
+struct BodyPart {
+	unsigned int type;
+
+	//[0, 1]
+	float health;
+};
+
+struct Body{
+
+	//[0, 1]
+	float health;
+
+	//[kg]
+	//float size;
+
+	//bool isMale;
+
+	//unsigned int age;
+
+	//hunger[0, 1], thirst[0, 1], energy[0, 1]
+	vec3 status;
+
+	//BodyPart bodyParty [10];
+
+	//Sickness sicknesses[10];
+};
+
+struct Animal{
+	uint locked;
+
+	int id;
+
+	//if this animal is active and in the game
+	bool isActive;
+
+	bool isAlive;
+
+	vec2 position;
+	vec2 target;
+
+	//current index in aabb
+	int index;
+
+	DataEntry baseValues;
+
+	unsigned int type;
+
+	
+	unsigned int stateMind;
+
+
+	unsigned int stateBody;
+
+	Body body;
+
+};
+
+struct MinAnimal{
+	uint locked;
+
+	bool isActive;
+	uint id;
+	uint type;
+	uint index;
+	vec2 position;
+};
+
+struct MapEntry{	
+	int count;
+	MinAnimal entries[MapCellEntryCount];
+};
+
+struct AABB{
+	int size;
+	MinAnimal[MAX_ANIMAL_SENSE] found;
+};
+
+//------------------- BUFFERS -------------------\\
+
+//buffer holding the information to animal
+layout(binding = 0, std430) buffer animalDataBase{
+	DataEntry data_entry[ANIMAL_DATA_COUNT];
+};
+
+//buffer holding all animals
+layout(binding = 1, std430) buffer animals{
+	Animal saved_animal[MAX_ANIMAL_COUNT];
+};
+
+//implicit 2d map loaded from outside as buffer and update when changes occure
+layout(binding = 2, std430) buffer WorldCellMap {
+	vec4 mapBounds;
+	uint cm_cellsX;
+	uint cm_cellsY;
+	float cm_cellSizeX;
+	float cm_cellSizeY;
+	uint cm_data[];
+};
+
+//buffer sent to the cpu with animals 
+layout(binding = 3, std430) buffer outBuffer {
+	int out_size;
+	Animal out_animal[];
+};
+
+//holds aabb infos of every animal
+layout(binding = 4, std430) buffer AAABBMap {
+	MapEntry aabb_map[CELLSX * CELLSY];
+};
+
+//------------------- UNIFORMS -------------------\\
+
+uniform vec4 player_info; //pos.x, pos.y, deltaTime, view_dist
+
+//------------------- FUNCTIONS -------------------\\
+
+//------------------- CELLMAP -------------------\\
+
+uint getIndex(in uint _x, in uint _y){
+	return _y * CELLSX + _x;
+}
+
+uint querry(in vec2 _pos){
+	int x = int(_pos.x / cm_cellSizeX);
+	int y = int(_pos.y / cm_cellSizeY);
+	uint index = clamp(uint(y * cm_cellsX + x), 0u, cm_data.length()-1);
+	return cm_data[index];
+};
+
+//------------------- AABB -------------------\\
+
+float AABB_calculateSenseRadius(in Animal _an){
+	return _an.baseValues.baseSenseDistance; //TODO apply modifiers
+};
+
+//thread safe
+void AABB_remove(in uint _index, in uint _id){
+	for(int k = 0; k < MapCellEntryCount; ++k){
+		if(aabb_map[_index].entries[k].locked != 0) continue; 
+		if(aabb_map[_index].entries[k].id == _id){
+			atomicExchange(aabb_map[_index].entries[k].locked, 1);			
+			aabb_map[_index].entries[k].isActive = false;
+			atomicExchange(aabb_map[_index].entries[k].locked, 0);
+			atomicAdd(aabb_map[_index].count, -1);
+			return;
+		}
+	}
+};
+
+//returns false if insertion failed because of overflow (thread safe)
+bool AABB_insert(in uint _index, in uint _id, in vec2 _pos){ 
+	for(int k = 0; k < MapCellEntryCount; ++k){
+		if(aabb_map[_index].entries[k].locked != 0) continue; 
+		if(!aabb_map[_index].entries[k].isActive){
+			if(atomicAdd(aabb_map[_index].entries[k].locked, 1) != 1) continue;
+			aabb_map[_index].entries[k].id == _id;
+			aabb_map[_index].entries[k].index = _index;
+			aabb_map[_index].entries[k].position = _pos;
+			atomicAdd(aabb_map[_index].count, 1);
+			atomicExchange(aabb_map[_index].entries[k].locked, 0);
+			return true;
+		}
+	}
+	return false;
+};
+
+
+
+//returns false if insertion failed because of overflow
+bool AABB_updateEntry(in vec2 _pos, inout uint _index, in uint _id){
+
+	float cwidth = (mapBounds.z - mapBounds.x) / CELLSX;
+	float cheight = (mapBounds.w - mapBounds.y) / CELLSY;
+
+	int x = int(_pos.x / cwidth);
+	int y = int(_pos.y / cheight);
+
+	//test if cell has changed
+	uint currentIndex = _index;
+	uint newIndex = getIndex(x, y);
+
+	if(currentIndex == newIndex)
+		return true;
+
+	_index = newIndex;
+
+	//insert. if insertion fails keep in old cell
+	if(!AABB_insert(_index, _id, _pos)){
+		_index = currentIndex;
+		return false;
+	}
+
+	//remove
+	AABB_remove(_index, _id);
+
+	return true;
+};
+
+//finds neightbours. limited by MAX_ANIMAL_SENSE
+AABB AABB_findNeighbours(in Animal  _an){
+	AABB aabb;
+
+	float cwidth = (mapBounds.z - mapBounds.x) / CELLSX;
+	float cheight = (mapBounds.w - mapBounds.y) / CELLSY;
+
+	int x = int(_an.position.x / cwidth);
+	int y = int(_an.position.y / cheight);
+
+	uint index = getIndex(x, y);
+
+	float senseDist = AABB_calculateSenseRadius(_an);
+	int dist = max(int(senseDist/cwidth), int(senseDist/cheight));
+
+	dist = dist%2 == 0 ? dist : dist + 1;
+	int disth = dist / 2;
+
+	int maxAnimalsPerCell = int(MAX_ANIMAL_SENSE / (disth*disth));
+	aabb.size = 0;
+	for(int x_ = x - disth; x_ <= x + disth; ++x){
+		for(int y_ = x - disth; y_ <= y + disth; ++y){
+			MapEntry entry = aabb_map[getIndex(x, y)];
+			for(int k = 0; k < (maxAnimalsPerCell < entry.count ? maxAnimalsPerCell : entry.count); ++k){
+				aabb.found[aabb.size++] = entry.entries[k];
+			}
+		}
+	}
+	return aabb;
+};
+
+//returns true if a circle on position _pos with radius _minDist2 is blocked
+bool AABB_posCheck(in vec2 _pos, in float _minDist2){
+
+	float cwidth = (mapBounds.z - mapBounds.x) / CELLSX;
+	float cheight = (mapBounds.w - mapBounds.y) / CELLSY;
+
+	int x = int(_pos.x / cwidth);
+	int y = int(_pos.y / cheight);
+
+	uint index = getIndex(x, y);
+
+	for(int k = 0; k < MapCellEntryCount; ++k){
+		float dist2 = _pos.x * _pos.x  + aabb_map[index].entries[k].position.x * aabb_map[index].entries[k].position.x;
+		if(dist2 <= _minDist2) return true;
+	}
+	return false;
+};
+
+layout( local_size_variable ) in;
+
+//------------------- MAIN -------------------\\
+
+/*
+	x: index for animal 
+*/
+
+void main() {
+	float deltaTime = player_info.z;
+	float viewDistance = player_info.w;
+	float viewDistance2 = viewDistance * viewDistance;
+
+	uint index = gl_WorkGroupID.x;
+	Animal animal = saved_animal[index];
+
+	if(!animal.isActive) return;
+	//get data entry
+	DataEntry data;
+
+	//find neighbours
+	AABB aabb = AABB_findNeighbours(animal);
+
+	switch(animal.type) {
+
+		case A_RED_DEER: 
+		{
+		
+		//current state
+		uint state = animal.stateBody;
+
+		//analyse dangers
+		float dangerScore = 0;
+		for(int k = 0; k < aabb.size; ++k){
+			MinAnimal an = aabb.found[k];
+			if(an.type == animal.type) continue;
+			switch(an.type){
+			//TODO
+			}
+		}
+
+		//calculate status
+		//energy
+		float currentEnergy = animal.body.status.z;
+		{
+			float multi = 1.0;
+			switch(state){
+			case BM_IDLE:
+			multi = -0.5;
+			break;
+			case BM_WALK:
+			multi = -0.75;
+			break;
+			case BM_WALK_FAST:
+			multi = -1.0;
+			break;
+			case BM_RUN: 
+			multi = -1.5;
+			break;
+			case BM_SPRINT:
+			multi = -2.0;
+			break;			
+			case BM_RUMINATE:
+			multi = 1.75;
+			break;
+			case BM_EAT:
+			multi = 1.5;
+			break;
+			case BM_SLEEP:
+			multi = 2.0;
+			break;
+			}
+			currentEnergy = clamp(currentEnergy += multi * data.deltaEnergy, 0.0, 1.0);
+		}
+		//hunger
+		float currentHunger = clamp(animal.body.status.x + (state == 6 || state == 5 ? data.deltaHunger : -1 * data.deltaHunger), 0.0, 1.0);
+
+		//thirst
+		float currentThirst = clamp(animal.body.status.y + (state == 7 ? data.deltaThirst : -1 * data.deltaThirst), 0.0, 1.0);
+
+		//health
+		float currentHealth = animal.body.health;
+		{
+			switch(state){
+			case BM_IDLE:
+			currentHealth += 0.01f * deltaTime;
+			break;		
+			case BM_RUMINATE:
+			currentHealth += 0.01f * deltaTime;
+			break;
+			case BM_SLEEP:
+			currentHealth += 0.05f * deltaTime;
+			break;
+			}
+			currentHealth = clamp(currentHealth, 0.0, 1.0);
+		}
+
+		//dead
+		if(currentHealth <= 0.00001){
+			animal.isAlive = false;
+			//TODO write to output
+			return;
+		}
+
+		//evaluate new state
+		uint newState = 0;
+		if (dangerScore <= 0.4){ //mind state: calm
+			animal.stateMind = 0;
+			if (currentEnergy <= 0.3){
+				newState = 8;
+			} else if (currentThirst >= currentHunger){
+				newState = 7;
+			} else if (currentThirst < currentHunger){
+				newState = 6;
+			}
+		} else if (dangerScore > 0.4 && dangerScore <= 0.75){ // mind state: startled/ attentiv
+			animal.stateMind = 2;
+			state = 0;
+		} else { //fleeing panicked
+			animal.stateMind = 3;
+			if(dangerScore <= 0.8) animal.stateBody = 3;
+			else animal.stateBody = 4;
+		}
+
+		//if old state = moving -> check if new target is needed
+		//find new target
+		switch(animal.stateMind){
+			case MS_STARTLED:
+			{				
+				animal.target = animal.position;
+			}
+			break;
+			case MS_PANICKED:
+			{
+				animal.target = animal.position;
+			}
+			break;
+			case MS_FLEEING:
+			{
+				animal.target = animal.position + vec2(50, 0);
+			}
+			break;
+		}
+
+		//try to apply movement if necessary
+		switch(newState){
+			case 1:
+			{				
+				vec2 dir = normalize(animal.position - animal.target) * data.walkSpeed * deltaTime;
+			}
+			break;
+			case 2:
+			{
+				vec2 dir = normalize(animal.position - animal.target) * data.canterSpeed * deltaTime;
+			}
+			break;
+			case 3:
+			{
+				vec2 dir = normalize(animal.position - animal.target) * data.runSpeed * deltaTime;
+			}
+			break;
+			case 4:
+			{
+				vec2 dir = normalize(animal.position - animal.target) * data.sprintSpeed * deltaTime;
+			}
+			break;
+		}
+
+		vec2 ppos = vec2(player_info.xy);
+		ppos -= animal.position;
+		ppos *= ppos;
+
+		//update animal
+		saved_animal[index] = animal;
+
+		//thread safe add to out array 
+		if((ppos.x + ppos.y) <= viewDistance2){
+			uint isLocked = 0;
+			for(uint i = 0; i < MAX_ANIMAL_COUNT; ++i){
+				isLocked = atomicAdd(out_animal[i].locked, 1u);
+				if(isLocked == 1){
+					animal.locked = 1;
+					out_animal[i] = animal;
+					atomicAdd(out_size, 1);
+					break;
+				}
+			}	
+		}
+
+	}
+}

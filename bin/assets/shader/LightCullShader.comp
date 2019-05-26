@@ -1,0 +1,220 @@
+
+#version 460 core
+
+#extension GL_ARB_compute_variable_group_size : enable
+#extension GL_ARB_shader_image_load_store : enable
+
+#define POINT_LIGHT 0
+#define SPOT_LIGHT 1
+
+layout( local_size_variable ) in;
+
+struct Light{
+	uint type;
+	vec3 position;
+	vec3 direction;
+	vec4 color;
+	uint lumen;
+	vec3 funcvalues;
+	float maxDistance;
+	//spot light
+	float sl_innerAngle;
+	float sl_outerAngle;
+	float sl_maxRadius;
+};
+
+restrict readonly layout(binding = 0, std430) buffer frustumBuffer {
+	vec4 planes[];
+};
+
+restrict readonly layout(binding = 1, std430) buffer uniforms {
+	mat4 InverseProjection;
+	vec2 ScreenDimensions;
+};
+
+restrict readonly layout(binding = 2, std430) buffer dynamicLightBuffer {
+	Light dLights[];
+};
+
+layout (binding = 4) uniform sampler2D depthBuffer;
+
+// Global counter for current index into the light index list.
+layout(binding = 5, std430) buffer LightCounterBuffer {
+	uint o_LightIndexCounter;
+	uint t_LightIndexCounter;
+};
+
+restrict layout (binding = 6, rg32ui) uniform uimage2D  o_LightGrid;
+
+restrict layout (binding = 7, rg32ui) uniform uimage2D t_LightGrid;
+
+restrict layout(binding = 8, std430) buffer o_LightIndexListBuffer {
+	uint o_LightIndexList[];
+};
+
+restrict layout(binding = 9, std430) buffer t_LightIndexListBuffer {
+	uint t_LightIndexList[];
+};
+
+shared uint uMinDepth;
+shared uint uMaxDepth;
+shared vec4 frustum[4];
+// Opaque geometry light lists.
+shared uint o_LightCount;
+shared uint o_LightIndexStartOffset;
+shared uint o_LightList[1024];
+// Transparent geometry light lists.
+shared uint t_LightCount;
+shared uint t_LightIndexStartOffset;
+shared uint t_LightList[1024];
+
+bool SphereInsidePlane(in vec3 _pos, in float _rad, in vec4 _plane) {
+    return dot(_plane.xyz, _pos) - _plane.w < -_rad;
+}
+
+bool SphereInsideFrustum(in vec3 _pos, in float _rad, in vec4 _frustum[4], in float _zNear, in float _zFar){
+	bool result = true;
+	result = !(_pos.z - _rad > _zNear || _pos.z + _rad < _zFar );
+    for (int i = 0; i < 4 && result; ++i)
+		result = !SphereInsidePlane(_pos, _rad, _frustum[i]);
+    return result;
+};
+
+bool PointInsidePlane(in vec3 _pos, in vec4 _plane) {
+    return dot(_plane.xyz, _pos) - _plane.w < 0.0;
+};
+
+bool ConeInsidePlane(in vec3 _tip, in float _height, in vec3 _dir, in float _radius, in vec4 _plane) {
+    vec3 m = cross(cross(_plane.xyz, _dir ), _dir);
+    vec3 Q = _tip + _dir * _height - m * _radius;
+    return PointInsidePlane(_tip, _plane) && PointInsidePlane(Q, _plane);
+}
+
+bool ConeInsideFrustum(in vec3 _tip, in float _height, in vec3 _dir, in float _radius, in vec4 _frustum[4], in float _zNear, in float _zFar ) {
+    bool result = true;
+    vec4 nearPlane = vec4(0.0, 0.0, -1.0, -_zNear);
+    vec4 farPlane = vec4(0.0, 0.0, 1.0, _zFar);
+	result = !(ConeInsidePlane(_tip, _height, _dir, _radius, nearPlane) || ConeInsidePlane(_tip, _height, _dir, _radius, farPlane));
+    for (int i = 0; i < 4 && result; ++i)
+        result = !(ConeInsidePlane(_tip, _height, _dir, _radius, _frustum[i])); 
+    return result;
+}
+
+// Add the light to the visible light list for opaque geometry.
+void o_AppendLight(in uint _lightIndex) {
+    uint index = atomicAdd(o_LightCount, 1); // Index into the visible lights array.
+    if (index < 1024)
+		o_LightList[index] = _lightIndex;
+}
+ 
+// Add the light to the visible light list for transparent geometry.
+void t_AppendLight(in uint _lightIndex) {
+    uint index = atomicAdd(t_LightCount, 1); // Index into the visible lights array.
+    if (index < 1024)
+		t_LightList[index] = _lightIndex;
+}
+
+// Convert clip space coordinates to view space
+vec4 ClipToView(in vec4 _clip) {
+    // View space position.
+    vec4 view = InverseProjection * _clip;
+    // Perspective projection.
+    return  view / view.w;
+}
+
+void main(){
+
+	// Calculate min & max depth in threadgroup / tile.
+    uvec2 texCoord = gl_WorkGroupID.xy;
+    float fDepth = texture(depthBuffer, ivec2(texCoord)).r;
+ 
+    uint uDepth = uint(fDepth);
+
+	if (gl_LocalInvocationID == 0) { // Avoid contention by other threads in the group.	
+		uMinDepth = 0xffffffff;
+		uMaxDepth = 0;
+		o_LightCount = 0;
+		t_LightCount = 0;
+		uint index = 0;
+		for(uint i = 0; i < 4; ++i)
+			frustum[i] = planes[index + i];//TODO
+		//frustum = in_Frustums[IN.groupID.x + ( IN.groupID.y * numThreadGroups.x )];
+	}
+ 
+	memoryBarrierShared();
+	atomicMin(uMinDepth, uDepth);
+	atomicMax(uMaxDepth, uDepth);
+	memoryBarrierShared();
+
+	float fMinDepth = float(uMinDepth);
+	float fMaxDepth = float(uMaxDepth);
+ 
+	// Convert depth values to view space.
+	float minDepthVS = ClipToView(vec4(0.0, 0.0, fMinDepth, 1.0)).z;
+	float maxDepthVS = ClipToView(vec4(0.0, 0.0, fMaxDepth, 1.0)).z;
+	float nearClipVS = ClipToView(vec4(0.0, 0.0, 0.0, 1.0)).z;
+ 
+	// Clipping plane for minimum depth value 
+	// (used for testing lights within the bounds of opaque geometry).
+	vec4 minPlane = vec4(0.0, 0.0, -1.0, -minDepthVS);
+
+	// Cull dynamic lights
+	// Each thread in a group will cull 1 light until all lights have been culled.
+	for (uint i = gl_LocalInvocationIndex; i < dLights.length(); i += 32 * 32) {	
+    
+        Light light = dLights[i];
+
+		switch (light.type) {
+			case POINT_LIGHT:
+			{
+				if (SphereInsideFrustum(light.position, light.maxDistance, frustum, nearClipVS, maxDepthVS)) {
+					t_AppendLight(i);
+ 
+					if (!SphereInsidePlane(light.position, light.maxDistance, minPlane))
+						o_AppendLight(i);
+				}
+			}
+			break;
+			case SPOT_LIGHT:
+			{//in vec3 _tip, in float _height, in vec3 _dir, in float _radius
+				float coneRadius = tan(radians(light.sl_outerAngle)) * light.maxDistance;
+				if (ConeInsideFrustum(light.position, light.maxDistance, light.direction, coneRadius, frustum, nearClipVS, maxDepthVS)) {
+					t_AppendLight(i);
+ 
+					if (!ConeInsidePlane(light.position, light.maxDistance, light.direction, coneRadius, minPlane))
+						o_AppendLight(i);
+				}
+			}
+			break;
+			break;
+			}
+		}
+ 
+	// Wait till all threads in group have caught up.
+	memoryBarrierShared();
+
+	// Update global memory with visible light buffer.
+	// First update the light grid (only thread 0 in group needs to do this)
+	if (gl_LocalInvocationID == 0) {
+		// Update light grid for opaque geometry.			
+		o_LightIndexStartOffset = atomicAdd(o_LightIndexCounter, o_LightCount);
+		imageStore(o_LightGrid, ivec2(gl_WorkGroupID.xy), ivec4(o_LightIndexStartOffset, o_LightCount, 0, 0));
+ 
+		// Update light grid for transparent geometry.
+		t_LightIndexStartOffset = atomicAdd(t_LightIndexCounter, t_LightCount);
+		imageStore(t_LightGrid, ivec2(gl_WorkGroupID.xy), ivec4(t_LightIndexStartOffset, t_LightCount, 0, 0));
+	}
+ 
+	memoryBarrierImage();
+
+	// Now update the light index list (all threads).
+	// For opaque geometry.
+	for (uint i = gl_LocalInvocationIndex; i < o_LightCount; i += 32 * 32 ) {
+		o_LightIndexList[o_LightIndexStartOffset + i] = o_LightList[i];
+	}
+	// For transparent geometry.
+	for (uint i = gl_LocalInvocationIndex; i < t_LightCount; i += 32 * 32 ) {
+		t_LightIndexList[t_LightIndexStartOffset + i] = t_LightList[i];
+	}
+
+};

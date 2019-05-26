@@ -1,0 +1,249 @@
+
+#version 460 core
+
+#define FOREST_SOIL 0.f
+#define FOREST_CLIFF 1.f
+#define FOREST_DIRT 2.f
+#define FOREST_GRASS 3.f
+#define FOREST_MOSS 4.f
+#define FOREST_MUD 5.f
+#define FOREST_ROAD 6.f
+#define FOREST_ROCK 7.f
+#define FOREST_WET_MUD 8.f
+
+#define VERTEXSIZE 15
+
+layout(local_size_x = 5, local_size_y = 1, local_size_z = 1) in;
+
+restrict layout (binding = 0, std430) buffer vertexBuffer{
+	float data[];
+};
+
+restrict layout (binding = 1, std430) buffer metaBuffer {
+	uint vertex; //global counter
+	uint m_width; //count of voxels in width
+	uint m_height; //count of voxels in height
+	uint m_aabb_x; //float offset to the bottom left voxel
+	uint m_aabb_y; //float offset to the bottom left voxel
+	uint m_voxWidth; //width of a voxel (square)
+	uint m_heightOffset; //offset between 1 step in height
+};
+
+restrict layout (binding = 2, std430) buffer tangentBuffer {
+	vec3 tangents[5]; //top, W, N, E, S
+	vec3 bitangents[5]; //top, W, N, E, S
+};
+
+layout (location = 0) uniform usampler2DRect heightMap;
+//layout (location = 1) uniform mat4 combined;
+
+void main(){
+	
+	//TODO test if plane visible
+
+	//heightmap
+	float u = float(gl_WorkGroupID.x) + 1.1f;
+	float v = float(gl_WorkGroupID.y) + 1.1f;
+
+	uint self = texture(heightMap, vec2(u, v)).r;
+	uint n = texture(heightMap, vec2(u, v + 1.f)).r;
+	uint e = texture(heightMap, vec2(u + 1.f, v)).r;
+	uint w = texture(heightMap, vec2(u - 1.f, v)).r;
+	uint s = texture(heightMap, vec2(u, v - 1.f)).r;
+
+	uint id = gl_LocalInvocationID.x; //quad to work on
+
+	//skip if height negativ
+	switch(id){
+		case 1: //e
+		if(int(self) - int(e) <= 0) return;
+		else break;
+		case 2: //n
+		if(int(self) - int(n) <= 0) return;
+		else break;
+		case 3: //w
+		if(int(self) - int(w) <= 0) return;
+		else break;
+		case 4: //s
+		if(int(self) - int(s) <= 0) return;
+		else break;
+		break;
+	}
+
+	uint index = atomicAdd(vertex, 1);
+
+	uint i = index * VERTEXSIZE * 4 ;
+
+	vec3 position = vec3(gl_WorkGroupID.x * m_voxWidth, 0.f, gl_WorkGroupID.y * m_voxWidth); //lowest bottom left corner
+
+	/*
+		v3		v2
+
+		v4		v1
+	*/
+
+	vec3 v1, v2, v3, v4;
+	vec3 norm;
+	vec3 uv1, uv2, uv3, uv4;
+
+	switch(id){
+		case 0: //top
+		{
+			v1 = position + vec3(0.f, self * m_heightOffset, 0.f);
+			v2 = position + vec3(0.f, self * m_heightOffset, m_voxWidth);
+			v3 = position + vec3(m_voxWidth, self * m_heightOffset, m_voxWidth);
+			v4 = position + vec3(m_voxWidth, self * m_heightOffset, 0.f);
+			norm = vec3(0.75f, 0.75f, 0.f);
+			uv1 = vec3(1.f, 0.f, FOREST_GRASS);
+			uv2 = vec3(1.f, 1.f, FOREST_GRASS);
+			uv3 = vec3(0.f, 1.f, FOREST_GRASS);
+			uv4 = vec3(0.f, 0.f, FOREST_GRASS);
+		}
+		break;
+		
+		case 1: //e
+		{
+
+			v4 = position + vec3(m_voxWidth, e * m_heightOffset, 0.f);
+			v3 = position + vec3(m_voxWidth, e * m_heightOffset, m_voxWidth);
+			v2 = position + vec3(m_voxWidth, self * m_heightOffset, m_voxWidth);
+			v1 = position + vec3(m_voxWidth, self * m_heightOffset, 0.f);
+			norm = vec3(0.5f, 0.f, 0.f);
+			uv1 = vec3(1.f, 0.f, FOREST_DIRT);
+			uv2 = vec3(1.f, 1.f, FOREST_DIRT);
+			uv3 = vec3(0.f, 1.f, FOREST_DIRT);
+			uv4 = vec3(0.f, 0.f, FOREST_DIRT);
+		}
+		break;		
+		
+		case 2: //n
+		{
+			v4 = position + vec3(0.f, n * m_heightOffset, m_voxWidth);
+			v3 = position + vec3(0.f, self * m_heightOffset, m_voxWidth);
+			v2 = position + vec3(m_voxWidth, self * m_heightOffset, m_voxWidth);
+			v1 = position + vec3(m_voxWidth, n * m_heightOffset,m_voxWidth);
+			norm = vec3(0.75f, 0.f, 0.f);
+			uv1 = vec3(1.f, 0.f, FOREST_DIRT);
+			uv2 = vec3(1.f, 1.f, FOREST_DIRT);
+			uv3 = vec3(0.f, 1.f, FOREST_DIRT);
+			uv4 = vec3(0.f, 0.f, FOREST_DIRT);
+		}
+		break;
+
+		case 3: //w
+		{
+			v4 = position + vec3(0.f, self * m_heightOffset, 0.f);
+			v3 = position + vec3(0.f, self * m_heightOffset, m_voxWidth);
+			v2 = position + vec3(0.f, w * m_heightOffset, m_voxWidth);
+			v1 = position + vec3(0.f, w * m_heightOffset, 0.f);
+			norm = vec3(0.f, 0.f, 0.5f);
+			uv1 = vec3(1.f, 0.f, FOREST_DIRT);
+			uv2 = vec3(1.f, 1.f, FOREST_DIRT);
+			uv3 = vec3(0.f, 1.f, FOREST_DIRT);
+			uv4 = vec3(0.f, 0.f, FOREST_DIRT);
+		}
+		break;
+
+		case 4: //s
+		{
+			v4 = position + vec3(0.f, self * m_heightOffset, 0.f);
+			v3 = position + vec3(0.f, s * m_heightOffset, 0.f);
+			v2 = position + vec3(m_voxWidth, s * m_heightOffset, 0.f);
+			v1 = position + vec3(m_voxWidth, self * m_heightOffset, 0.f);
+			norm = vec3(0.f, 0.75f, 0.f);
+			uv1 = vec3(1.f, 0.f, FOREST_DIRT);
+			uv2 = vec3(1.f, 1.f, FOREST_DIRT);
+			uv3 = vec3(0.f, 1.f, FOREST_DIRT);
+			uv4 = vec3(0.f, 0.f, FOREST_DIRT);
+		}
+		break;
+		
+	}
+
+	//vertex 1
+	data[i++] = v1.x; //a_pos
+	data[i++] = v1.y;
+	data[i++] = v1.z;
+
+	data[i++] =  norm.x; //a_norm
+	data[i++] =  norm.y;
+	data[i++] =  norm.z;
+
+	data[i++] =  uv1.x; //a_uv
+	data[i++] =  uv1.y;
+	data[i++] =  uv1.z;
+
+	data[i++] = 0.f; //tangents[id].x; //a_tang
+	data[i++] = 0.f; //tangents[id].y;
+	data[i++] = 0.f; //tangents[id].z;
+
+	data[i++] = 0.f; //bitangents[id].x; //a_bitang
+	data[i++] = 0.f; //bitangents[id].y;
+	data[i++] = 0.f; //bitangents[id].z;
+
+	//vertex 2
+	data[i++] = v2.x; //a_pos
+	data[i++] = v2.y;
+	data[i++] = v2.z;
+
+	data[i++] =  norm.x; //a_norm
+	data[i++] =  norm.y;
+	data[i++] =  norm.z;
+
+	data[i++] =  uv2.x; //a_uv
+	data[i++] =  uv2.y;
+	data[i++] =  uv2.z;
+
+	data[i++] = 0.f; //tangents[id].x; //a_tang
+	data[i++] = 0.f; //tangents[id].y;
+	data[i++] = 0.f; //tangents[id].z;
+
+	data[i++] = 0.f; //bitangents[id].x; //a_bitang
+	data[i++] = 0.f; // bitangents[id].y;
+	data[i++] = 0.f; //bitangents[id].z;
+
+	//vertex 3
+	data[i++] = v3.x; //a_pos
+	data[i++] = v3.y;
+	data[i++] = v3.z;
+
+	data[i++] =  norm.x; //a_norm
+	data[i++] =  norm.y;
+	data[i++] =  norm.z;
+
+	data[i++] =  uv3.x; //a_uv
+	data[i++] =  uv3.y;
+	data[i++] =  uv3.z;
+
+	data[i++] = 0.f; //tangents[id].x; //a_tang
+	data[i++] = 0.f; //tangents[id].y;
+	data[i++] = 0.f; //tangents[id].z;
+
+	data[i++] = 0.f; //bitangents[id].x; //a_bitang
+	data[i++] = 0.f; //bitangents[id].y;
+	data[i++] = 0.f; //bitangents[id].z;
+
+	//vertex 4
+	data[i++] = v4.x; //a_pos
+	data[i++] = v4.y;
+	data[i++] = v4.z;
+
+	data[i++] =  norm.x; //a_norm
+	data[i++] =  norm.y;
+	data[i++] =  norm.z;
+
+	data[i++] =  uv4.x; //a_uv
+	data[i++] =  uv4.y;
+	data[i++] =  uv4.z;
+
+	data[i++] = 0.f; //tangents[id].x; //a_tang
+	data[i++] = 0.f; //tangents[id].y;
+	data[i++] = 0.f; //tangents[id].z;
+
+	data[i++] = 0.f; //bitangents[id].x; //a_bitang
+	data[i++] = 0.f; //bitangents[id].y;
+	data[i++] = 0.f; //bitangents[id].z;
+
+	memoryBarrier();
+
+};

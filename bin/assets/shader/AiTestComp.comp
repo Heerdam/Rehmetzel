@@ -1,0 +1,212 @@
+
+#version 460 core
+
+#extension GL_ARB_compute_variable_group_size : enable
+
+layout( local_size_variable ) in;
+
+#define CELLSX 50
+#define CELLSY 50
+#define MAX_ANIMAL_COUNT 1000
+#define MapCellEntryCount 15
+#define MAX_ANIMAL_SENSE 100
+
+#define MAP_WIDTH 1000.0
+#define MAP_HEIGHT 1000.0
+
+//------------------- STRUCTS -------------------\\
+
+struct Debug{
+	float radius;
+	vec2 position;
+};
+
+struct Entitiy{
+	uint locked;
+	bool isActive;
+	uint id;
+	uint index;
+
+	vec2 position;
+	vec2 dir;
+	float speed;
+};
+
+struct MapEntry{	
+	int count;
+	Entitiy entries[MapCellEntryCount];
+};
+
+struct AABB{
+	int size;
+	Entitiy[MAX_ANIMAL_SENSE] found;
+};
+
+//------------------- BUFFERS -------------------\\
+
+layout(binding = 0, std430) buffer debugBuffer{
+	float gridWidth;
+	float gridHeight;
+	uint cellsX;
+	uint cellsY;
+	uint size;
+	Debug data[1000];
+};
+
+//buffer holding all entities
+layout(binding = 1, std430) buffer entities{
+	Entitiy saved_entities[MAX_ANIMAL_COUNT];
+};
+
+//holds aabb infos of every animal
+layout(binding = 2, std430) buffer AAABBMap {
+	MapEntry aabb_map[CELLSX * CELLSY];
+};
+
+//------------------- FUNCTIONS -------------------\\
+
+uint getIndex(in uint _x, in uint _y){
+	return _y * CELLSX + _x;
+}
+
+//thread safe
+void AABB_remove(in uint _index, in uint _id){
+	for(int k = 0; k < MapCellEntryCount; ++k){
+		if(aabb_map[_index].entries[k].locked != 0) continue; 
+		if(aabb_map[_index].entries[k].id == _id){
+			atomicExchange(aabb_map[_index].entries[k].locked, 1);			
+			aabb_map[_index].entries[k].isActive = false;
+			atomicExchange(aabb_map[_index].entries[k].locked, 0);
+			atomicAdd(aabb_map[_index].count, -1);
+			return;
+		}
+	}
+};
+
+//returns false if insertion failed because of overflow (thread safe)
+bool AABB_insert(in uint _index, in uint _id, in vec2 _pos){ 
+	for(int k = 0; k < MapCellEntryCount; ++k){
+		if(aabb_map[_index].entries[k].locked != 0) continue; 
+		if(!aabb_map[_index].entries[k].isActive){
+			if(atomicAdd(aabb_map[_index].entries[k].locked, 1) != 1) continue;
+			aabb_map[_index].entries[k].id == _id;
+			aabb_map[_index].entries[k].index = _index;
+			aabb_map[_index].entries[k].position = _pos;
+			atomicAdd(aabb_map[_index].count, 1);
+			atomicExchange(aabb_map[_index].entries[k].locked, 0);
+			return true;
+		}
+	}
+	return false;
+};
+
+//returns false if insertion failed because of overflow
+bool AABB_updateEntry(in vec2 _pos, inout uint _index, in uint _id){
+
+	float cwidth = MAP_WIDTH / CELLSX;
+	float cheight = MAP_HEIGHT / CELLSY;
+
+	int x = int(_pos.x / cwidth);
+	int y = int(_pos.y / cheight);
+
+	//test if cell has changed
+	uint currentIndex = _index;
+	uint newIndex = getIndex(x, y);
+
+	if(currentIndex == newIndex)
+		return true;
+
+	_index = newIndex;
+
+	//insert. if insertion fails keep in old cell
+	if(!AABB_insert(_index, _id, _pos)){
+		_index = currentIndex;
+		return false;
+	}
+
+	//remove
+	AABB_remove(_index, _id);
+
+	return true;
+};
+
+//finds neightbours. limited by MAX_ANIMAL_SENSE
+AABB AABB_findNeighbours(in Entitiy  _an){
+	AABB aabb;
+
+	float cwidth = MAP_WIDTH / CELLSX;
+	float cheight = MAP_HEIGHT / CELLSY;
+
+	int x = int(_an.position.x / cwidth);
+	int y = int(_an.position.y / cheight);
+
+	uint index = getIndex(x, y);
+
+	float senseDist = 20.0;
+	int dist = max(int(senseDist/cwidth), int(senseDist/cheight));
+
+	dist = dist%2 == 0 ? dist : dist + 1;
+	int disth = dist / 2;
+
+	int maxAnimalsPerCell = int(MAX_ANIMAL_SENSE / (disth*disth));
+	aabb.size = 0;
+	for(int x_ = x - disth; x_ <= x + disth; ++x){
+		for(int y_ = x - disth; y_ <= y + disth; ++y){
+			MapEntry entry = aabb_map[getIndex(x, y)];
+			for(int k = 0; k < (maxAnimalsPerCell < entry.count ? maxAnimalsPerCell : entry.count); ++k){
+				aabb.found[aabb.size++] = entry.entries[k];
+			}
+		}
+	}
+	return aabb;
+};
+
+//returns true if a circle on position _pos with radius _minDist2 is blocked
+bool AABB_posCheck(in vec2 _pos, in float _minDist2){
+
+	float cwidth = MAP_WIDTH / CELLSX;
+	float cheight = MAP_HEIGHT / CELLSY;
+
+	int x = int(_pos.x / cwidth);
+	int y = int(_pos.y / cheight);
+
+	uint index = getIndex(x, y);
+
+	for(int k = 0; k < MapCellEntryCount; ++k){
+		float dist2 = _pos.x * _pos.x  + aabb_map[index].entries[k].position.x * aabb_map[index].entries[k].position.x;
+		if(dist2 <= _minDist2) return true;
+	}
+	return false;
+};
+
+
+void main(){
+	float delta = 1.0 / 60.0;
+	uint index = gl_WorkGroupID.x;
+
+	Entitiy en = saved_entities[index];
+	//calculate next move
+	/*
+	vec2 nextPos = en.position + en.dir * en.speed;
+
+	if(AABB_posCheck(nextPos, 100.0)){
+		
+		if(en.dir.x < en.dir.y)
+			en.dir.x *= -1;
+		else 
+			en.dir.y *= -1;
+
+	}
+
+	nextPos = en.position + en.dir * en.speed;
+
+	AABB_updateEntry(nextPos, index, en.id);
+	
+	en.position = nextPos;
+	*/
+	//debug
+	Debug debug;
+	debug.radius = 10.0;
+	debug.position = en.position;
+	data[index] = debug;
+};
