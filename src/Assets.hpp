@@ -9,7 +9,7 @@ namespace Heerbann {
 	enum Type {
 		byteArray, image, texture2D, texture2DArray, 
 		font, level, atlas, shader, model, renderer,
-		shadowMap, framebuffer
+		shadowMap, framebuffer, ssbo, heightmap
 	};
 
 	struct Ressource {
@@ -24,8 +24,8 @@ namespace Heerbann {
 
 		virtual void load() {};
 		virtual void unload() {};
-		virtual void glLoad(void*) {};
-		virtual void glUnload(void*) {};
+		virtual bool glLoad(void*) { return true; };
+		virtual bool glUnload(void*) { return true; };
 
 	public:
 
@@ -84,8 +84,8 @@ namespace Heerbann {
 		Vec2u bounds;
 	protected:
 		void load() override;
-		void glLoad(void*) override;
-		void glUnload(void*) override;
+		bool glLoad(void*) override;
+		bool glUnload(void*) override;
 	public:
 		//https://www.khronos.org/opengl/wiki/GLAPI/glTexImage2D
 		//target, level, internalFormat, format, type
@@ -109,8 +109,8 @@ namespace Heerbann {
 		Vec2u bounds;
 	protected:
 		void load() override;
-		void glLoad(void*) override;
-		void glUnload(void*) override;
+		bool glLoad(void*) override;
+		bool glUnload(void*) override;
 	public:
 		// https://www.khronos.org/opengl/wiki/GLAPI/glTexStorage3D
 		//id, files, levels, target, level, internalFormat, format, type
@@ -143,25 +143,82 @@ namespace Heerbann {
 		std::unordered_map<std::string, AtlasRegion*> regions;
 	protected:
 		void load() override;
-		void glLoad(void*) override;
-		void glUnload(void*) override;
+		bool glLoad(void*) override;
+		bool glUnload(void*) override;
 	public:
 		TextureAtlas(std::string);
 		AtlasRegion* getRegion(std::string);
 		static TextureAtlas* get(std::string);
 	};
 
+	class SSBO : public Ressource {
+		GLuint handle;
+		GLbitfield flags;
+		uint lastBindTarget;
+		void* pntr;
+	protected:		
+		bool glLoad(void*) override;
+		bool glUnload(void*) override;
+	public:
+		/*
+		https://www.khronos.org/opengl/wiki/GLAPI/glBufferStorage
+		GL_DYNAMIC_STORAGE_BIT, GL_MAP_READ_BIT, GL_MAP_WRITE_BIT, GL_MAP_PERSISTENT_BIT,
+		GL_MAP_COHERENT_BIT, GL_CLIENT_STORAGE_BIT
+		*/
+		SSBO(std::string, uint, void*, GLbitfield);
+		void bind(uint);
+		void bindAs(uint, uint);
+		void unbind();
+		/*
+		https://www.khronos.org/opengl/wiki/GLAPI/glMapBufferRange
+		!offset and length in byte!
+		GL_MAP_READ_BIT, GL_MAP_WRITE_BIT, GL_MAP_INVALIDATE_RANGE_BIT,
+		GL_MAP_INVALIDATE_BUFFER_BIT, GL_MAP_FLUSH_EXPLICIT_BIT,
+		GL_MAP_UNSYNCHRONIZED_BIT, GL_MAP_PERSISTENT_BIT,
+		GL_MAP_COHERENT_BIT
+		*/
+		void* map(uint, uint, GLbitfield);
+		void unmap();		
+		static SSBO* get(std::string);
+
+		template<class T>
+		T inline getPtr() {
+			return reinterpret_cast<T>(pntr);
+		};
+
+	};
+
+	class FlipFlopSSBO : public Ressource {
+		GLbitfield flags;
+		uint index = 0, size;
+		std::vector<SSBO*> buffers;
+		std::vector<void*> pointers;
+	protected:
+		bool glLoad(void*) override;
+		bool glUnload(void*) override;
+	public:
+		FlipFlopSSBO(std::string, bool, uint, uint, GLbitfield, GLbitfield);
+		void flip();
+		void bind(uint);
+		void bindAs(uint, uint);
+		void unbind();
+		template<class T>
+		T inline getPtr() {
+			return reinterpret_cast<T>(pointers[index]);
+		};
+	};
+
 	class Model : public Ressource {
-
 		ModelData* model;
-
+		bool modelDataLoaded = false;
 	protected:
 		void load() override;
-		void glLoad(void*) override;
-		void glUnload(void*) override;
+		bool glLoad(void*) override;
+		bool glUnload(void*) override;
 	public:
 		Model(std::string);
 		ModelData* getData();
+		Texture2D* texture;
 		Mat4 transform = IDENTITY;
 		Vec3 position;
 		void bindTransform(uint);
@@ -179,8 +236,8 @@ namespace Heerbann {
 		bool loadFromMemory(const std::string&, const std::string&, const std::string&, const std::string&, const std::string&);
 	protected:
 		void load() override;
-		void glLoad(void*) override;
-		void glUnload(void*) override;
+		bool glLoad(void*) override;
+		bool glUnload(void*) override;
 	public:
 		ShaderProgram(std::string);
 		bool printDebug = true;
@@ -194,8 +251,8 @@ namespace Heerbann {
 		GLuint handle;
 		std::unordered_map<std::string, Texture2D*> textures;
 	protected:
-		void glLoad(void*) override;
-		void glUnload(void*) override;
+		bool glLoad(void*) override;
+		bool glUnload(void*) override;
 	public:
 		Vec2u bounds;
 		Framebuffer(std::string, std::unordered_map<std::string, Texture2D*>);
@@ -207,15 +264,16 @@ namespace Heerbann {
 
 	class ShadowMap : public Ressource {
 		Framebuffer* fb;
-		std::string shadowId;
+		std::string colorId, depthId;
 	protected:
-		void glUnload(void*) override;
+		bool glUnload(void*) override;
 	public:
-		ShadowMap(std::string, Framebuffer*, std::string);
+		ShadowMap(std::string, Framebuffer*, std::string, std::string);
 		void bind();
 		void unbind();
 		Vec2u getBounds();
 		Texture2D* getTex();
+		Texture2D* getDepth();
 		static ShadowMap* get(std::string);
 	};
 
@@ -223,150 +281,27 @@ namespace Heerbann {
 		sf::Font* font;
 
 	protected:
-		void glLoad(void*) override;
-		void glUnload(void*) override;
+		bool glLoad(void*) override;
+		bool glUnload(void*) override;
 
 	public:
 		Font(std::string);
 		static Font* get(std::string);
 	};
 
-	struct Renderable {
-	};
-
-	class Renderer : public Ressource {
-	public:
-		Renderer(std::string);
-		virtual void add(Renderable*) = 0;
-		virtual void add(std::vector<Renderable*>) = 0;
-		virtual void draw(View*) = 0;
-	};
-
-	struct TxDbgRenderable : public Renderable {
-		enum { Texture2D, Array2DTexture, AtlasRegion, TextureAtlas };
-		uint type = 0;
-		float scale = 1.f;
-		uint layer = 0;
-		void* data;
-		template<class T>
-		T get();
-	};
-
-	template<class T>
-	inline T TxDbgRenderable::get() {
-		return reinterpret_cast<T>(data);
-	}
-
-	class TextureDebugRenderer : public Renderer {
-		GLuint vao;
-		ShaderProgram* shader;
-
-		std::vector<TxDbgRenderable*> renderables;
-
-		void draw(Texture2D*, float = 1.f);
-		void draw(Array2DTexture*, uint, float = 1.f);
-		void draw(AtlasRegion*, float = 1.f);
-		void draw(TextureAtlas*, uint, float = 1.f);
-
-		/*
-		0: sampler2D
-		1: isampler2D
-		2: usampler2D
-		3: sampler2DRect
-		4: isampler2DRect
-		5: usampler2DRect
-		*/
-		void draw(GLuint, GLuint, uint, uint = 0, uint = 0, uint = 0, uint = M_WIDTH, uint = M_HEIGHT);
-
+	class HeightMap : public Ressource {
+		FlipFlopSSBO* buffer;
+		std::forward_list<std::tuple<bool, uint, ushort>*> changeList;
+		uint width, height;
 	protected:
-		void glLoad(void*) override;
-		void glUnload(void*) override;
+		HeightMap(std::string, uint, uint);
+		void load() override;
+		bool glLoad(void*) override;
+		bool glUnload(void*) override;
 	public:
-		TextureDebugRenderer();
-		void add(Renderable*) override;
-		void add(std::vector<Renderable*>) override;
-		void draw(View*) override;
+		void bind(uint);
+		void unbind();
+		void changeEntry(uint, uint, ushort);
 	};
 
-	struct VSMRenderable : public Renderable {
-		bool hasTex = true;
-		bool isVoxel = false;
-		GLuint texture, shadowTex;
-		GLuint* texVox;
-		Model* model;
-		uint vao, offset, count, matIndex;
-	};
-
-	class ShadowRenderer : public Renderer {
-		uint renderType;
-		ShaderProgram* shader;
-		Framebuffer* fb;
-		std::vector<VSMRenderable*> renderables;
-	protected:
-		void glLoad(void*) override;
-		void glUnload(void*) override;
-	public:
-		enum { VSM };
-		ShadowRenderer(std::string, uint);
-		void add(Renderable*) override;
-		void add(std::vector<Renderable*>) override;
-		void draw(View*) override;
-	};
-
-	class GaussianBlurRenderer : public Renderer {
-	private:
-		ShaderProgram* blurShader;
-		GLuint uniformBuffer;
-		GBlurData data;
-	public:
-		GaussianBlurRenderer(uint, float);
-		~GaussianBlurRenderer();
-		void blur(GLuint[2]);
-	};
-
-	class VSMRenderer : public Renderer {
-
-		TextureDebugRenderer* debugR;
-		ShadowRenderer* shadowR;
-		GaussianBlurRenderer* blur;
-
-		ShaderProgram* vsmNoTexShader;
-		ShaderProgram* vsmShader;
-
-		std::vector<VSMRenderable*> renderables;
-		std::vector<VSMRenderable*> rendNoTex;
-		std::vector<VSMRenderable*> voxelRend;
-
-		void drawVSM(std::vector<VSMRenderable*>);
-		void drawVSMNoTex(std::vector<VSMRenderable*>);
-		void drawVoxel(std::vector<VSMRenderable*>);
-
-	public:
-		VSMRenderer(std::string);
-		void add(Renderable*) override;
-		void add(std::vector<Renderable*>);
-		void draw(View*) override;
-	};
-
-	struct VoxelRenderable : Renderable {
-		GLuint vao;
-		GLuint heightmap;
-	};
-
-	class VoxelBackGroundRenderer : public Renderer {
-		ShaderProgram* shader;
-		GLuint bSizeBuffer[2];
-		uint* bSizeBufferPntr[2];
-		float* bSizeBufferPntrf[2];
-		uint bSizeIndex = 0;
-		std::vector<VoxelRenderable*> renderables;
-	protected:
-		void glLoad(void*) override;
-		void glUnload(void*) override;
-	public:
-		uint VOXELS = 102;
-		VoxelBackGroundRenderer(std::string);
-		void add(Renderable*) override;
-		void draw(View*) override;
-	};
 }

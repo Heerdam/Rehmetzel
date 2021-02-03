@@ -13,9 +13,7 @@
 using namespace Heerbann;
 using namespace UI;
 
-Level::Level(std::string _id) : id(_id) {
-	neededLoadingState = State::discrete;
-}
+Level::Level(std::string _id) : Ressource(_id, Type::level) {}
 
 void LevelManager::initialize() {
 	M_Asset->addLevel("PreLoadLevel", new PreLoadLevel());

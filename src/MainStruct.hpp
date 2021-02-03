@@ -49,6 +49,7 @@
 #include <regex>
 #include <windows.h>
 #include <stack>
+#include <forward_list>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -245,6 +246,8 @@ typedef glm::quat Quat;
 
 #define FLOAT(X) (static_cast<float>((X)))
 
+using namespace std::chrono_literals;
+
 	namespace App {
 		class Main;
 	}
@@ -305,11 +308,28 @@ typedef glm::quat Quat;
 	class Array2DTexture;
 	struct AtlasRegion;
 	class TextureAtlas;
+	class SSBO;
+	class FlipFlopSSBO;
 	class Model;
 	class ShaderProgram;
 	class Framebuffer;
 	class ShadowMap;
 	class Font;
+	class Renderer;
+	struct TxDbgRenderable;
+	class TextureDebugRenderer;
+	struct ShadowRenderable;
+	class ShadowRenderer;
+	struct GaussianBlurRenderable;
+	class GaussianBlurRenderer;
+	struct VoxelRenderable;
+	class VoxelBackGroundRenderer;
+	struct VSMLightRenderable;
+	class VSMLightRenderer;
+	struct VSMShadownRenderable;
+	class VSMShadowRenderer;
+	struct VSMRenderable;
+	class VSMRenderer;
 
 	//World
 	class VoxelWorld;
@@ -337,6 +357,7 @@ typedef glm::quat Quat;
 	struct Animation;
 	struct Mesh;
 	struct ModelData;
+	struct DrawCall;
 
 	//Gdx
 	class Environment;
@@ -347,15 +368,7 @@ typedef glm::quat Quat;
 	struct Material;
 	enum LightType : int;
 	struct sLight;
-	class TextureDebugRenderer;
-	class ShadowMap;
-	class Renderer;
-	class VSMRenderer;
-	class ESMRenderer;
-	struct Renderable;
-	struct VSMRenderable;
-	struct GaussianBlur;
-	struct GBlurData;
+
 
 	//TimeLog
 	class Logger;
@@ -397,7 +410,7 @@ typedef glm::quat Quat;
 
 			std::mt19937_64 random;
 
-			std::queue<std::tuple<std::function<void(void*)>, void*>> loadJob;
+			std::queue<std::tuple<std::function<bool(void*)>, void*>> loadJob;
 			std::mutex jobLock;
 
 			GLuint* indexBuffer;
@@ -430,7 +443,7 @@ typedef glm::quat Quat;
 			//---------------------- Job ----------------------\\
 
 			//thread safe
-			static void addJob(std::function<void(void*)>, void*);
+			static void addJob(std::function<bool(void*)>, void*);
 
 			//---------------------- Random ----------------------\\
 
@@ -587,6 +600,12 @@ typedef glm::quat Quat;
 			inline bool almost_equal(float _x, float _y) {
 				return std::abs(_x - _y) <= std::numeric_limits<float>::epsilon() * (std::abs(_x) + (std::abs(_y) + 1.0f));
 			};
+			
+			//#define ipc(X) *((int*)&X)
+			//bool almost_equal(float a, float b){
+				//return !((ipc(a) ^ ipc(b)) & (0xfffff000));
+			//}
+			
 
 		}
 

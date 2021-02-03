@@ -31,6 +31,9 @@
     <Filter Include="Resource Files\Simple Forward">
       <UniqueIdentifier>{d5698c0b-95d7-4c2e-8ed8-afa46072f91f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\vsm">
+      <UniqueIdentifier>{392fd9cc-e52f-4cfe-bd6b-1274130b9972}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\CameraUtils.hpp">
@@ -243,6 +246,24 @@
     </None>
     <None Include="..\bin\assets\shader\voxel\shader_voxel_draw.vert">
       <Filter>Resource Files\voxel</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\vsm\shader_vsm_s1_shadowmap.frag">
+      <Filter>Resource Files\vsm</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\vsm\shader_vsm_s1_shadowmap.vert">
+      <Filter>Resource Files\vsm</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\vsm\shader_vsm_s2_light.frag">
+      <Filter>Resource Files\vsm</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\vsm\shader_vsm_s2_light.vert">
+      <Filter>Resource Files\vsm</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\vsm\shader_vsm_s3_shadow.frag">
+      <Filter>Resource Files\vsm</Filter>
+    </None>
+    <None Include="..\bin\assets\shader\vsm\shader_vsm_s3_shadow.vert">
+      <Filter>Resource Files\vsm</Filter>
     </None>
   </ItemGroup>
 </Project>

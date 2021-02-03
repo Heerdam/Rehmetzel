@@ -27,10 +27,11 @@ Main::~Main() {
 void Main::update() {
 	++frameId;
 
+	// if true is returned job is removed
 	while (!loadJob.empty()) {
-		std::tuple tuple = loadJob.front();
-		loadJob.pop();
-		std::get<0>(tuple)(std::get<1>(tuple));
+		std::tuple tuple = loadJob.front();		
+		if(std::get<0>(tuple)(std::get<1>(tuple)));
+			loadJob.pop();
 	}
 }
 
@@ -84,10 +85,13 @@ void Main::intialize(MainConfig* _config) {
 	glFrontFace(GL_CCW);
 	//glEnable(GL_SCISSOR_TEST);
 	
-	getAssetManager()->addAsset("assets/fonts/default.ttf", Type::font);
-	getAssetManager()->load("assets/fonts/default.ttf");
-	getAssetManager()->addAsset("assets/shader/spritebatch/sb_sprite", Type::shader);
-	getAssetManager()->load("assets/shader/spritebatch/sb_sprite");
+	new ShaderProgram("assets/shader/spritebatch/sb_sprite");
+	new Font("assets/fonts/default.ttf");
+
+	//getAssetManager()->addAsset("assets/fonts/default.ttf", Type::font);
+	//getAssetManager()->load("assets/fonts/default.ttf");
+	//getAssetManager()->addAsset("assets/shader/spritebatch/sb_sprite", Type::shader);
+	//getAssetManager()->load("assets/shader/spritebatch/sb_sprite");
 	getAssetManager()->finish();
 	update();
 

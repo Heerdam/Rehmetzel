@@ -152,7 +152,7 @@ namespace Heerbann {
 	};
 
 	struct OrthoPanJob {
-		std::function<void(void*)> func;
+		std::function<bool(void*)> func;
 		OrthographicCamera* cam;
 		Vec2 dir;
 		float speed;

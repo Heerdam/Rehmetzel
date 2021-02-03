@@ -1,3 +1,4 @@
+#include "..\..\Rehmetzel_v2\include\Rehmetzel\GL\Texture.hpp"
 
 #include <fstream>
 
@@ -104,7 +105,7 @@ void Texture2D::load() {
 	ifs.close();
 }
 
-void Texture2D::glLoad(void*) {
+bool Texture2D::glLoad(void*) {
 	sf::Image* img = reinterpret_cast<sf::Image*>(data);
 	glGenTextures(1, &handle);
 	glBindTexture(target, handle);
@@ -118,10 +119,12 @@ void Texture2D::glLoad(void*) {
 	data = nullptr;
 	isLoaded = true;
 	GLError("Texture2D::glLoad");
+	return true;
 }
 
-void Texture2D::glUnload(void*) {
+bool Texture2D::glUnload(void*) {
 	glDeleteTextures(1, &handle);
+	return true;
 }
 
 GLuint Texture2D::get() {
@@ -184,7 +187,7 @@ void Array2DTexture::load() {
 	}
 }
 
-void Array2DTexture::glLoad(void*) {
+bool Array2DTexture::glLoad(void*) {
 	assert(dataSize != 0 && "datasize == 0, no images loaded");
 	assert(data != nullptr && "data is null");
 	glGenTextures(GL_TEXTURE_2D_ARRAY, &handle);
@@ -214,11 +217,13 @@ void Array2DTexture::glLoad(void*) {
 	delete data;
 	data = nullptr;
 	isLoaded = true;
+	return true;
 }
 
-void Array2DTexture::glUnload(void*) {
+bool Array2DTexture::glUnload(void*) {
 	glDeleteTextures(1, &handle);
 	GLError("Array2DTexture::glUnload");
+	return true;
 }
 
 GLuint Array2DTexture::get() {
@@ -384,14 +389,70 @@ void Heerbann::TextureAtlas::load() {
 	file.close();
 }
 
-void TextureAtlas::glLoad(void*) {
+bool TextureAtlas::glLoad(void*) {
 	//TODO
+	return true;
 }
 
-void TextureAtlas::glUnload(void*) {
+bool TextureAtlas::glUnload(void*) {
 	//TODO
+	return true;
 }
 
+SSBO::SSBO(std::string _id, uint _size, void* _data, GLbitfield _flags) : Ressource(_id, Type::ssbo) {
+	data = _data;
+	dataSize = _size;
+	flags = _flags;
+}
+
+bool SSBO::glLoad(void*) {
+	glGenBuffers(1, &handle);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, handle);
+	glBufferStorage(GL_SHADER_STORAGE_BUFFER, dataSize, data, flags);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+	GLError("SSBO::glLoad::" + id);
+	return true;
+}
+
+bool SSBO::glUnload(void*) {
+	unmap();
+	glDeleteBuffers(1, &handle);
+	GLError("SSBO::glUnload::" + id);
+	return true;
+}
+
+void SSBO::bind(uint _binding) {
+	bindAs(GL_SHADER_STORAGE_BUFFER, _binding);
+}
+
+void SSBO::bindAs(uint _target, uint _binding) {
+	glBindBufferBase(lastBindTarget = _target, _binding, handle);
+	GLError("SSBO::bindAs::" + id);
+}
+
+void SSBO::unbind() {
+	glBindBuffer(lastBindTarget, 0);
+	GLError("SSBO::unbind::" + id);
+}
+
+void* SSBO::map(uint _offset, uint _length, GLbitfield _flags) {
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, handle);
+	pntr = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, _offset, _length, _flags);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+	GLError("SSBO::map::" + id);
+	return pntr;
+}
+
+void SSBO::unmap() {
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, handle);
+	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+	GLError("SSBO::unmap::" + id);
+}
+
+SSBO* SSBO::get(std::string _id) {
+	return M_Asset->get<SSBO*>(_id);
+}
 
 void Model::load() {
 	Assimp::Importer importer;
@@ -406,8 +467,7 @@ void Model::load() {
 	std::vector<unsigned int> indexBuffer;
 	//offset, size
 
-	ModelData* modelOut = new ModelData();
-	data = modelOut;
+	model = new ModelData();
 
 	std::vector<Material> materialList;
 
@@ -448,16 +508,16 @@ void Model::load() {
 	int meshVertexOffset = 0;
 	//meshes
 
-	modelOut->meshList.resize(scene->mNumMeshes);
+	model->meshList.resize(scene->mNumMeshes);
 
-	modelOut->boneCache.resize(scene->mNumMeshes);
+	model->boneCache.resize(scene->mNumMeshes);
 
 	for (unsigned int i = 0; i < scene->mNumMeshes; ++i) {
 
 		aiMesh* mesh = scene->mMeshes[i];
 		Mesh* meshOut = new Mesh();
-		modelOut->meshList[i] = meshOut;
-		modelOut->meshMap[std::string(mesh->mName.C_Str())] = meshOut;
+		model->meshList[i] = meshOut;
+		model->meshMap[std::string(mesh->mName.C_Str())] = meshOut;
 
 		meshOut->vertexCount = mesh->mNumVertices;
 		meshOut->vertexOffset = static_cast<uint>(vertexBuffer.size());
@@ -499,11 +559,11 @@ void Model::load() {
 
 		meshIndexOffset += iCount;
 
-		modelOut->boneCache[i].resize(mesh->mNumBones);
+		model->boneCache[i].resize(mesh->mNumBones);
 		for (uint k = 0; k < mesh->mNumBones; ++k) {
 			auto bone = mesh->mBones[i];
 			Bone* out = new Bone();
-			modelOut->boneCache[i].emplace_back(out);
+			model->boneCache[i].emplace_back(out);
 			out->id = bone->mName.C_Str();
 			meshOut->boneMap[out->id] = out;
 			out->numWeights = bone->mNumWeights;
@@ -536,8 +596,8 @@ void Model::load() {
 			_self->mTransformation.a3, _self->mTransformation.b3, _self->mTransformation.c3, _self->mTransformation.d3,
 			_self->mTransformation.a4, _self->mTransformation.b4, _self->mTransformation.c4, _self->mTransformation.d4);
 
-		modelOut->nodeMap[out->id] = out;
-		modelOut->nodeCache.emplace_back(out);
+		model->nodeMap[out->id] = out;
+		model->nodeCache.emplace_back(out);
 		if (_self->mNumChildren == 0) return out;
 		for (uint i = 0; i < _self->mNumChildren; ++i)
 			sort(out, _self->mChildren[i]);
@@ -589,74 +649,71 @@ void Model::load() {
 		}
 	}
 
-	modelOut->vertexBufferCacheSize = static_cast<uint>(vertexBuffer.size());
-	modelOut->vertexBufferCache = new float[vertexBuffer.size()];
-	std::memcpy(modelOut->vertexBufferCache, vertexBuffer.data(), vertexBuffer.size() * sizeof(float));
+	model->vertexBufferCacheSize = static_cast<uint>(vertexBuffer.size());
+	model->vertexBufferCache = new float[vertexBuffer.size()];
+	std::memcpy(model->vertexBufferCache, vertexBuffer.data(), vertexBuffer.size() * sizeof(float));
 
-	modelOut->indexBufferCacheSize = static_cast<uint>(indexBuffer.size());
-	modelOut->indexBufferCache = new unsigned int[indexBuffer.size()];
-	std::memcpy(modelOut->indexBufferCache, indexBuffer.data(), indexBuffer.size() * sizeof(unsigned int));
+	model->indexBufferCacheSize = static_cast<uint>(indexBuffer.size());
+	model->indexBufferCache = new unsigned int[indexBuffer.size()];
+	std::memcpy(model->indexBufferCache, indexBuffer.data(), indexBuffer.size() * sizeof(unsigned int));
 
-	modelOut->materialCacheSize = static_cast<uint>(materialList.size());
-	modelOut->materialCache = new char[sizeof(Material) * materialList.size()];
-	std::memcpy(modelOut->materialCache, materialList.data(), materialList.size() * sizeof(Material));
+	model->matBuffer = new SSBO(id + "_matBuffer", sizeof(Material) * materialList.size(), materialList.data(), 0);
 
 }
 
-void Model::glLoad(void*) {
+bool Model::glLoad(void*) {
 
-	ModelData* model = reinterpret_cast<ModelData*>(data);
-	LOG("Loading: [Model] " + id);
-	GLuint vbo;
-	GLuint index;
+	if (!modelDataLoaded) {
+		modelDataLoaded = true;
+		model = reinterpret_cast<ModelData*>(data);
+		LOG("Loading: [Model] " + id);
+		GLuint vbo;
+		GLuint index;
 
-	//create buffer
-	glGenVertexArrays(1, &model->vao);
-	glGenBuffers(1, &vbo);
-	glGenBuffers(1, &index);
-	glGenBuffers(1, &model->matBuffer);
+		//create buffer
+		glGenVertexArrays(1, &model->vao);
+		glGenBuffers(1, &vbo);
+		glGenBuffers(1, &index);
 
-	glBindVertexArray(model->vao);
+		glBindVertexArray(model->vao);
 
-	//vbo
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * model->vertexBufferCacheSize, model->vertexBufferCache, GL_STATIC_DRAW);
+		//vbo
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * model->vertexBufferCacheSize, model->vertexBufferCache, GL_STATIC_DRAW);
 
-	//index
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint) * model->indexBufferCacheSize, model->indexBufferCache, GL_STATIC_DRAW);
+		//index
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint) * model->indexBufferCacheSize, model->indexBufferCache, GL_STATIC_DRAW);
 
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
 
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+		glEnableVertexAttribArray(2);
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
 
-	glBindVertexArray(0);
+		glBindVertexArray(0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-	//material
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, model->matBuffer);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Material) * model->materialCacheSize, model->materialCache, GL_STATIC_DRAW);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+		if (model->vertexBufferCache != nullptr) delete model->vertexBufferCache;
+		if (model->indexBufferCache != nullptr) delete model->indexBufferCache;
+		if (model->animationCache != nullptr) delete model->animationCache;
 
-	if (model->vertexBufferCache != nullptr) delete model->vertexBufferCache;
-	if (model->indexBufferCache != nullptr) delete model->indexBufferCache;
-	if (model->animationCache != nullptr) delete model->animationCache;
-	if (model->materialCache != nullptr) delete model->materialCache;
-
-	isLoaded = true;
-	GLError("Model::glLoad");
+		GLError("Model::glLoad");
+	}
+	if (!model->matBuffer->loaded()) return false;
+	isLoaded = true;	
+	return true;
 }
 
-void Heerbann::Model::glUnload(void *) {
+bool Heerbann::Model::glUnload(void *) {
 	//TODO
+	return true;
 }
 
 Model::Model(std::string _id) : Ressource(_id, Type::model) {}
@@ -880,7 +937,7 @@ void ShaderProgram::load() {
 	frag.close();
 }
 
-void ShaderProgram::glLoad(void *) {
+bool ShaderProgram::glLoad(void *) {
 	std::tuple<std::string, std::string, std::string, std::string>* tuple = reinterpret_cast<std::tuple<std::string, std::string, std::string, std::string>*>(data);
 
 	std::string comp = std::get<0>(*tuple);
@@ -892,10 +949,12 @@ void ShaderProgram::glLoad(void *) {
 
 	delete tuple;
 	isLoaded = true;
+	return true;
 }
 
-void ShaderProgram::glUnload(void*) {
+bool ShaderProgram::glUnload(void*) {
 	//TODO
+	return true;
 }
 
 ShaderProgram::ShaderProgram(std::string _id) : Ressource(_id, Type::shader) {}
@@ -914,15 +973,20 @@ ShaderProgram* ShaderProgram::get(std::string _id) {
 	return M_Asset->get<ShaderProgram*>(_id);
 }
 
-ShadowMap::ShadowMap(std::string _id, Framebuffer* _fb, std::string _shadowID) :
-	Ressource(_id, Type::shadowMap), fb(_fb), shadowId(_shadowID) {}
+ShadowMap::ShadowMap(std::string _id, Framebuffer* _fb, std::string _colorId, std::string _depthId) :
+	Ressource(_id, Type::shadowMap), fb(_fb), colorId(_colorId), depthId(_depthId) {}
 
-void ShadowMap::glUnload(void*) {
+bool ShadowMap::glUnload(void*) {
 	delete fb;
+	return true;
 }
 
 Texture2D* ShadowMap::getTex() {
-	return fb->getTex(shadowId);
+	return fb->getTex(colorId);
+}
+
+Texture2D* ShadowMap::getDepth() {
+	return fb->getTex(depthId);
 }
 
 ShadowMap* ShadowMap::get(std::string _id) {
@@ -941,7 +1005,10 @@ Vec2u ShadowMap::getBounds() {
 	return fb->bounds;
 }
 
-void Framebuffer::glLoad(void*) {
+bool Framebuffer::glLoad(void*) {
+	for (auto& it : textures)
+		if (!it.second->loaded()) return false;
+
 	glGenFramebuffers(1, &handle);
 	glBindFramebuffer(GL_FRAMEBUFFER, handle);
 	uint k = 0;
@@ -957,9 +1024,10 @@ void Framebuffer::glLoad(void*) {
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	GLError("ShadowMap::glLoad");
+	return true;
 }
 
-void Framebuffer::glUnload(void*) {
+bool Framebuffer::glUnload(void*) {
 	for (auto& it : textures)
 		delete it.second;
 	glDeleteFramebuffers(1, &handle);
@@ -992,7 +1060,7 @@ Framebuffer* Framebuffer::get(std::string _id) {
 	return M_Asset->get<Framebuffer*>(_id);
 }
 
-void Font::glLoad(void *) {
+bool Font::glLoad(void *) {
 	std::ifstream ifs(id);
 	if (!ifs.good()) throw new std::exception((std::string("can't open file [") + id + std::string("]")).data());
 	ifs.seekg(0, std::ios::end);
@@ -1004,10 +1072,12 @@ void Font::glLoad(void *) {
 	font = new sf::Font();
 	font->loadFromMemory(data, dataSize);
 	isLoaded  = true;
+	return true;
 }
 
-void Font::glUnload(void *) {
+bool Font::glUnload(void *) {
 	delete font;
+	return true;
 }
 
 Font::Font(std::string _id) : Ressource(_id, Type::font){}
@@ -1016,371 +1086,100 @@ Font* Font::get(std::string _id) {
 	return M_Asset->get<Font*>(_id);
 }
 
-void TextureDebugRenderer::glLoad(void*) {
-	shader = new ShaderProgram("assets/shader/fbo_debug_shader");
-
-	float vertices[] = {
-		1.f, 1.f, 0.f,
-		1.f, 1.f,
-
-		1.f, -1.f, 0.f,
-		1.f, 0.f,
-
-		-1.f, -1.f, 0.f,
-		0.f, 0.f,
-
-		-1.f, 1.f, 0.f,
-		0.f, 1.f
-	};
-
-	unsigned int indices[] = {
-		3, 1, 0,
-		3, 2, 1
-	};
-
-	GLuint index, vertex;
-
-	glGenVertexArrays(1, &vao);
-	glGenBuffers(1, &index);
-	glGenBuffers(1, &vertex);
-
-	glBindVertexArray(vao);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ARRAY_BUFFER, vertex);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	glEnableVertexAttribArray(0); //a_Pos
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-
-	glEnableVertexAttribArray(1); //a_uv
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	GLError("TextureDebugRenderer::glLoad");
+FlipFlopSSBO::FlipFlopSSBO(std::string _id, bool _autoflip, uint _bufferCount, uint _size, GLbitfield _bufferFlags, GLbitfield _mapFlags) : 
+	Ressource(_id, Type::ssbo), size(_size), flags(_mapFlags){
+	buffers.resize(_bufferCount);
+	pointers.resize(_bufferCount);
+	for (uint i = 0; i < _bufferCount; ++i)
+		buffers[i] = new SSBO(_id + "_" + std::to_string(i), _size, nullptr, _bufferFlags);
+	if (_autoflip)
+		M_Main->addJob([&](void*)->bool {
+		flip();
+		return false;
+	}, nullptr);
 }
 
-void TextureDebugRenderer::glUnload(void*) {
-	//delete shader;
-	glDeleteVertexArrays(1, &vao);
-	GLError("TextureDebugRenderer::glUnload");
+void FlipFlopSSBO::flip() {
+	index = (index++) % size;
 }
 
-TextureDebugRenderer::TextureDebugRenderer() : Renderer("TextureDebugRenderer") {}
-
-void TextureDebugRenderer::add(Renderable* _renderable) {
-	renderables.emplace_back(_renderable);
-}
-
-void TextureDebugRenderer::add(std::vector<Renderable*> _renderables) {
-	renderables.emplace_back(_renderables.begin(), _renderables.end());
-}
-
-void TextureDebugRenderer::draw(View* _view) {
-	for (Renderable* r : renderables) {
-		TxDbgRenderable* rend = reinterpret_cast<TxDbgRenderable*>(r);
-		switch (rend->type) {
-		case TxDbgRenderable::Texture2D:
-			draw(rend->get<Texture2D*>(), rend->scale);
-			break;
-		case TxDbgRenderable::Array2DTexture:
-			draw(rend->get<Array2DTexture*>(), rend->layer, rend->scale);
-			break;
-		case TxDbgRenderable::AtlasRegion:
-			draw(rend->get<AtlasRegion*>(), rend->scale);
-			break;
-		case TxDbgRenderable::TextureAtlas:
-			draw(rend->get<TextureAtlas*>(), rend->layer, rend->scale);
-			break;
+bool FlipFlopSSBO::glLoad(void*) {
+	bool finishLoading = true;
+	for (uint i = 0; i < buffers.size(); ++i) {
+		SSBO* buffer = buffers[i];
+		if (!buffer->loaded()) {
+			finishLoading = false;
+			continue;
 		}
+		pointers[i] = buffer->map(0, dataSize, flags);
 	}
-	renderables.clear();
+	if(finishLoading) isLoaded = true;
+	return finishLoading;
 }
 
-void TextureDebugRenderer::draw(Texture2D* _tex, float _scale) {
-	if (!_tex->loaded()) return;
-
-	uint type = 0;
-	if (GL_R8I || GL_R16I || GL_R32I || GL_RG8I || GL_RG16I || GL_RG32I || GL_RGB8I ||
-		GL_RGB16I || GL_RGB32I || GL_RGBA8I || GL_RGBA16I || GL_RGBA32I)
-		type = 1;
-	else if (GL_R8UI || GL_R16UI || GL_R32UI || GL_RG8UI || GL_RG16UI || GL_RG32UI ||
-		GL_RGB8UI || GL_RGB16UI || GL_RGB32UI || GL_RGBA8UI || GL_RGBA16UI || GL_RGBA32UI || GL_RGB10_A2UI)
-		type = 2;
-	else type = 0;
-
-	uint state = 0;
-
-	switch (_tex->type) {
-	case GL_TEXTURE_2D:
-		state = type;
-		break;
-	case GL_TEXTURE_RECTANGLE:
-		state = type + 3;
-		break;
+bool FlipFlopSSBO::glUnload(void*) {
+	for (auto b : buffers) {
+		b->unmap(); //TODO is that needed??
+		delete b;
 	}
-
-	draw(_tex->handle, _tex->type, state, _tex->bounds.x, _tex->bounds.y, 0, _tex->bounds.x * _scale, _tex->bounds.y * _scale);
+	return true;
 }
 
-void TextureDebugRenderer::draw(Array2DTexture* _tex, uint _index, float _scale) {
-	if (!_tex->loaded()) return;
-
-	uint type = 0;
-	if (GL_R8I || GL_R16I || GL_R32I || GL_RG8I || GL_RG16I || GL_RG32I || GL_RGB8I ||
-		GL_RGB16I || GL_RGB32I || GL_RGBA8I || GL_RGBA16I || GL_RGBA32I)
-		type = 1;
-	else if (GL_R8UI || GL_R16UI || GL_R32UI || GL_RG8UI || GL_RG16UI || GL_RG32UI ||
-		GL_RGB8UI || GL_RGB16UI || GL_RGB32UI || GL_RGBA8UI || GL_RGBA16UI || GL_RGBA32UI || GL_RGB10_A2UI)
-		type = 2;
-	else type = 0;
-
-	uint state = 0;
-
-	switch (_tex->type) {
-	case GL_TEXTURE_2D:
-		state = type;
-		break;
-	case GL_TEXTURE_RECTANGLE:
-		state = type + 3;
-		break;
-	}
-
-	draw(_tex->handle, _tex->type, state, _tex->bounds.x, _tex->bounds.y, _index, _tex->bounds.x * _scale, _tex->bounds.y * _scale);
+void FlipFlopSSBO::bind(uint _binding) {
+	bindAs(GL_SHADER_STORAGE_BUFFER, _binding);
 }
 
-void TextureDebugRenderer::draw(AtlasRegion* _region, float) {
-	//if (!_region->loaded()) return;
-	//TODO
+void FlipFlopSSBO::bindAs(uint _target, uint _binding) {	
+	buffers[index]->bindAs(_target, _binding);
 }
 
-void TextureDebugRenderer::draw(TextureAtlas* _atlas, uint _index, float) {
-	if (!_atlas->loaded()) return;
-	//TODO
+void FlipFlopSSBO::unbind() {
+	buffers[index]->unbind();
 }
 
-void TextureDebugRenderer::draw(GLuint _texture, GLuint _type, uint _state, uint _width, uint _height, uint _index, uint _viewportW, uint _viewportH) {
-	if (!shader->loaded()) return;
-	Vec2u oldSize(M_WIDTH, M_HEIGHT);
-
-	glViewport(0, 0, _viewportW, _viewportH);
-
-	shader->bind();
-
-	glActiveTexture(GL_TEXTURE0 + _state);
-	glBindTexture(_type, _texture);
-
-	glUniform1ui(3, _state);
-	glUniform2ui(4, _width, _height);
-	glUniform1ui(5, _index);
-
-	glBindVertexArray(vao);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-	glBindTexture(_type, 0);
-	glBindVertexArray(0);
-
-	shader->unbind();
-
-	glViewport(0, 0, oldSize.x, oldSize.y);
-
-	GLError("TextureDebugRenderer::draw");
+HeightMap::HeightMap(std::string _id, uint _width, uint _height) : Ressource(_id, Type::heightmap),
+	width(_width), height(_height){
+	dataSize = _width * _height * sizeof(ushort);	
 }
 
-void VSMRenderer::drawVSM(std::vector<VSMRenderable*>) {
-	//draw geometry (with tex)
-	vsmShader->bind();
-	for (auto g : geometry) {
-		Model* model = std::get<4>(g);
-
-		model->bindTransform(3);
-		model->bindinvTransform(4);
-		_view->bindCombined(5);
-		light->bindLightTransform(6, model->position, 1500.f, 250.f);
-		M_Env->bindLights(2);
-		_view->bindPosition(7);
-		glUniform1ui(8, std::get<3>(g));
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, std::get<5>(g));
-
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, std::get<6>(g));
-
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, model->matBuffer);
-
-		glBindVertexArray(model->vao);
-		glDrawElements(GL_TRIANGLES, std::get<2>(g), GL_UNSIGNED_INT, (void*)(std::get<1>(g) * sizeof(uint)));
-		glBindVertexArray(0);
-
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-	}
-	vsmShader->unbind();
-
-	GLError("TestWorldLevel::draw::vsm_tex");
+void HeightMap::load() {
+	buffer = new FlipFlopSSBO(id + "_buffer", false, 2, dataSize, 
+		GL_MAP_PERSISTENT_BIT | GL_MAP_WRITE_BIT,
+		GL_MAP_PERSISTENT_BIT | GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
 }
 
-void VSMRenderer::drawVSMNoTex(std::vector<VSMRenderable*>) {
-	//draw geometry (no tex)
-	vsmNoTexShader->bind();
-	for (auto g : geometryNoTex) {
-		Model* model = std::get<3>(g);
-
-		model->bindTransform(3);
-		model->bindinvTransform(4);
-		_view->bindCombined(5);
-		light->bindLightTransform(6, model->position, 1500.f, 250.f);
-
-		_view->bindPosition(7);
-
-		M_Env->bindLights(2);
-
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, std::get<4>(g));
-
-		glBindVertexArray(model->vao);
-		glDrawElements(GL_TRIANGLES, std::get<2>(g), GL_UNSIGNED_INT, (void*)(std::get<1>(g) * sizeof(uint)));
-		glBindVertexArray(0);
-
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-	};
-	vsmNoTexShader->unbind();
-
-	GLError("TestWorldLevel::draw::vsm_notex");
-}
-
-void VSMRenderer::drawVoxel(std::vector<VSMRenderable*>) {
-}
-
-VSMRenderer::VSMRenderer(std::string _id) : Renderer(_id) {
-	vsmShader = new ShaderProgram("assets/shader/simple forward/sb_sf_vsm");
-	vsmNoTexShader = new ShaderProgram("assets/shader/simple forward/sb_sf_vsm_notex");
-
-	debugR = new TextureDebugRenderer();
-	shadowR = new ShadowRenderer("shadowVSMRenderer", ShadowRenderer::VSM);
-	//blur = new GaussianBlur(128, 8);
-}
-
-void VSMRenderer::add(Renderable* _renderable) {
-	VSMRenderable* r = reinterpret_cast<VSMRenderable*>(_renderable);
-	if (r->hasTex)
-		renderables.emplace_back(r);
-	else rendNoTex.emplace_back(r);
-}
-
-void VSMRenderer::add(std::vector<Renderable*> _renderables) {
-	for (auto r : _renderables)
-		add(r);
-}
-
-void VSMRenderer::draw(View* _view) {
-
-	
-
-
-
-	renderables.clear();
-	rendNoTex.clear();
-}
-
-Renderer::Renderer(std::string _id) : Ressource(_id, Type::renderer) {}
-
-void ShadowRenderer::glLoad(void*) {
-	switch (renderType) {
-		case ShadowRenderer::VSM:
-			shader = new ShaderProgram("assets/shader/simple forward/sb_vsm");
-			std::unordered_map <std::string, Texture2D*> textures;
-			textures["depth"] = new Texture2D(id + "_fb_depth", GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT);
-			textures["color"] = new Texture2D(id + "_fb_color", GL_TEXTURE_2D, 0, GL_RG32F, GL_RG, GL_FLOAT);
-			fb = new Framebuffer("shadowFrameBuffer", textures);
-			break;
+bool HeightMap::glLoad(void*) {
+	if (!buffer->loaded()) return false;
+	M_Main->addJob([&](void*)->bool {
+		ushort* data = buffer->getPtr<ushort*>();
+		for (auto it = changeList.begin(), bit = changeList.before_begin(); it != changeList.end(); ++it, ++bit) {
+			auto el = *it;
+			data[std::get<1>(*el)] = std::get<2>(*el);
+			if (std::get<0>(*el)) {
+				changeList.erase_after(bit);
+				delete el;
+			} else std::get<0>(*el) = true;
 		}
+		buffer->flip();
+		return false;
+	}, nullptr);
+	return true;
 }
 
-void ShadowRenderer::glUnload(void*) {
-	delete fb;
+bool HeightMap::glUnload(void*) {
+	delete buffer;
+	return true;
 }
 
-ShadowRenderer::ShadowRenderer(std::string _id, uint _renderType) : Renderer(_id), renderType(_renderType) {}
-
-void ShadowRenderer::add(Renderable* _renderable) {
-	renderables.emplace_back(_renderable);
+void HeightMap::bind(uint _binding) {
+	buffer->bind(_binding);
 }
 
-void ShadowRenderer::add(std::vector<Renderable*> _renderables) {
-	renderables.emplace_back(_renderables.begin(), _renderables.end());
+void HeightMap::unbind() {
+	buffer->unbind();
 }
 
-void ShadowRenderer::draw(View* _view) {
-	auto lights = M_Env->queryLights(_view);
-
-	shader->bind();
-	for (auto l : lights) {
-		if (l->shadowMap == nullptr) continue;
-		l->shadowMap->bind();
-		for (auto t : renderables) {
-			t->model->bindTransform(2);
-			l->bindLightTransform(1, t->model->position, 1500.f, 250.f);//TODO distance for dir light?
-			glBindVertexArray(t->vao);
-			glDrawElements(GL_TRIANGLES, t->count, GL_UNSIGNED_INT, (void*)(t->offset * sizeof(uint)));
-			glBindVertexArray(0);
-		}
-		l->shadowMap->unbind();
-	}
-	shader->unbind();
-
-	GLError("TestWorldLevel::draw::shadowmaps");
-}
-
-void VoxelBackGroundRenderer::glLoad(void*) {
-	shader = new ShaderProgram("assets/shader/voxel/shader_voxel_builder");
-}
-
-void VoxelBackGroundRenderer::glUnload(void*) {
-	delete shader;
-}
-
-VoxelBackGroundRenderer::VoxelBackGroundRenderer(std::string _id) : Renderer(_id) {}
-
-void VoxelBackGroundRenderer::add(Renderable* _renderable) {
-	renderables.emplace_back(reinterpret_cast<VoxelRenderable*>(_renderable));
-}
-
-void VoxelBackGroundRenderer::draw(View* _view) {
-	BoundingBox* aabb = _view->getCamera()->frustum->toAABB(_view->getCamera());
-	Vec3u num_groups(VOXELS - 2, VOXELS - 2, 1);
-
-	bSizeIndex = (bSizeIndex + 1) % 2;
-	auto pntr = bSizeBufferPntr[bSizeIndex];
-	pntr[0] = 0;
-
-	pntr[1] = VOXELS - 2;
-	pntr[2] = VOXELS - 2;
-
-	pntr[3] = 0;
-	pntr[4] = 0;
-
-	pntr[5] = 50;
-	pntr[6] = 5;
-
-	shader->bind();
-	for (auto r : renderables) {
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_RECTANGLE, r->heightmap);
-
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, r->vao);
-
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, bSizeBuffer[bSizeIndex]);
-
-		glDispatchCompute(num_groups.x, num_groups.y, num_groups.z);
-		glMemoryBarrier(GL_ALL_BARRIER_BITS | GL_SHADER_STORAGE_BARRIER_BIT | GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
-	}
-	shader->unbind();
-	renderables.clear();
-	GLError("VoxelBackGroundRenderer::draw");
+void HeightMap::changeEntry(uint _posX, uint _posY, ushort _val) {
+	std::tuple<bool, uint, ushort>* tuple = new std::tuple<bool, uint, ushort>(false, _posY * width + _posX, _val);
+	changeList.push_front(tuple);
 }

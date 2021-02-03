@@ -6,44 +6,22 @@ namespace Heerbann {
 
 	using namespace UI;
 
-	//base class to be inherited
-	struct Level {
+	struct Level : Ressource {
+	protected:
+		virtual void load() override {};
+		virtual void unload() override {};
+		virtual bool glLoad(void*) override {};
+		virtual bool glUnload(void*) override {};
 	public:
-		const std::string id;
 		Level(std::string);
-		std::atomic<bool> isLocked = false;
-		std::atomic<bool> isLoaded = false;
 
-		std::vector<LoadItem*> assetToLoad;
-		std::vector<LoadItem*> assetToUnload;
-
-		State neededLoadingState;
-		bool lockIfDiscrete = true;
-
-		//actual async loading 
-		virtual void load() {};
-
-		//actual async unloading 
-		virtual void unload() {};
-
-		//add assets to queue for loading
-		virtual void preLoad() {};
-
-		//add assets to queue for unloading
-		virtual void preUnload() {};
-
-		//on main thread for opengl
-		virtual void postLoad() {};
-		
+		bool isActive = false;
 		virtual void update() {};
 		virtual void draw() {};
 	};
 
 	struct PreLoadLevel : public Level {
 		PreLoadLevel() : Level("PreLoadLevel") {};
-
-		void preLoad() override;
-		void postLoad() override;
 	};
 
 	struct LoadingScreenLevel : public Level {
@@ -51,10 +29,7 @@ namespace Heerbann {
 
 		Label* label;
 
-		void preLoad() override;
 		void load() override;
-		void preUnload() override;
-		void postLoad() override;
 		void unload() override;
 		void update() override;
 	};
@@ -104,39 +79,23 @@ namespace Heerbann {
 
 		Text::TextBlock* testblock;
 
-		void preLoad() override;
 		void load() override;
-		void postLoad() override;
 		void update() override;
 		void draw() override;
 	};
 
 	class LevelManager {
 
-		std::vector<Level*> activeLevels;
+		std::unordered_map<std::string, Level*> levels;
+
+		Level* activeLevel = nullptr;
 
 	public:
 		void initialize();
 
-	private:
-		std::queue<Level*> toLoad;
-		std::queue<Level*> toUnload;
-
-		std::vector<Level*> loadCache;
-		std::vector<Level*> unloadCache;
-
-		void loadLevel(Level*);
-		void unloadLevel(Level*);
-
 	public:
 		void update();
 		void draw();
-
-		void queueLevelToLoad(std::string);
-		void queueLevelToUnLoad(std::string);
-
-		void queueLevelToLoad(Level*);
-		void queueLevelToUnLoad(Level*);
 	};
 
 }

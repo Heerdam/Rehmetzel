@@ -6,34 +6,39 @@ namespace Heerbann {
 
 	using namespace Heerbann;
 
+	
+	struct WorldObject {
+		const std::string id;
+		void* object;
+
+		template<class T>
+		T get() {
+			return reinterpret_cast<T>(object);
+		};
+	};
+
+
+
 	struct WorldBuilderDefinition {
 
 		uint heightMapWidth = 1000;
 	};
 
-	class VoxelWorld {
+	class World {
 
-		ShaderProgram* voxelComputeShader;
-		TextureDebugRenderer* debug;
+		std::unordered_map<std::string, WorldObject*> objects;
 
-		GLuint* texture;
-		GLuint heightmap;
-		GLuint vertexBuffer;
-		GLuint vao;
-
-		GLuint bSizeBuffer[2];
-		uint* bSizeBufferPntr[2];
-		float* bSizeBufferPntrf[2];
-		uint bSizeIndex = 0;
-
-		VSMRenderable* renderable;
-
-		void createVAO(GLuint&, GLuint&);
+		VSMRenderer* renderer;
 
 	public:
-		VoxelWorld();
-		void build(WorldBuilderDefinition*);
-		void draw(View*, Renderer*);
+		World();
+		void build(const WorldBuilderDefinition&);
+
+		template<class T>
+		WorldObject* get(std::string _id) {
+			if (objects.count(_id) == 0) return nullptr;
+			return reinterpret_cast<T>(objects[_id]->object);
+		};
 	};
 
 }

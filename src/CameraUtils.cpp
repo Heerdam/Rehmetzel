@@ -5,6 +5,7 @@
 #include "Utils.hpp"
 #include "Math.hpp"
 #include "TimeLog.hpp"
+#include "Assets.hpp"
 
 using namespace Heerbann;
 
@@ -172,16 +173,17 @@ void View::setInteractive(bool _setActive) {
 					Vec2 delta = Vec2i(_x, _y) - lastPos;
 					job->dir = NOR(delta);
 					job->speed = LEN(delta);
-					job->func = [&](void* _entry) {
+					job->func = [&](void* _entry)->bool {
 						if (buttonPressed) {
 							delete _entry;
-							return;
+							return true;
 						}
 						auto job = reinterpret_cast<OrthoPanJob*>(_entry);
 						job->cam->translate(LERP((job->dir*job->speed), Vec2(0.f, 0.f), (job->t += DeltaTime)));
 						if (!(job->t > 1.f || EQUAL(job->t, 1.f)))
-							M_Main->addJob(job->func, job);
+							return false;
 						else delete _entry;
+						return true;
 					};
 					M_Main->addJob(job->func, job);
 				}

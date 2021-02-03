@@ -89,7 +89,8 @@ namespace Heerbann {
 		GLuint vbo;
 		GLuint indexBuffer;
 		GLuint animBuffer;
-		GLuint matBuffer;
+
+		SSBO* matBuffer;
 
 		uint vertexBufferCacheSize; //elements
 		float* vertexBufferCache = nullptr;
@@ -99,9 +100,6 @@ namespace Heerbann {
 
 		uint animationCacheSize; //elements
 		char* animationCache = nullptr;
-
-		uint materialCacheSize; //elements
-		char* materialCache = nullptr;
 
 		uint metaCacheSize; //elements
 		char* metaCache = nullptr;
@@ -115,6 +113,11 @@ namespace Heerbann {
 		std::vector<mNode*> nodeCache;
 		std::unordered_map<std::string, mNode*> nodeMap;
 
+	};
+
+	struct DrawCall {
+		GLuint vao;
+		uint count, offset;
 	};
 	
 }
